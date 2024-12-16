@@ -25,6 +25,7 @@
 ********************************************************************************************/
 #include "raylib.h"
 #include "raymath.h"
+#include <stdlib.h>
 
 #define GRID_SIZE 5
 
@@ -41,6 +42,9 @@ float variation_hauteur(GridCell cellule) {
     return cos(cellule.position.x + time) + cos(cellule.position.z + time);
 }
 
+float random_flottant(float min, float max) {
+    return min + (rand() / (float)RAND_MAX) * (max - min);
+}
 
 int main(void) {
     // Initialisation
@@ -67,7 +71,8 @@ int main(void) {
         for (int z = 0; z < GRID_SIZE; z++) {
             grid[x][z].position = (Vector3){ x * 2.0f, 0.0f, z * 2.0f };
             grid[x][z].model = model;
-            grid[x][z].model.transform = MatrixScale(0.1f, 0.1f, 0.1f);  // Réduire la taille du modèle
+            float taille = random_flottant(0.05f,0.01f);
+            grid[x][z].model.transform = MatrixScale(taille,taille,taille);  // Réduire la taille du modèle
             grid[x][z].active = true;  // Activer tous les objets par défaut
         }
     }
