@@ -67,7 +67,7 @@ int main(void) {
         for (int z = 0; z < GRID_SIZE; z++) {
             grid[x][z].position = (Vector3){ x * 2.0f, 0.0f, z * 2.0f };
             grid[x][z].model = model;
-            grid[x][z].model.transform = MatrixScale(0.5f, 0.5f, 0.5f);  // Réduire la taille du modèle
+            grid[x][z].model.transform = MatrixScale(0.1f, 0.1f, 0.1f);  // Réduire la taille du modèle
             grid[x][z].active = true;  // Activer tous les objets par défaut
         }
     }
