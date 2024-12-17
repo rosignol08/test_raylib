@@ -65,6 +65,7 @@ int main(void) {
     Model model = LoadModel("pine_tree/scene.gltf");
     Texture2D texture = LoadTexture("textures/Leavs_baseColor.png");
     model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+    
     // Initialisation de la grille
     GridCell grid[GRID_SIZE][GRID_SIZE];
     for (int x = 0; x < GRID_SIZE; x++) {
