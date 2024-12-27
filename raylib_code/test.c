@@ -126,7 +126,7 @@ int main(void) {
     //Light lights[1] = { 0 };
     //lights[0] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){ 0, 1, -1 }, Vector3Zero(), RED, shader);
 
-    // Charger le modèle et la texture
+    // Charger le modèle et la texture test commentaire
     Model model = LoadModel("pine_tree/scene.gltf");
     Texture2D texture = LoadTexture("textures/Leavs_baseColor.png");
     model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
