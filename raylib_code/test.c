@@ -27,7 +27,10 @@
 #include "raymath.h"
 #include <stdlib.h>
 #define RLIGHTS_IMPLEMENTATION
+//pour linux:
 #include "/home/romaric/Bureau/3d_raylib_test/test_raylib/raylib/examples/shaders/rlights.h"
+//pour windows:
+#include "C:\Users\bunny\vcpkg\buildtrees\raylib\src\5.5-966575b391.clean\examples\shadersrlights.h"
 
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION            330
