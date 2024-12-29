@@ -27,11 +27,11 @@
 #include "raymath.h"
 #include <stdlib.h>
 #define RLIGHTS_IMPLEMENTATION
-#if defined(_WIN32) || defined(_WIN64)
-#include "C:\\raylib\\raylib\\examples\\shaders\\rlights.h"
-#elif defined(__linux__)
-#include "/home/romaric/Bureau/3d_raylib_test/test_raylib/raylib/examples/shaders/rlights.h"
-#endif
+//#if defined(_WIN32) || defined(_WIN64)
+#include "shaders/rlights.h"
+//#elif defined(__linux__)
+//#include "/home/romaric/Bureau/3d_raylib_test/test_raylib/raylib/examples/shaders/rlights.h"
+//#endif
 
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION            330
@@ -41,38 +41,14 @@
 #define GRID_SIZE 5
 
 
-// Light type
-typedef enum {
-    LIGHT_DIRECTIONAL = 0,
-    LIGHT_POINT,
-    LIGHT_SPOT
-} LightType;
-
-// Light data
-typedef struct {
-    int type;
-    int enabled;
-    Vector3 position;
-    Vector3 target;
-    float color[4];
-    float intensity;
-
-    // Shader light parameters locations
-    int typeLoc;
-    int enabledLoc;
-    int positionLoc;
-    int targetLoc;
-    int colorLoc;
-    int intensityLoc;
-} Light;
 
 static int lightCount = 0;
 // Create a light and get shader locations
-static Light CreateLight(int type, Vector3 position, Vector3 target, Color color, float intensity, Shader shader);
+//static Light CreateLight(int type, Vector3 position, Vector3 target, Color color, float intensity, Shader shader);
 
 // Update light properties on shader
 // NOTE: Light shader locations should be available
-static void UpdateLight(Shader shader, Light light);
+//static void UpdateLight(Shader shader, Light light);
 
 // Structure pour stocker les informations d'un objet 3D dans la grille
 typedef struct {
@@ -112,11 +88,11 @@ int main(void) {
     // Get some required shader locations
     //shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
     // Create a light and get shader locations
-    static Light CreateLight(int type, Vector3 position, Vector3 target, Color color, float intensity, Shader shader);
+    //static Light CreateLight(int type, Vector3 position, Vector3 target, Color color, float intensity, Shader shader);
 
     // Update light properties on shader
     // NOTE: Light shader locations should be available
-    static void UpdateLight(Shader shader, Light light);
+    //static void UpdateLight(Shader shader, Light light);
 
     // NOTE: "matModel" location name is automatically assigned on shader loading, 
     // no need to get the location again if using that uniform name
