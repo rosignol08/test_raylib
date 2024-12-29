@@ -125,7 +125,7 @@ int main(void) {
 
     DisableCursor();// Limit cursor to relative movement inside the window
 
-    SetTargetFPS(850);
+    SetTargetFPS(30000);
 
     // Boucle principale
     while (!WindowShouldClose()) {
