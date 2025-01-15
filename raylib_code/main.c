@@ -15,7 +15,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include "shaders/rlights.h"
 #elif defined(__linux__)
-#include "shaders/rlights.h"
+#include "include/shaders/rlights.h"
 #endif
 
 #if defined(PLATFORM_DESKTOP)
@@ -53,24 +53,21 @@ float distance = 10.0f; // Distance entre la caméra et la cible
 // Variable pour activer/désactiver la rotation
 bool isRotating = false;
 
-
+// Structure pour stocker les informations d'un objet 3D dans la scène
 typedef struct {
-    GridCell *cell;
-    float depth;
-} TransparentObject;
+    Vector3 position;    // Position de l'objet
+    Model *model;        // Modèle 3D
+    float depth;         // Distance caméra → objet
+} SceneObject;
 
-int CompareDepth(const void *a, const void *b) {
-    TransparentObject *objA = (TransparentObject *)a;
-    TransparentObject *objB = (TransparentObject *)b;
+
+int CompareSceneObjects(const void *a, const void *b) {
+    SceneObject *objA = (SceneObject *)a;
+    SceneObject *objB = (SceneObject *)b;
     return (objA->depth < objB->depth) - (objA->depth > objB->depth); // Tri décroissant
 }
 
-void SortTransparentObjects(Camera camera, TransparentObject *transparentObjects, int count) {
-    for (int i = 0; i < count; i++) {
-        transparentObjects[i].depth = Vector3Distance(camera.position, transparentObjects[i].cell->position);
-    }
-    qsort(transparentObjects, count, sizeof(TransparentObject), CompareDepth);
-}
+
 
 //terrain avec hauteur
 float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSize) {
@@ -92,11 +89,18 @@ int main(void) {
 
     InitWindow(screenWidth, screenHeight, "raylib - Grille avec objets 3D");
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
+    /*
     rlEnableDepthTest();
-
+    rlEnableDepthMask();
     rlEnableScissorTest();
     rlEnableColorBlend();
-
+    glEnable(GL_DEPTH_TEST);
+    */
+    //rlEnableDepthTest();    // Activer le test de profondeur
+    //rlEnableDepthMask();    // Activer l'écriture dans le tampon de profondeur
+    //glBlendFunc(RL_SRC_ALPHA, RL_ONE_MINUS_SRC_ALPHA);
+    rlEnableColorBlend(); // Activer le blending
+    rlSetBlendMode(RL_BLEND_ALPHA);
     // Caméra pour visualiser la scène
     Camera camera = { 
     .position = (Vector3){ 0.0f, 0.0f, 0.0f },
@@ -124,13 +128,14 @@ int main(void) {
     Shader shader = LoadShader(TextFormat("resources/shaders/glsl%i/lighting.vs", GLSL_VERSION), TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     
     // Charger le modèle et la texture test commentaire
-    Model model = LoadModel("pine_tree/scene.gltf");
-    Texture2D texture = LoadTexture("pine_tree/textures/Leavs_baseColor.png");
+    Model model = LoadModel("models/pine_tree/scene.gltf");
+    Texture2D texture = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
     model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
     
     // Initialisation de la grille
     GridCell grid[GRID_SIZE][GRID_SIZE];
 
+    
    // Initialisation de la grille
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
@@ -156,10 +161,12 @@ int main(void) {
         }
     }
 
+    //on collecte les objets
 
+    
     DisableCursor();// Limit cursor to relative movement inside the window
 
-    SetTargetFPS(5000);
+    SetTargetFPS(165);
     
 
     // Boucle principale
@@ -201,10 +208,11 @@ int main(void) {
         BeginMode3D(camera);
         
         BeginShaderMode(shader);
-        DrawCube(Vector3Zero(), 2.0, 4.0, 2.0, WHITE);
-
-
+        
+        //DrawCube(Vector3Zero(), 2.0, 4.0, 2.0, WHITE);
+        //DrawModel(model_sol, mapPosition, 1.0f, RED);
         // Dessiner les objets de la grille
+        /*
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
                 if (grid[x][z].active) {
@@ -213,21 +221,63 @@ int main(void) {
                 variation_hauteur(grid[x][z]);
             }
         }
+        */
+       
+        SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
+int objectCount = 0;
 
-        DrawModel(model_sol, mapPosition, 1.0f, RED);
+// Ajouter le sol à la liste
+sceneObjects[objectCount].position = mapPosition;
+sceneObjects[objectCount].model = &model_sol;
+sceneObjects[objectCount].depth = Vector3Distance(camera.position, mapPosition);
+objectCount++;
+
+// Ajouter les arbres à la liste
+for (int x = 0; x < GRID_SIZE; x++) {
+    for (int z = 0; z < GRID_SIZE; z++) {
+        if (grid[x][z].active) {
+            sceneObjects[objectCount].position = grid[x][z].position;
+            sceneObjects[objectCount].model = &grid[x][z].model;
+            sceneObjects[objectCount].depth = Vector3Distance(camera.position, grid[x][z].position);
+            objectCount++;
+        }
+    }
+}
+// Trier les objets par profondeur
+qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
+
+// Dessiner les objets dans l'ordre trié
+for (int i = 0; i < objectCount; i++) {
+    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+}
+/* ou alors ça
+// Rendre les faces arrière des feuilles
+rlSetCullFace(RL_CULL_FACE_FRONT); // Ne pas dessiner les faces avant
+for (int i = 0; i < objectCount; i++) {
+    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+}
+
+// Rendre les faces avant des feuilles
+rlSetCullFace(RL_CULL_FACE_BACK); // Ne pas dessiner les faces arrière
+for (int i = 0; i < objectCount; i++) {
+    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+}
+
+// Réinitialiser le mode de culling
+rlSetCullFace(RL_CULL_FACE_BACK);
+    */    
+
+        
 
         DrawGrid(20, 1.0f);
-
         EndShaderMode();
         
 
         EndMode3D();
         
-
         DrawText("Grille d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         DrawFPS(10, 40);
-
         EndDrawing();
     }
 
