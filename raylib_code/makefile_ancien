@@ -1,19 +1,10 @@
-# Détection du système d'exploitation
-OS := $(shell uname -s 2>/dev/null || echo Windows_NT)
-
 # Nom de l'exécutable
-ifeq ($(OS), Windows_NT)
-    EXEC = test.exe
-    RM = del /F /Q
-    LDFLAGS = -Llib/ -lraylib -lopengl32 -lgdi32 -lwinmm
-else
-    EXEC = test
-    RM = rm -f
-    LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
-endif
+EXEC = test.exe
 
-# Dossiers
+# Dossier contenant les fichiers d'en-tête (.h)
 INCLUDE_DIR = include
+
+# Dossier contenant les bibliothèques (.lib)
 LIB_DIR = lib
 
 # Fichiers source
@@ -32,7 +23,7 @@ $(EXEC): $(SRC)
 
 # Nettoyage des fichiers générés
 clean:
-	$(RM) $(EXEC)
+	del /F /Q $(EXEC)
 
 # Phony targets
 .PHONY: all clean

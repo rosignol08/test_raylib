@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #define RLIGHTS_IMPLEMENTATION
 #if defined(_WIN32) || defined(_WIN64)
-#include "shaders\\rlights.h"
+#include "shaders/rlights.h"
 #elif defined(__linux__)
 #include "shaders/rlights.h"
 #endif
