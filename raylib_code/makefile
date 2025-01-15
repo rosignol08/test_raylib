@@ -1,38 +1,30 @@
+
+CC = gcc
+
 # Détection du système d'exploitation
 OS := $(shell uname -s 2>/dev/null || echo Windows_NT)
 
-# Nom de l'exécutable
+# Options communes
+CFLAGS = -Wall -std=c99 -Wno-missing-braces -O1
+INCLUDE = -Iinclude/
+SRC = main.c
+
 ifeq ($(OS), Windows_NT)
-    EXEC = test.exe
-    RM = del /F /Q
+    # Compilation pour Windows (statique)
     LDFLAGS = -Llib/ -lraylib -lopengl32 -lgdi32 -lwinmm
+    OUTPUT = main.exe
+    RM = del /Q
 else
-    EXEC = test
-    RM = rm -f
+    # Compilation pour Linux (dynamique)
     LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+    OUTPUT = main
+    RM = rm -f
 endif
 
-# Dossiers
-INCLUDE_DIR = include
-LIB_DIR = lib
+# Règle principale
+all:
+	$(CC) $(SRC) -o $(OUTPUT) $(CFLAGS) $(INCLUDE) $(LDFLAGS)
 
-# Fichiers source
-SRC = test.c
-
-# Options de compilation
-CFLAGS = -O1 -Wall -std=c99 -Wno-missing-braces -I$(INCLUDE_DIR)
-LDFLAGS = -L$(LIB_DIR) -lraylib -lopengl32 -lgdi32 -lwinmm
-
-# Commande par défaut
-all: $(EXEC)
-
-# Règle pour générer l'exécutable
-$(EXEC): $(SRC)
-	gcc $(SRC) -o $(EXEC) $(CFLAGS) $(LDFLAGS)
-
-# Nettoyage des fichiers générés
+# Nettoyer les fichiers exécutables
 clean:
-	$(RM) $(EXEC)
-
-# Phony targets
-.PHONY: all clean
+	$(RM) $(OUTPUT)

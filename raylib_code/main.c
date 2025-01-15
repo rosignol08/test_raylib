@@ -124,8 +124,8 @@ int main(void) {
     Shader shader = LoadShader(TextFormat("resources/shaders/glsl%i/lighting.vs", GLSL_VERSION), TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     
     // Charger le modèle et la texture test commentaire
-    Model model = LoadModel("models/pine_tree/scene.gltf");
-    Texture2D texture = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
+    Model model = LoadModel("pine_tree/scene.gltf");
+    Texture2D texture = LoadTexture("pine_tree/textures/Leavs_baseColor.png");
     model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
     
     // Initialisation de la grille
