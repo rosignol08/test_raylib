@@ -23,7 +23,7 @@
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
     #define GLSL_VERSION            100
 #endif
-#define GRID_SIZE 5
+#define GRID_SIZE 50
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 
 
@@ -139,8 +139,8 @@ int main(void) {
    // Initialisation de la grille
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
-            float posX = x * 4.0f - 8.0f;  // Ajustez selon votre terrain
-            float posZ = z * 4.0f - 8.0f;
+            float posX = x * 0.30f - 8.0f;  // Ajustez selon votre terrain
+            float posZ = z * 0.30f - 8.0f;
 
             // Obtenir la hauteur du terrain pour cette cellule
             float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
@@ -148,7 +148,7 @@ int main(void) {
             // Positionner la cellule en fonction de la hauteur du terrain
             grid[x][z].position = (Vector3){ posX, height, posZ };
             grid[x][z].model = model;
-            float taille = random_flottant(3.5f,5.15f);
+            float taille = random_flottant(0.15f,0.35f);
             Matrix transform = MatrixIdentity();
 
             // Appliquer l'échelle pour réduire ou agrandir le modèle

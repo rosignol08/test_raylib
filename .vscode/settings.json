@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "iterator": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "rlights.h": "c"
     }
 }
