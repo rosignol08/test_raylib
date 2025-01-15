@@ -25,12 +25,13 @@
 ********************************************************************************************/
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
 #include <stdlib.h>
 #define RLIGHTS_IMPLEMENTATION
 #if defined(_WIN32) || defined(_WIN64)
-#include "C:\\raylib\\raylib\\examples\\shaders\\rlights.h"
+#include "shaders\\rlights.h"
 #elif defined(__linux__)
-#include "/home/romaric/Bureau/3d_raylib_test/test_raylib/raylib/examples/shaders/rlights.h"
+#include "shaders/rlights.h"
 #endif
 
 #if defined(PLATFORM_DESKTOP)
@@ -39,40 +40,9 @@
     #define GLSL_VERSION            100
 #endif
 #define GRID_SIZE 5
+#define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 
 
-// Light type
-typedef enum {
-    LIGHT_DIRECTIONAL = 0,
-    LIGHT_POINT,
-    LIGHT_SPOT
-} LightType;
-
-// Light data
-typedef struct {
-    int type;
-    int enabled;
-    Vector3 position;
-    Vector3 target;
-    float color[4];
-    float intensity;
-
-    // Shader light parameters locations
-    int typeLoc;
-    int enabledLoc;
-    int positionLoc;
-    int targetLoc;
-    int colorLoc;
-    int intensityLoc;
-} Light;
-
-static int lightCount = 0;
-// Create a light and get shader locations
-static Light CreateLight(int type, Vector3 position, Vector3 target, Color color, float intensity, Shader shader);
-
-// Update light properties on shader
-// NOTE: Light shader locations should be available
-static void UpdateLight(Shader shader, Light light);
 
 // Structure pour stocker les informations d'un objet 3D dans la grille
 typedef struct {
@@ -91,85 +61,134 @@ float random_flottant(float min, float max) {
     return min + (rand() / (float)RAND_MAX) * (max - min);
 }
 
+// Variables globales pour stocker les angles de rotation
+float angleX = 0.0f; // Rotation autour de l'axe X
+float angleY = 0.0f; // Rotation autour de l'axe Y
+float distance = 10.0f; // Distance entre la caméra et la cible
+
+// Variable pour activer/désactiver la rotation
+bool isRotating = false;
+
+
+typedef struct {
+    GridCell *cell;
+    float depth;
+} TransparentObject;
+
+int CompareDepth(const void *a, const void *b) {
+    TransparentObject *objA = (TransparentObject *)a;
+    TransparentObject *objB = (TransparentObject *)b;
+    return (objA->depth < objB->depth) - (objA->depth > objB->depth); // Tri décroissant
+}
+
+void SortTransparentObjects(Camera camera, TransparentObject *transparentObjects, int count) {
+    for (int i = 0; i < count; i++) {
+        transparentObjects[i].depth = Vector3Distance(camera.position, transparentObjects[i].cell->position);
+    }
+    qsort(transparentObjects, count, sizeof(TransparentObject), CompareDepth);
+}
+
+
 int main(void) {
     // Initialisation
     const int screenWidth = 800;
     const int screenHeight = 450;
 
     InitWindow(screenWidth, screenHeight, "raylib - Grille avec objets 3D");
+    rlDisableBackfaceCulling();//pour voir l'arriere des objets
+    rlEnableDepthTest();
+
+    rlEnableScissorTest();
+    rlEnableColorBlend();
 
     // Caméra pour visualiser la scène
-    Camera camera = { 0 };
-    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f };
-    camera.target = (Vector3){ 0.0f, 8.0f, 0.0f };
-    camera.up = (Vector3){ 0.0f, 10.0f, 0.0f };
-    camera.fovy = 45.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
+    Camera camera = { 
+    .position = (Vector3){ 0.0f, 0.0f, 0.0f },
+    .target = (Vector3){ 0.0f, 0.0f, 0.0f },
+    .up = (Vector3){ 0.0f, 1.0f, 0.0f },
+    .fovy = 85.0f,
+    .projection = CAMERA_PERSPECTIVE
+    };
+    
+    
 
     // Load basic lighting shader
-    Shader shader = LoadShader(TextFormat("resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),
-                               TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
-    // Get some required shader locations
-    //shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
-    // Create a light and get shader locations
-    static Light CreateLight(int type, Vector3 position, Vector3 target, Color color, float intensity, Shader shader);
-
-    // Update light properties on shader
-    // NOTE: Light shader locations should be available
-    static void UpdateLight(Shader shader, Light light);
-
-    // NOTE: "matModel" location name is automatically assigned on shader loading, 
-    // no need to get the location again if using that uniform name
-    //shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(shader, "matModel");
+    Shader shader = LoadShader(TextFormat("resources/shaders/glsl%i/lighting.vs", GLSL_VERSION), TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     
-    // Ambient light level (some basic lighting)
-    //int ambientLoc = GetShaderLocation(shader, "direc");
-    //SetShaderValue(shader, ambientLoc, (float[4]){ 0.0f, 0.0f, 0.0f, 1.0f }, SHADER_UNIFORM_VEC4);
-
-    // Create lights
-    //Light lights[1] = { 0 };
-    //lights[0] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){ 0, 1, -1 }, Vector3Zero(), RED, shader);
-
     // Charger le modèle et la texture test commentaire
     Model model = LoadModel("pine_tree/scene.gltf");
-    Texture2D texture = LoadTexture("textures/Leavs_baseColor.png");
+    Texture2D texture = LoadTexture("pine_tree/textures/Leavs_baseColor.png");
     model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
     
     // Initialisation de la grille
     GridCell grid[GRID_SIZE][GRID_SIZE];
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
-            grid[x][z].position = (Vector3){ x * 2.0f, 0.0f, z * 2.0f };
+            grid[x][z].position = (Vector3){ x * 4.0f, 0.0f, z * 4.0f };
             grid[x][z].model = model;
-            float taille = random_flottant(0.05f,0.01f);
-            grid[x][z].model.transform = MatrixScale(taille,taille,taille); // Réduire la taille du modèle
+            float taille = random_flottant(3.5f,5.15f);
+            Matrix transform = MatrixIdentity();
+        
+            // Appliquer l'échelle pour rendre l'arbre plus grand
+            transform = MatrixMultiply(transform, MatrixScale(taille, taille, taille));
+            // Rotation pour orienter l'arbre vers le haut (si nécessaire)
+            transform = MatrixMultiply(transform, MatrixRotateX(-(PI / 2.0f))); // Exemple pour une rotation X
+        
+            // Appliquer la transformation
+            grid[x][z].model.transform = transform;
+        
             grid[x][z].active = true; // Activer tous les objets par défaut
+            //grid[x][z].model.transform = MatrixScale(taille,taille,taille); // Réduire la taille du modèle
+            //grid[x][z].active = true; // Activer tous les objets par défaut
         }
     }
 
     DisableCursor();// Limit cursor to relative movement inside the window
 
-    SetTargetFPS(850);
+    SetTargetFPS(5000);
+    
 
     // Boucle principale
     while (!WindowShouldClose()) {
-        // Mise à jour de la caméra
-        UpdateCamera(&camera, CAMERA_FREE);
-        
-        //float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
-        //SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
-        //if (IsKeyPressed(KEY_Y)) { lights[0].enabled = !lights[0].enabled; }
-        //for (int i = 0; i < 1; i++) UpdateLightValues(shader, lights[i]);
+         // Activer/désactiver la rotation avec le clic droit
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) isRotating = true;
+        if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) isRotating = false;
 
+        // Capture des mouvements de la souris
+        if (isRotating) {
+            Vector2 mouseDelta = GetMouseDelta();
+            angleX -= mouseDelta.y * 0.2f; // Sensibilité verticale
+            angleY -= mouseDelta.x * 0.2f; // Sensibilité horizontale
+        }
+        // Gestion du zoom avec la molette de la souris
+        distance -= GetMouseWheelMove() * 0.5f; // Ajustez le facteur (0.5f) pour contrôler la sensibilité du zoom
+        if (distance < 2.0f) distance = 2.0f;   // Distance minimale
+        if (distance > 50.0f) distance = 50.0f; // Distance maximale
+
+
+        // Limiter les angles X pour éviter une rotation complète
+        if (angleX > 89.0f) angleX = 89.0f;
+        if (angleX < -89.0f) angleX = -89.0f;
+
+        // Calcul de la position de la caméra en coordonnées sphériques
+        float radAngleX = DEG2RAD * angleX;
+        float radAngleY = DEG2RAD * angleY;
+
+        camera.position.x = distance * cos(radAngleX) * sin(radAngleY);
+        camera.position.y = distance * sin(radAngleX);
+        camera.position.z = distance * cos(radAngleX) * cos(radAngleY);
+
+        DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
+        
         // Dessiner
         BeginDrawing();
         ClearBackground(SKYBLUE);
 
         BeginMode3D(camera);
         
+
         BeginShaderMode(shader);
-        DrawPlane(Vector3Zero(), (Vector2) { 10.0, 10.0 }, WHITE);
-        DrawCube(Vector3Zero(), 2.0, 4.0, 2.0, WHITE);
+DrawCube(Vector3Zero(), 2.0, 4.0, 2.0, WHITE);
         //for (int i = 0; i < 1; i++)
         //        {
         //            if (lights[i].enabled) DrawSphereEx(lights[i].position, 0.2f, 8, 8, lights[i].color);
@@ -181,18 +200,73 @@ int main(void) {
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
                 if (grid[x][z].active) {
-                    DrawModel(grid[x][z].model, grid[x][z].position, 0.5f, GREEN);
+                    DrawModel(grid[x][z].model, grid[x][z].position, 0.5f, WHITE);
                 }
                 variation_hauteur(grid[x][z]);
             }
         }
-        
+////////////////////////////////////test de profondeur marche pas à l'arrière/////////////////
+    // Dessiner les objets opaques en premier
+//    for (int x = 0; x < GRID_SIZE; x++) {
+//        for (int z = 0; z < GRID_SIZE; z++) {
+//            if (grid[x][z].active) {
+//                DrawModel(grid[x][z].model, grid[x][z].position, 1.0f, WHITE);
+//            }
+//        }
+//    }
+
+    // Collecter les objets transparents
+//    TransparentObject transparentObjects[GRID_SIZE * GRID_SIZE];
+//    int transparentCount = 0;
+
+//    for (int x = 0; x < GRID_SIZE; x++) {
+//        for (int z = 0; z < GRID_SIZE; z++) {
+//            if (grid[x][z].active) {
+//                transparentObjects[transparentCount].cell = &grid[x][z];
+//                transparentCount++;
+//            }
+//        }
+//    }
+
+    // Trier les objets transparents par profondeur
+//    SortTransparentObjects(camera, transparentObjects, transparentCount);
+
+    // Désactiver l'écriture dans le tampon de profondeur pour les objets transparents
+//    rlDisableDepthMask();
+
+    // Dessiner les objets transparents dans l'ordre trié
+//    for (int i = 0; i < transparentCount; i++) {
+//        DrawModel(transparentObjects[i].cell->model, transparentObjects[i].cell->position, 1.0f, WHITE);
+//    }
+
+
+        //for (int i = 0; i < 1; i++)
+        //        {
+        //            if (lights[i].enabled) DrawSphereEx(lights[i].position, 0.2f, 8, 8, lights[i].color);
+        //            else DrawSphereWires(lights[i].position, 0.2f, 8, 8, ColorAlpha(lights[i].color, 0.3f));
+        //        }
+        //DrawGrid(10, 1.0f);  // Grille visuelle
+
+        // Dessiner les objets de la grille
+  //      for (int x = 0; x < GRID_SIZE; x++) {
+//            for (int z = 0; z < GRID_SIZE; z++) {
+                //if (grid[x][z].active) {
+                //    DrawModel(grid[x][z].model, grid[x][z].position, 0.5f, WHITE);
+              //  }
+            //    variation_hauteur(grid[x][z]);
+          //  }
+        //}
+// Réactiver l'écriture dans le tampon de profondeur
+//rlEnableDepthMask();
         EndShaderMode();
         
+
         EndMode3D();
+        
 
         DrawText("Grille d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
-        DrawFPS(10, 30);
+        DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
+        DrawFPS(10, 40);
 
         EndDrawing();
     }
