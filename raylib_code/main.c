@@ -112,7 +112,7 @@ int main(void) {
     
 
     //test sol
-    Image image_sol = LoadImage("heightmap.png");     // Load heightmap image (RAM)
+    Image image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
     Texture2D texture_sol = LoadTextureFromImage(image_sol);        // Convert image to texture (VRAM)
 
     Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 16, 8, 16 }); // Generate heightmap mesh (RAM and VRAM)
@@ -222,7 +222,7 @@ int main(void) {
             }
         }
         */
-       
+       DrawModel(model_sol, mapPosition, 1.0f, MAROON);
         SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
 int objectCount = 0;
 
