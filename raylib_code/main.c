@@ -190,17 +190,17 @@ int main(void) {
             // Vérifier si la cellule est sur une pente
             bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
 
-            if (pente){
+            if (!(pente)){
                 grid[x][z].model = model_sapin;
                 taille_min = 0.05f;
                 taille_max = 0.15f;
                 besoin_retourner = 1;
             }
             else{
-                grid[x][z].model = model_acacia;
-                taille_min = 0.005f;
-                taille_max = 0.05f;
-                besoin_retourner = 2;
+                grid[x][z].model = model_buisson_europe;
+                taille_min = 0.00005f;
+                taille_max = 0.0005f;
+                besoin_retourner = 0;
             }
             
             // Positionner la cellule en fonction de la hauteur du terrain
