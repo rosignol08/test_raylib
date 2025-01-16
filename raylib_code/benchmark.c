@@ -13,7 +13,7 @@ int main(void) {
     const int screenWidth = 1280;
     const int screenHeight = 720;
 
-    InitWindow(screenWidth, screenHeight, "Raylib - 10,000 Cubes Benchmark");
+    InitWindow(screenWidth, screenHeight, "Raylib - 50,000 Cubes Benchmark");
     
     Camera camera = { 0 };
     camera.position = (Vector3){ 100.0f, 100.0f, 100.0f }; // Position de la caméra
@@ -26,9 +26,9 @@ int main(void) {
     Cube cubes[CUBE_COUNT];
     for (int i = 0; i < CUBE_COUNT; i++) {
         cubes[i].position = (Vector3){
-            (float)(rand() % 200 - 100), // Position X entre -100 et 100
-            (float)(rand() % 200 - 100), // Position Y entre -100 et 100
-            (float)(rand() % 200 - 100)  // Position Z entre -100 et 100
+            (float)(rand() % 200 - 100)*0.1f, // Position X entre -10 et 10
+            (float)(rand() % 200 - 100)*0.1f, // Position Y entre -10 et 10
+            (float)(rand() % 200 - 100)*0.1f  // Position Z entre -10 et 10
         };
         cubes[i].color = (Color){
             rand() % 256, // Rouge
@@ -42,8 +42,8 @@ int main(void) {
     // Boucle principale
     while (!WindowShouldClose()) {
         // Déplacement de la caméra
-        UpdateCamera(&camera, CAMERA_FREE);
-
+        UpdateCamera(&camera, CAMERA_PERSPECTIVE);
+        EnableCursor(); // Activer le curseur pour la rotation de la caméra
         // Rendu
         BeginDrawing();
         ClearBackground(RAYWHITE);
