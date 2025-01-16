@@ -1,0 +1,408 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 4730,
+      "max": [
+        481.1716003417969,
+        626.185791015625,
+        420.5023498535156
+      ],
+      "min": [
+        -476.8569030761719,
+        -0.014779999852180481,
+        -379.990966796875
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 56760,
+      "componentType": 5126,
+      "count": 4730,
+      "max": [
+        0.9987196326255798,
+        0.9995666742324829,
+        0.9991196393966675
+      ],
+      "min": [
+        -0.9996238350868225,
+        -0.9995554685592651,
+        -0.9994228482246399
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 4730,
+      "max": [
+        0.999567985534668,
+        0.999854564666748,
+        0.9999910593032837,
+        1.0
+      ],
+      "min": [
+        -0.9991030693054199,
+        -0.9998571872711182,
+        -0.9999907612800598,
+        1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 4730,
+      "max": [
+        0.9995099902153015,
+        18.16642951965332
+      ],
+      "min": [
+        0.0004900000058114529,
+        0.0004900000058114529
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 21585,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 113520,
+      "componentType": 5126,
+      "count": 1160,
+      "max": [
+        638.2796020507813,
+        690.4692993164063,
+        555.1931762695313
+      ],
+      "min": [
+        -641.8280029296875,
+        292.4472351074219,
+        -483.8745422363281
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 127440,
+      "componentType": 5126,
+      "count": 1160,
+      "max": [
+        0.8301938772201538,
+        0.9981244206428528,
+        0.7540315389633179
+      ],
+      "min": [
+        -0.8802773952484131,
+        0.47037991881370544,
+        -0.7742021679878235
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 75680,
+      "componentType": 5126,
+      "count": 1160,
+      "max": [
+        0.9930176734924316,
+        0.6064972877502441,
+        0.9906480312347412,
+        1.0
+      ],
+      "min": [
+        -0.9996297955513,
+        -0.8275009393692017,
+        -0.9990309476852417,
+        -1.0
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 37840,
+      "componentType": 5126,
+      "count": 1160,
+      "max": [
+        0.9980199933052063,
+        0.9980199933052063
+      ],
+      "min": [
+        0.001979999942705035,
+        0.001979999942705035
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 86340,
+      "componentType": 5125,
+      "count": 2784,
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "evolveduk (https://sketchfab.com/evolveduk)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/acacia-tree-bb14c2bb679b4d0bb1c578a27e2ddabf",
+      "title": "Acacia tree"
+    },
+    "generator": "Sketchfab-16.15.0",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 97476,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 47120,
+      "byteOffset": 97476,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 141360,
+      "byteOffset": 144596,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 94240,
+      "byteOffset": 285956,
+      "byteStride": 16,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 380196,
+      "uri": "scene.bin"
+    }
+  ],
+  "images": [
+    {
+      "uri": "textures/bark05_0Mat_baseColor.png"
+    },
+    {
+      "uri": "textures/bark05_0Mat_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/bark05_0Mat_normal.png"
+    },
+    {
+      "uri": "textures/acacia_branch_1Mat_baseColor.png"
+    },
+    {
+      "uri": "textures/acacia_branch_1Mat_metallicRoughness.png"
+    },
+    {
+      "uri": "textures/acacia_branch_1Mat_normal.png"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "bark05_0Mat",
+      "normalTexture": {
+        "index": 2
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0.0,
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      }
+    },
+    {
+      "alphaCutoff": 0.20898581795579713,
+      "alphaMode": "MASK",
+      "doubleSided": true,
+      "name": "acacia_branch_1Mat",
+      "normalTexture": {
+        "index": 5
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicFactor": 0.0,
+        "metallicRoughnessTexture": {
+          "index": 4
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "bark05_0_bark05_0Mat_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3
+          },
+          "indices": 4,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "acacia branch_1_acacia branch_1Mat_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 6,
+            "POSITION": 5,
+            "TANGENT": 7,
+            "TEXCOORD_0": 8
+          },
+          "indices": 9,
+          "material": 1,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "matrix": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.220446049250313e-16,
+        -1.0,
+        0.0,
+        0.0,
+        1.0,
+        2.220446049250313e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "Sketchfab_model"
+    },
+    {
+      "children": [
+        2
+      ],
+      "matrix": [
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.009999999776482582,
+        0.0,
+        0.0,
+        -0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "acacia.fbx"
+    },
+    {
+      "children": [
+        3
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        4,
+        5
+      ],
+      "name": "bark05_0"
+    },
+    {
+      "mesh": 0,
+      "name": "bark05_0_bark05_0Mat_0"
+    },
+    {
+      "children": [
+        6
+      ],
+      "name": "acacia branch_1"
+    },
+    {
+      "mesh": 1,
+      "name": "acacia branch_1_acacia branch_1Mat_0"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    },
+    {
+      "sampler": 0,
+      "source": 3
+    },
+    {
+      "sampler": 0,
+      "source": 4
+    },
+    {
+      "sampler": 0,
+      "source": 5
+    }
+  ]
+}

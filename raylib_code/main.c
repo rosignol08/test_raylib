@@ -11,9 +11,10 @@
 #include "raymath.h"
 #include "rlgl.h"
 #include <stdlib.h>
+#include <stdio.h>//pour les printf
 #define RLIGHTS_IMPLEMENTATION
 #if defined(_WIN32) || defined(_WIN64)
-#include "shaders/rlights.h"
+#include "include/shaders/rlights.h"
 #elif defined(__linux__)
 #include "include/shaders/rlights.h"
 #endif
@@ -25,6 +26,7 @@
 #endif
 #define GRID_SIZE 50
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
+const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 
 
 
@@ -128,13 +130,33 @@ int main(void) {
     Shader shader = LoadShader(TextFormat("resources/shaders/glsl%i/lighting.vs", GLSL_VERSION), TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     
     // Charger le modèle et la texture test commentaire
-    Model model = LoadModel("models/pine_tree/scene.gltf");
-    Texture2D texture = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
-    model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+    Model model_sapin = LoadModel("models/pine_tree/scene.gltf");
+    Texture2D texture_sapin = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
+    model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sapin;
     
+    Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
+    Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
+    model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
+
+    Model model_acacia = LoadModel("models/acacia2/untitled.glb");
+    //Texture2D texture_acacia = LoadTexture("models/acacia2/Acacia_Dry_Green__Mature__Acacia_Trunk_baked_Color.png");
+    /*
+    Texture2D texture_acacia2 = LoadTexture("models/acacia2/Maps/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color.png");
+    Texture2D texture_acacia3 = LoadTexture("models/acacia2/Maps/Acacia_Dry_Green__Mature__Acacica_Leaves_2_baked_Color.png");
+    Texture2D texture_acacia4 = LoadTexture("models/acacia2/Maps/Acacia_Dry_Green__Mature__Acacica_Leaves_3_baked_Color.png");
+    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    */
+    /*
+    model_acacia.materials[1].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia2;
+    model_acacia.materials[2].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia3;
+    model_acacia.materials[3].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia4;
+    */
+
     // Initialisation de la grille
     GridCell grid[GRID_SIZE][GRID_SIZE];
-
+    float taille_min = 0;
+    float taille_max = 0;
+    int besoin_retourner = 0;
     
    // Initialisation de la grille
     for (int x = 0; x < GRID_SIZE; x++) {
@@ -142,20 +164,61 @@ int main(void) {
             float posX = x * 0.30f - 8.0f;  // Ajustez selon votre terrain
             float posZ = z * 0.30f - 8.0f;
 
+            
+            // Ajouter une irrégularité aux positions X et Z
+            float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
+            float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
+
+            posX += offsetX;
+            posZ += offsetZ;
+
             // Obtenir la hauteur du terrain pour cette cellule
             float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
 
+            // Calcul des hauteurs des cellules voisines
+            float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
+            float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
+            float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, (Vector3){ 16, 8, 16 });
+            float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, (Vector3){ 16, 8, 16 });
+
+            // Calcul des variations de hauteur
+            float deltaLeft = fabs(height - heightLeft);
+            float deltaRight = fabs(height - heightRight);
+            float deltaUp = fabs(height - heightUp);
+            float deltaDown = fabs(height - heightDown);
+
+            // Vérifier si la cellule est sur une pente
+            bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
+
+            if (pente){
+                grid[x][z].model = model_sapin;
+                taille_min = 0.05f;
+                taille_max = 0.15f;
+                besoin_retourner = 1;
+            }
+            else{
+                grid[x][z].model = model_acacia;
+                taille_min = 0.005f;
+                taille_max = 0.05f;
+                besoin_retourner = 2;
+            }
+            
             // Positionner la cellule en fonction de la hauteur du terrain
             grid[x][z].position = (Vector3){ posX, height, posZ };
-            grid[x][z].model = model;
-            float taille = random_flottant(0.15f,0.35f);
+            //grid[x][z].model = model_sapin;
+            float taille = random_flottant(taille_min, taille_max);
             Matrix transform = MatrixIdentity();
 
             // Appliquer l'échelle pour réduire ou agrandir le modèle
             transform = MatrixMultiply(transform, MatrixScale(taille, taille, taille));
-            // Rotation pour orienter l'arbre vers le haut (si nécessaire)
-            transform = MatrixMultiply(transform, MatrixRotateX(-(PI / 2.0f))); // Exemple pour une rotation X
-        
+            if (besoin_retourner == 1){
+                // Rotation pour orienter l'arbre vers le haut (si nécessaire)
+                transform = MatrixMultiply(transform, MatrixRotateX(-(PI / 2.0f))); // Exemple pour une rotation X
+            }else if (besoin_retourner == 2){
+                // Rotation pour orienter l'arbre vers le haut (si nécessaire)
+                transform = MatrixMultiply(transform, MatrixRotateX(PI / 2.0f)); // Exemple pour une rotation X
+            }
+            
             grid[x][z].model.transform = transform;
             grid[x][z].active = true;
         }
@@ -282,8 +345,12 @@ rlSetCullFace(RL_CULL_FACE_BACK);
     }
 
     // Désallocation des ressources
-    UnloadModel(model);
-    UnloadTexture(texture);
+    UnloadModel(model_sapin);
+    UnloadTexture(texture_sapin);
+    UnloadModel(model_buisson_europe);
+    UnloadTexture(texture_buisson_europe);
+    //UnloadModel(model_acacia);
+    //UnloadTexture(texture_acacia);
     UnloadShader(shader);   // Unload shader
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
