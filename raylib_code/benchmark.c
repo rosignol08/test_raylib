@@ -10,8 +10,8 @@ typedef struct {
 
 int main(void) {
     // Initialisation de la fenêtre et de la caméra
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
+    const int screenWidth = 1920;
+    const int screenHeight = 1080;
 
     InitWindow(screenWidth, screenHeight, "Raylib - 50,000 Cubes Benchmark");
     

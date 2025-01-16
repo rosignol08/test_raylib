@@ -86,8 +86,8 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
 
 int main(void) {
     // Initialisation
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    const int screenWidth = 1920;//800;
+    const int screenHeight = 1080;//450;
 
     InitWindow(screenWidth, screenHeight, "raylib - Grille avec objets 3D");
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
