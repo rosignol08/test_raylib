@@ -24,11 +24,62 @@
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
     #define GLSL_VERSION            100
 #endif
-#define GRID_SIZE 50
+#define GRID_SIZE 40
+#define MAX_LIGHTS 4 // Max dynamic lights supported by shader
+#define SHADOWMAP_RESOLUTION 512 //la resolution de la shadowmap
+
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 
+//les ombres
+//by @TheManTheMythTheGameDev
+RenderTexture2D LoadShadowmapRenderTexture(int width, int height);
+void UnloadShadowmapRenderTexture(RenderTexture2D target);
 
+
+RenderTexture2D LoadShadowmapRenderTexture(int width, int height)
+{
+    RenderTexture2D target = { 0 };
+
+    target.id = rlLoadFramebuffer(); // Load an empty framebuffer
+    target.texture.width = width;
+    target.texture.height = height;
+
+    if (target.id > 0)
+    {
+        rlEnableFramebuffer(target.id);
+
+        // Create depth texture
+        // We don't need a color texture for the shadowmap
+        target.depth.id = rlLoadTextureDepth(width, height, false);
+        target.depth.width = width;
+        target.depth.height = height;
+        target.depth.format = 19;       //DEPTH_COMPONENT_24BIT?
+        target.depth.mipmaps = 1;
+
+        // Attach depth texture to FBO
+        rlFramebufferAttach(target.id, target.depth.id, RL_ATTACHMENT_DEPTH, RL_ATTACHMENT_TEXTURE2D, 0);
+
+        // Check if fbo is complete with attachments (valid)
+        if (rlFramebufferComplete(target.id)) TRACELOG(LOG_INFO, "FBO: [ID %i] Framebuffer object created successfully", target.id);
+
+        rlDisableFramebuffer();
+    }
+    else TRACELOG(LOG_WARNING, "FBO: Framebuffer object can not be created");
+
+    return target;
+}
+
+// Unload shadowmap render texture from GPU memory (VRAM)
+void UnloadShadowmapRenderTexture(RenderTexture2D target)
+{
+    if (target.id > 0)
+    {
+        // NOTE: Depth texture/renderbuffer is automatically
+        // queried and deleted before deleting framebuffer
+        rlUnloadFramebuffer(target.id);
+    }
+}
 
 // Structure pour stocker les informations d'un objet 3D dans la grille
 typedef struct {
@@ -86,8 +137,9 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
 
 int main(void) {
     // Initialisation
-    const int screenWidth = 1920;//800;
-    const int screenHeight = 1080;//450;
+    const int screenWidth = 800;//1920;
+    const int screenHeight = 450;//1080;
+    SetConfigFlags(FLAG_MSAA_4X_HINT); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
     InitWindow(screenWidth, screenHeight, "raylib - Grille avec objets 3D");
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
@@ -103,6 +155,7 @@ int main(void) {
     //glBlendFunc(RL_SRC_ALPHA, RL_ONE_MINUS_SRC_ALPHA);
     rlEnableColorBlend(); // Activer le blending
     rlSetBlendMode(RL_BLEND_ALPHA);
+
     // Caméra pour visualiser la scène
     Camera camera = { 
     .position = (Vector3){ 0.0f, 0.0f, 0.0f },
@@ -111,24 +164,56 @@ int main(void) {
     .fovy = 85.0f,
     .projection = CAMERA_PERSPECTIVE
     };
+
+    //Lumière directionnelle
+    // Load basic lighting shader
+    Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     
+    //les ombres
+    Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl120/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl120/shadowmap.fs", GLSL_VERSION));
+
+    // Configurez les locations du shader de l'ombre
+    shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
+
+    // cree la lumiere
+    Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ -1.0f, -1.0f, -1.0f }, WHITE, shader);
+    //pour l'ombre
+    Vector3 lightDir = Vector3Normalize((Vector3){ 0.35f, -1.0f, -0.35f });
+    Color lightColor = WHITE;
+    Vector4 lightColorNormalized = ColorNormalize(lightColor);
+    int lightDirLoc = GetShaderLocation(shadowShader, "lightDir");
+    int lightColLoc = GetShaderLocation(shadowShader, "lightColor");
+    SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
+    int ambientLoc = GetShaderLocation(shadowShader, "ambient");
+    float ambient[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+    SetShaderValue(shadowShader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
+    int lightVPLoc = GetShaderLocation(shadowShader, "lightVP");
+    int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
+    int shadowMapResolution = SHADOWMAP_RESOLUTION;
+    SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
 
     //test sol
     Image image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
-    Texture2D texture_sol = LoadTextureFromImage(image_sol);        // Convert image to texture (VRAM)
+    //Texture2D texture_sol = LoadTextureFromImage(image_sol);        // Convert image to texture (VRAM)
 
-    Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 16, 8, 16 }); // Generate heightmap mesh (RAM and VRAM)
-    Model model_sol = LoadModelFromMesh(mesh_sol);                  // Load model from generated mesh
+    Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 160, 80, 160 }); // Generate heightmap mesh (RAM and VRAM)
+    Model model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
+    Image image_texture_sol = LoadImage("ressources/rocky_terrain_02_diff_1k.png");
+    Texture2D texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
+    Shader shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
+    int uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
+    Vector2 uvScale = {10.0f, 10.0f}; // Plus grand = texture plus petite et répétée
+    SetShaderValue(shader_taille, uvScaleLoc, &uvScale, SHADER_UNIFORM_VEC2);
 
     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol; // Set map diffuse texture
+    model_sol.materials[0].shader = shader_taille; // Assignez le shader au modèle
+
     Vector3 mapPosition = { -8.0f, 0.0f, -8.0f };           // Define model position
 
     //UnloadImage(image_sol);
     //fin test sol
 
-    // Load basic lighting shader
-    Shader shader = LoadShader(TextFormat("resources/shaders/glsl%i/lighting.vs", GLSL_VERSION), TextFormat("resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
-    
     // Charger le modèle et la texture test commentaire
     Model model_sapin = LoadModel("models/pine_tree/scene.gltf");
     Texture2D texture_sapin = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
@@ -138,19 +223,38 @@ int main(void) {
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
 
-    Model model_acacia = LoadModel("models/acacia2/untitled.glb");
-    //Texture2D texture_acacia = LoadTexture("models/acacia2/Acacia_Dry_Green__Mature__Acacia_Trunk_baked_Color.png");
-    /*
-    Texture2D texture_acacia2 = LoadTexture("models/acacia2/Maps/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color.png");
-    Texture2D texture_acacia3 = LoadTexture("models/acacia2/Maps/Acacia_Dry_Green__Mature__Acacica_Leaves_2_baked_Color.png");
-    Texture2D texture_acacia4 = LoadTexture("models/acacia2/Maps/Acacia_Dry_Green__Mature__Acacica_Leaves_3_baked_Color.png");
+    
+    //Model model_acacia = LoadModel("models/caca/scene.gltf");
+    //Texture2D texture_acacia = LoadTexture("models/caca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    Model model_acacia = LoadModel("models/caca/New/scene.gltf");
+    Texture2D texture_acacia = LoadTexture("models/caca/New/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-    */
-    /*
-    model_acacia.materials[1].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia2;
-    model_acacia.materials[2].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia3;
-    model_acacia.materials[3].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia4;
-    */
+
+    Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f); // Génère un cube
+    Model cubeModel = LoadModelFromMesh(cubeMesh);
+
+    cubeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+
+    model_sapin.materials[0].shader = shader;
+
+    model_buisson_europe.materials[0].shader = shader;
+    
+    model_acacia.materials[0].shader = shadowShader;
+    for (int i = 0; i < model_acacia.materialCount; i++)
+    {
+        model_acacia.materials[i].shader = shadowShader;
+    }
+    
+    model_sol.materials[0].shader = shader;
+    
+    model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+
+    //la shadowmap
+    RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
 
     // Initialisation de la grille
     GridCell grid[GRID_SIZE][GRID_SIZE];
@@ -191,10 +295,10 @@ int main(void) {
             bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
 
             if (!(pente)){
-                grid[x][z].model = model_sapin;
+                grid[x][z].model = model_acacia;
                 taille_min = 0.05f;
                 taille_max = 0.15f;
-                besoin_retourner = 1;
+                //besoin_retourner = 1;
             }
             else{
                 grid[x][z].model = model_buisson_europe;
@@ -207,6 +311,7 @@ int main(void) {
             grid[x][z].position = (Vector3){ posX, height, posZ };
             //grid[x][z].model = model_sapin;
             float taille = random_flottant(taille_min, taille_max);
+            
             Matrix transform = MatrixIdentity();
 
             // Appliquer l'échelle pour réduire ou agrandir le modèle
@@ -218,7 +323,10 @@ int main(void) {
                 // Rotation pour orienter l'arbre vers le haut (si nécessaire)
                 transform = MatrixMultiply(transform, MatrixRotateX(PI / 2.0f)); // Exemple pour une rotation X
             }
-            
+            float randomRotationX = random_flottant(0.0f, 2.0f * PI); // Rotation aléatoire autour de l'axe X
+            //convertir en radians
+            randomRotationX = DEG2RAD * randomRotationX;
+            transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
             grid[x][z].model.transform = transform;
             grid[x][z].active = true;
         }
@@ -228,6 +336,16 @@ int main(void) {
 
     
     DisableCursor();// Limit cursor to relative movement inside the window
+    
+    // For the shadowmapping algorithm, we will be rendering everything from the light's point of view
+    Camera3D lightCam = (Camera3D){ 0 };
+    lightCam.position = Vector3Scale(lightDir, -15.0f);
+    lightCam.target = Vector3Zero();
+
+    // Use an orthographic projection for directional lights
+    lightCam.projection = CAMERA_ORTHOGRAPHIC;
+    lightCam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    lightCam.fovy = 20.0f;
 
     SetTargetFPS(165);
     
@@ -263,87 +381,109 @@ int main(void) {
         camera.position.z = distance * cos(radAngleX) * cos(radAngleY);
 
         DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
-        
-        // Dessiner
+        //Lumière directionnelle
+        // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
+        float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
+        SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+        /*
+        //l'ombre
+        lightDir = Vector3Normalize(lightDir);
+        lightCam.position = Vector3Scale(lightDir, -15.0f);
+        SetShaderValue(shadowShader, shadowShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+        // Rendu de la shadow map (vue depuis la lumière)
+        BeginTextureMode(shadowMap);
+        ClearBackground(WHITE);  // La shadow map stocke les profondeurs
+        BeginMode3D(lightCam);
+            DrawModel(cubeModel, (Vector3){ 1.0f, 1.0f, 2.0f }, 1.0f, WHITE);
+            DrawModel(model_sol, mapPosition, 1.0f, MAROON);
+            for (int x = 0; x < GRID_SIZE; x++) {
+                for (int z = 0; z < GRID_SIZE; z++) {
+                    if (grid[x][z].active) {
+                        DrawModel(grid[x][z].model, grid[x][z].position, 1.0f, WHITE);
+                    }
+                }
+            }
+        EndMode3D();
+        EndTextureMode();
+
+        // Enregistrer les matrices de la lumière pour le shader
+        Matrix lightView = rlGetMatrixModelview();
+        Matrix lightProj = rlGetMatrixProjection();
+        Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
+        SetShaderValueMatrix(shader, lightVPLoc, lightViewProj);
+        */
+        // Rendu final (vue normale)
         BeginDrawing();
         ClearBackground(SKYBLUE);
 
         BeginMode3D(camera);
         
         BeginShaderMode(shader);
-        
-        //DrawCube(Vector3Zero(), 2.0, 4.0, 2.0, WHITE);
-        //DrawModel(model_sol, mapPosition, 1.0f, RED);
-        // Dessiner les objets de la grille
         /*
+        // Ajoutez les données de shadow map
+        int shadowMapSlot = 10;
+        rlActiveTextureSlot(shadowMapSlot);
+        rlEnableTexture(shadowMap.depth.id);
+        rlSetUniform(shadowMapLoc, &shadowMapSlot, SHADER_UNIFORM_INT, 1);
+
+        // Passez les matrices de la lumière
+        lightView = rlGetMatrixModelview();
+        lightProj = rlGetMatrixProjection();
+        lightViewProj = MatrixMultiply(lightView, lightProj);
+        SetShaderValueMatrix(shader, lightVPLoc, lightViewProj);
+        */
+        
+        //DrawModel(model_sol, mapPosition, 0.50f, MAROON);
+        SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
+        int objectCount = 0;
+
+        // Ajouter le sol à la liste
+        sceneObjects[objectCount].position = mapPosition;
+        sceneObjects[objectCount].model = &model_sol;
+        sceneObjects[objectCount].depth = Vector3Distance(camera.position, mapPosition);
+        objectCount++;
+
+        // Ajouter les arbres à la liste
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
                 if (grid[x][z].active) {
-                    DrawModel(grid[x][z].model, grid[x][z].position, 0.5f, WHITE);
+                    sceneObjects[objectCount].position = grid[x][z].position;
+                    sceneObjects[objectCount].model = &grid[x][z].model;
+                    sceneObjects[objectCount].depth = Vector3Distance(camera.position, grid[x][z].position);
+                    objectCount++;
                 }
-                variation_hauteur(grid[x][z]);
             }
         }
-        */
-       DrawModel(model_sol, mapPosition, 1.0f, MAROON);
-        SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
-int objectCount = 0;
-
-// Ajouter le sol à la liste
-sceneObjects[objectCount].position = mapPosition;
-sceneObjects[objectCount].model = &model_sol;
-sceneObjects[objectCount].depth = Vector3Distance(camera.position, mapPosition);
-objectCount++;
-
-// Ajouter les arbres à la liste
-for (int x = 0; x < GRID_SIZE; x++) {
-    for (int z = 0; z < GRID_SIZE; z++) {
-        if (grid[x][z].active) {
-            sceneObjects[objectCount].position = grid[x][z].position;
-            sceneObjects[objectCount].model = &grid[x][z].model;
-            sceneObjects[objectCount].depth = Vector3Distance(camera.position, grid[x][z].position);
-            objectCount++;
+        // Trier les objets par profondeur
+        qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
+        // Dessiner les objets dans l'ordre trié
+        for (int i = 0; i < objectCount; i++) {
+            if (sceneObjects[i].model == &model_sol) {
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+            } else {
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+            }
         }
-    }
-}
-// Trier les objets par profondeur
-qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
-
-// Dessiner les objets dans l'ordre trié
-for (int i = 0; i < objectCount; i++) {
-    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
-}
-/* ou alors ça
-// Rendre les faces arrière des feuilles
-rlSetCullFace(RL_CULL_FACE_FRONT); // Ne pas dessiner les faces avant
-for (int i = 0; i < objectCount; i++) {
-    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
-}
-
-// Rendre les faces avant des feuilles
-rlSetCullFace(RL_CULL_FACE_BACK); // Ne pas dessiner les faces arrière
-for (int i = 0; i < objectCount; i++) {
-    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
-}
-
-// Réinitialiser le mode de culling
-rlSetCullFace(RL_CULL_FACE_BACK);
-    */    
-
+        //pour faire bouger la lumière
+        directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
+        directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
+        //update la lumière
+        UpdateLightValues(shader, directionalLight);
         
-
-        DrawGrid(20, 1.0f);
         EndShaderMode();
-        
-
+        DrawGrid(20, 1.0f);
         EndMode3D();
         
         DrawText("Grille d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         DrawFPS(10, 40);
+        
         EndDrawing();
     }
-
+    UnloadShader(shader);
+    UnloadShader(shadowShader);
+    UnloadShader(shader_taille);
     // Désallocation des ressources
     UnloadModel(model_sapin);
     UnloadTexture(texture_sapin);
@@ -354,72 +494,11 @@ rlSetCullFace(RL_CULL_FACE_BACK);
     UnloadShader(shader);   // Unload shader
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
+    UnloadShadowmapRenderTexture(shadowMap);
+
 
 
     CloseWindow();
 
     return 0;
 }
-
-
-//lumiere
-        //for (int i = 0; i < 1; i++)
-        //        {
-        //            if (lights[i].enabled) DrawSphereEx(lights[i].position, 0.2f, 8, 8, lights[i].color);
-        //            else DrawSphereWires(lights[i].position, 0.2f, 8, 8, ColorAlpha(lights[i].color, 0.3f));
-        //        }
-        //DrawGrid(10, 1.0f);  // Grille visuelle
-
-////////////////////////////////////test de profondeur marche pas à l'arrière/////////////////
-    // Dessiner les objets opaques en premier
-//    for (int x = 0; x < GRID_SIZE; x++) {
-//        for (int z = 0; z < GRID_SIZE; z++) {
-//            if (grid[x][z].active) {
-//                DrawModel(grid[x][z].model, grid[x][z].position, 1.0f, WHITE);
-//            }
-//        }
-//    }
-
-    // Collecter les objets transparents
-//    TransparentObject transparentObjects[GRID_SIZE * GRID_SIZE];
-//    int transparentCount = 0;
-
-//    for (int x = 0; x < GRID_SIZE; x++) {
-//        for (int z = 0; z < GRID_SIZE; z++) {
-//            if (grid[x][z].active) {
-//                transparentObjects[transparentCount].cell = &grid[x][z];
-//                transparentCount++;
-//            }
-//        }
-//    }
-
-    // Trier les objets transparents par profondeur
-//    SortTransparentObjects(camera, transparentObjects, transparentCount);
-
-    // Désactiver l'écriture dans le tampon de profondeur pour les objets transparents
-//    rlDisableDepthMask();
-
-    // Dessiner les objets transparents dans l'ordre trié
-//    for (int i = 0; i < transparentCount; i++) {
-//        DrawModel(transparentObjects[i].cell->model, transparentObjects[i].cell->position, 1.0f, WHITE);
-//    }
-
-
-        //for (int i = 0; i < 1; i++)
-        //        {
-        //            if (lights[i].enabled) DrawSphereEx(lights[i].position, 0.2f, 8, 8, lights[i].color);
-        //            else DrawSphereWires(lights[i].position, 0.2f, 8, 8, ColorAlpha(lights[i].color, 0.3f));
-        //        }
-        //DrawGrid(10, 1.0f);  // Grille visuelle
-
-        // Dessiner les objets de la grille
-  //      for (int x = 0; x < GRID_SIZE; x++) {
-//            for (int z = 0; z < GRID_SIZE; z++) {
-                //if (grid[x][z].active) {
-                //    DrawModel(grid[x][z].model, grid[x][z].position, 0.5f, WHITE);
-              //  }
-            //    variation_hauteur(grid[x][z]);
-          //  }
-        //}
-// Réactiver l'écriture dans le tampon de profondeur
-//rlEnableDepthMask();
