@@ -1,4 +1,3 @@
-
 CC = gcc
 
 # Détection du système d'exploitation

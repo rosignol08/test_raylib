@@ -3,5 +3,6 @@
         "iterator": "c",
         "stdlib.h": "c",
         "rlights.h": "c"
-    }
+    },
+    "makefile.compileCommandsPath": "D:\\test_raylib\\raylib_code"
 }

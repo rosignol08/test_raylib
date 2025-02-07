@@ -86,8 +86,25 @@ typedef struct {
     Vector3 position;   // Position de l'objet
     Model model;        // Modèle 3D de l'objet
     bool active;        // Indique si l'objet est actif ou non
+    int temperature;    // Température de l'objet
 } GridCell;
 
+//fonction pour faire varier un parametre
+void test_variation(GridCell * cellule){
+    cellule->temperature = rand() % 100; // Assign a random temperature between 0 and 99
+}
+void undate_grille(GridCell grille[GRID_SIZE][GRID_SIZE]){
+    for (int x = 0; x < GRID_SIZE; x++) {
+        for (int z = 0; z < GRID_SIZE; z++) {
+            if (grille[x][z].temperature % 2 == 0) {
+                grille[x][z].active = true;
+            } else {
+                grille[x][z].active = false;
+            }
+        }
+    }
+}
+//#include "monobjet.h"
 
 float variation_hauteur(GridCell cellule) {
     float time = GetTime();
@@ -385,6 +402,15 @@ int main(void) {
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+        // Parcours de toute la grille pour mettre à jour les températures
+        for (int x = 0; x < GRID_SIZE; x++) {
+            for (int z = 0; z < GRID_SIZE; z++) {
+                test_variation(&grid[x][z]);
+            }
+        }
+
+        // Mise à jour de la grille en fonction des nouvelles températures
+        undate_grille(grid);
         /*
         //l'ombre
         lightDir = Vector3Normalize(lightDir);
