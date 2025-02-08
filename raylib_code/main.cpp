@@ -12,15 +12,7 @@
 #include "rlgl.h"
 #include <stdlib.h>
 #include <stdio.h>//pour les printf
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <vector>
-
-#ifdef __cplusplus
-}
-#endif
 
 #include "sol.h"
 #define RLIGHTS_IMPLEMENTATION
@@ -93,13 +85,14 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
 }
 
 // Structure pour stocker les informations d'un objet 3D dans la grille
+/*
 typedef struct {
     Vector3 position;   // Position de l'objet
     Model model;        // Modèle 3D de l'objet
     bool active;        // Indique si l'objet est actif ou non
     int temperature;    // Température de l'objet
 } GridCell;
-
+*/
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
     cellule->temperature = rand() % 100; // Assign a random temperature between 0 and 99
@@ -129,7 +122,7 @@ float random_flottant(float min, float max) {
 // Variables globales pour stocker les angles de rotation
 float angleX = 0.0f; // Rotation autour de l'axe X
 float angleY = 0.0f; // Rotation autour de l'axe Y
-float distance = 10.0f; // Distance entre la caméra et la cible
+float distance_cam = 10.0f; // Distance entre la caméra et la cible
 
 // Variable pour activer/désactiver la rotation
 bool isRotating = false;
@@ -206,7 +199,7 @@ int main(void) {
     // cree la lumiere
     Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ -1.0f, -1.0f, -1.0f }, WHITE, shader);
     //pour l'ombre
-    /*
+    
     Vector3 lightDir = Vector3Normalize((Vector3){ 0.35f, -1.0f, -0.35f });
     Color lightColor = WHITE;
     Vector4 lightColorNormalized = ColorNormalize(lightColor);
@@ -221,7 +214,7 @@ int main(void) {
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
-    */
+    
     //test sol
     Image image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
     //Texture2D texture_sol = LoadTextureFromImage(image_sol);        // Convert image to texture (VRAM)
@@ -285,12 +278,25 @@ int main(void) {
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
     // Création d'une grille de cellules
-    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, 
-        GridCell({0,0,0}, LoadModel("models/caca/New/scene.gltf"), true, 20, 50)),0.);
+    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, LoadModel("models/caca/New/scene.gltf"), true, 20, 50, 0.0f, 0.0f)));
     // Création d'une plante
-    Plante buisson("Buisson", 30, 15, 3, 1, 0.00005f, 0.05f, 0, model_buisson_europe);
-    Plante accacia("Acacia", 20, 10, 2, 1, 0.05f, 0.15f, 0, model_acacia);
-    Plante sapin("Sapin", 10, 5, 1, 1, 0.05f, 0.01f, 0, model_sapin);
+    /*
+    string nom;
+    int humidite_min;
+    int humidite_max;
+    int temperature_min;
+    int temperature_max;
+    int influence_humidite;
+    int influence_temperature;
+    float taille;
+    float taille_max;
+    float pente_max;
+    int age;
+    Model model;
+    */
+    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0,false, model_buisson_europe);
+    Plante accacia("Acacia", 10, 20,10 , 30, 2, 1, 0.15f, 0.05f, 0.5f, 0,false, model_acacia);
+    Plante cree_plante("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0,false, model_sapin);
     // Initialisation de la grille
     //GridCell grid[GRID_SIZE][GRID_SIZE];
     float taille_min = 0;
@@ -353,10 +359,21 @@ int main(void) {
             */
 
             // Positionner la cellule en fonction de la hauteur du terrain
-            grid[x][z].position = (Vector3){ posX, height, posZ };
+            grille[x][z].position = (Vector3){ posX, height, posZ };
+            grille[x][z].active = true;
+            grille[x][z].occupee = false;
+            grille[x][z].humidite = 10;
+            grille[x][z].temperature = 15;//random_flottant(0, 30);
+            if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
+                grille[x][z].plante = accacia;
+            } else if (temperature >= buisson.temperature_min && temperature <= buisson.temperature_max) {
+                grille[x][z].plante = buisson;
+            } else {
+                grille[x][z].plante = cree_plante;
+            }
             //grid[x][z].model = model_sapin;
-            float taille = random_flottant(taille_min, taille_max);
-            
+            //float taille = random_flottant(taille_min, taille_max);
+            float taille = grille[x][z].plante.taille;
             Matrix transform = MatrixIdentity();
 
             // Appliquer l'échelle pour réduire ou agrandir le modèle
@@ -372,8 +389,32 @@ int main(void) {
             //convertir en radians
             randomRotationX = DEG2RAD * randomRotationX;
             transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
-            grid[x][z].model.transform = transform;
-            grid[x][z].active = true;
+            grille[x][z].model.transform = transform;
+            
+            if (grille[x][z].active && grille[x][z].occupee) {
+                grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
+            }
+            
+            // Déterminer la plante appropriée en fonction de la pente et de la température
+            /*
+            if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
+                grille[x][z].model = model_acacia;
+                taille_min = accacia.taille;
+                taille_max = accacia.taille_max;
+                besoin_retourner = 1;
+            } else if (temperature >= buisson.temperature_min && temperature <= buisson.temperature_max) {
+                grille[x][z].model = model_buisson_europe;
+                taille_min = buisson.taille;
+                taille_max = buisson.taille_max;
+                besoin_retourner = 0;
+            } else {
+                grille[x][z].model = model_sapin;
+                taille_min = cree_plante.taille;
+                taille_max = cree_plante.taille_max;
+                besoin_retourner = 0;
+            }
+            */
+
         }
     }
 
@@ -408,9 +449,9 @@ int main(void) {
             angleY -= mouseDelta.x * 0.2f; // Sensibilité horizontale
         }
         // Gestion du zoom avec la molette de la souris
-        distance -= GetMouseWheelMove() * 0.5f; // Ajustez le facteur (0.5f) pour contrôler la sensibilité du zoom
-        if (distance < 2.0f) distance = 2.0f;   // Distance minimale
-        if (distance > 50.0f) distance = 50.0f; // Distance maximale
+        distance_cam -= GetMouseWheelMove() * 0.5f; // Ajustez le facteur (0.5f) pour contrôler la sensibilité du zoom
+        if (distance_cam < 2.0f) distance_cam = 2.0f;   // Distance minimale
+        if (distance_cam > 50.0f) distance_cam = 50.0f; // Distance maximale
 
 
         // Limiter les angles X pour éviter une rotation complète
@@ -421,9 +462,9 @@ int main(void) {
         float radAngleX = DEG2RAD * angleX;
         float radAngleY = DEG2RAD * angleY;
 
-        camera.position.x = distance * cos(radAngleX) * sin(radAngleY);
-        camera.position.y = distance * sin(radAngleX);
-        camera.position.z = distance * cos(radAngleX) * cos(radAngleY);
+        camera.position.x = distance_cam * cos(radAngleX) * sin(radAngleY);
+        camera.position.y = distance_cam * sin(radAngleX);
+        camera.position.z = distance_cam * cos(radAngleX) * cos(radAngleY);
 
         DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
         //Lumière directionnelle
@@ -440,6 +481,15 @@ int main(void) {
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
                 grille[x][z].update(grille, x, z);
+                grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
+                if (grille[x][z].temperature > 50) {
+                    grille[x][z].active = false;
+                }
+                grille[x][z].temperature += 1;
+                if (grille[x][z].temperature > 100) {
+                    grille[x][z].temperature = 30;
+                }
+                //printf("Temperature : %d\n", grille[x][z].temperature);
             }
         }
         // Mise à jour de la grille en fonction des nouvelles températures
@@ -506,10 +556,10 @@ int main(void) {
         // Ajouter les arbres à la liste
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
-                if (grid[x][z].active) {
-                    sceneObjects[objectCount].position = grid[x][z].position;
-                    sceneObjects[objectCount].model = &grid[x][z].model;
-                    sceneObjects[objectCount].depth = Vector3Distance(camera.position, grid[x][z].position);
+                if (grille[x][z].active) {
+                    sceneObjects[objectCount].position = grille[x][z].position;
+                    sceneObjects[objectCount].model = &grille[x][z].model;
+                    sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
                     objectCount++;
                 }
             }
@@ -534,7 +584,7 @@ int main(void) {
         DrawGrid(20, 1.0f);
         EndMode3D();
         
-        DrawText("Grille d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
+        DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         DrawFPS(10, 40);
         

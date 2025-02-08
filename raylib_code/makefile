@@ -1,12 +1,18 @@
 CC = gcc
+CXX = g++
 
 # Détection du système d'exploitation
 OS := $(shell uname -s 2>/dev/null || echo Windows_NT)
 
 # Options communes
 CFLAGS = -Wall -std=c99 -Wno-missing-braces -O1
+CXXFLAGS = -Wall -std=c++11 -O1  # Ajout des options pour C++
 INCLUDE = -Iinclude/
-SRC = main.c
+
+SRC = main.cpp
+SRC_CPP = sol.cpp  # Ajout du fichier C++
+OBJ_C = $(SRC_C:.c=.o)
+OBJ_CPP = $(SRC_CPP:.cpp=.o)
 
 ifeq ($(OS), Windows_NT)
     # Compilation pour Windows (statique)
@@ -22,8 +28,8 @@ endif
 
 # Règle principale
 all:
-	$(CC) $(SRC) -o $(OUTPUT) $(CFLAGS) $(INCLUDE) $(LDFLAGS)
+	$(CXX) $(SRC) $(SRC_CPP)  -o $(OUTPUT) $(CXXFLAGS) $(INCLUDE) $(LDFLAGS)
 
-# Nettoyer les fichiers exécutables
+# Nettoyer les fichiers exécutables 	$(CC) $(SRC) -o $(OUTPUT) $(CFLAGS) $(INCLUDE) $(LDFLAGS)
 clean:
 	$(RM) $(OUTPUT)
