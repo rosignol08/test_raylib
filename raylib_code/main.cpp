@@ -1,6 +1,5 @@
 /*******************************************************************************************
 *
-*   raylib [core] example - Basic window
 *
 *   Welcome to raylib!
 *
@@ -27,9 +26,14 @@
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
     #define GLSL_VERSION            100
 #endif
-#define GRID_SIZE 40
+#define GRID_SIZE 20
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 512 //la resolution de la shadowmap
+
+#define MODE_NORMAL 0
+#define MODE_TEMPERATURE 1
+#define MODE_HUMIDITE 2
+int viewMode = MODE_NORMAL;
 
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 const float PENTE_SEUIL = 0.20f; //valeur de la pente max
@@ -97,7 +101,7 @@ typedef struct {
 void test_variation(GridCell * cellule){
     cellule->temperature = rand() % 100; // Assign a random temperature between 0 and 99
 }
-void undate_grille(GridCell grille[GRID_SIZE][GRID_SIZE]){
+void update_grille(GridCell grille[GRID_SIZE][GRID_SIZE]){
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
             if (grille[x][z].temperature % 2 == 0) {
@@ -155,6 +159,39 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
     return (pixel.r / 255.0f) * terrainSize.y;
 }
 
+int minTemp = 100;
+int maxTemp = 0;
+//pour la temperature
+Color GetTemperatureColor(int temperature, int minTemp, int maxTemp) {
+    float normalizedTemp = (float)(temperature - minTemp) / (maxTemp - minTemp);
+    
+    // Interpolation entre bleu (froid) et rouge (chaud)
+    Color coldColor = BLUE;
+    Color hotColor = RED;
+    
+    unsigned char r = (unsigned char)(coldColor.r + (hotColor.r - coldColor.r) * normalizedTemp);
+    unsigned char g = (unsigned char)(coldColor.g + (hotColor.g - coldColor.g) * normalizedTemp);
+    unsigned char b = (unsigned char)(coldColor.b + (hotColor.b - coldColor.b) * normalizedTemp);
+    
+    return (Color){r, g, b, 255};
+}
+
+int minHum = 0;
+int maxHum = 0;
+//pour l'humidite
+Color GetHumidityColor(int humidity, int minHum, int maxHum) {
+    float normalizedHum = (float)(humidity - minHum) / (maxHum - minHum);
+    
+    // Interpolation entre bleu (sec) et vert (humide)
+    Color dryColor = BLUE;
+    Color wetColor = GREEN;
+    
+    unsigned char r = (unsigned char)(dryColor.r + (wetColor.r - dryColor.r) * normalizedHum);
+    unsigned char g = (unsigned char)(dryColor.g + (wetColor.g - dryColor.g) * normalizedHum);
+    unsigned char b = (unsigned char)(dryColor.b + (wetColor.b - dryColor.b) * normalizedHum);
+    
+    return (Color){r, g, b, 255};
+}
 
 int main(void) {
     // Initialisation
@@ -216,8 +253,13 @@ int main(void) {
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     
     //test sol
-    Image image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
+    Image image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)
     //Texture2D texture_sol = LoadTextureFromImage(image_sol);        // Convert image to texture (VRAM)
+    
+    //image de la temperature
+    Image temperatureMap = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+    Texture2D temperatureTexture = LoadTextureFromImage(temperatureMap);
+    UnloadImage(temperatureMap);
 
     Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 160, 80, 160 }); // Generate heightmap mesh (RAM and VRAM)
     Model model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
@@ -237,10 +279,11 @@ int main(void) {
     //fin test sol
 
     // Charger le modèle et la texture test commentaire
+    Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
+    model_mort.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
     Model model_sapin = LoadModel("models/pine_tree/scene.gltf");
     Texture2D texture_sapin = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
     model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sapin;
-    
     Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
@@ -292,11 +335,13 @@ int main(void) {
     float taille_max;
     float pente_max;
     int age;
+    bool morte;
     Model model;
     */
     Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0,false, model_buisson_europe);
     Plante accacia("Acacia", 10, 20,10 , 30, 2, 1, 0.15f, 0.05f, 0.5f, 0,false, model_acacia);
-    Plante cree_plante("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0,false, model_sapin);
+    Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0,true, model_mort);
+    Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0,false, model_sapin);
     // Initialisation de la grille
     //GridCell grid[GRID_SIZE][GRID_SIZE];
     float taille_min = 0;
@@ -369,7 +414,7 @@ int main(void) {
             } else if (temperature >= buisson.temperature_min && temperature <= buisson.temperature_max) {
                 grille[x][z].plante = buisson;
             } else {
-                grille[x][z].plante = cree_plante;
+                grille[x][z].plante = plante_morte;
             }
             //grid[x][z].model = model_sapin;
             //float taille = random_flottant(taille_min, taille_max);
@@ -434,11 +479,54 @@ int main(void) {
     lightCam.fovy = 20.0f;
 
     SetTargetFPS(165);
-    
 
     // Boucle principale
     while (!WindowShouldClose()) {
-         // Activer/désactiver la rotation avec le clic droit
+        
+        //pour la temperature
+        if (IsKeyPressed(KEY_T)) {
+            viewMode = (viewMode == MODE_NORMAL) ? MODE_TEMPERATURE : MODE_NORMAL;
+            
+            // Changer la texture du sol en fonction du mode
+            if (viewMode == MODE_TEMPERATURE) {
+                // Mode température : mettre à jour la texture de température
+                Image tempImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
+                        ImageDrawPixel(&tempImage, x, z, tempColor);
+                    }
+                }
+                UpdateTexture(temperatureTexture, tempImage.data);
+                UnloadImage(tempImage);
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+            } else {
+                // Mode normal : remettre la texture normale
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+            }
+        }
+        if (IsKeyPressed(KEY_Y)) {
+            viewMode = (viewMode == MODE_NORMAL) ? MODE_HUMIDITE : MODE_NORMAL;
+            
+            // Changer la texture du sol en fonction du mode
+            if (viewMode == MODE_HUMIDITE) {
+                // Mode humidité : mettre à jour la texture d'humidité
+                Image humImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
+                        ImageDrawPixel(&humImage, x, z, humColor);
+                    }
+                }
+                UpdateTexture(temperatureTexture, humImage.data);
+                UnloadImage(humImage);
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+            } else {
+                // Mode normal : remettre la texture normale
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+            }
+        }
+        // Activer/désactiver la rotation avec le clic droit
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) isRotating = true;
         if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) isRotating = false;
 
@@ -493,7 +581,7 @@ int main(void) {
             }
         }
         // Mise à jour de la grille en fonction des nouvelles températures
-        //undate_grille(grid);
+        //update_grille(grid);
         /*
         //l'ombre
         lightDir = Vector3Normalize(lightDir);
@@ -522,6 +610,54 @@ int main(void) {
         Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
         SetShaderValueMatrix(shader, lightVPLoc, lightViewProj);
         */
+        
+        //petite actualisation de la temperature
+        
+        if (viewMode == MODE_TEMPERATURE) {
+            Image tempImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+            
+            // Mettre à jour l'image avec les couleurs de température
+            for (int x = 0; x < GRID_SIZE; x++) {
+                for (int z = 0; z < GRID_SIZE; z++) {
+                    Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
+                    ImageDrawPixel(&tempImage, x, z, tempColor);
+                }
+            }
+            
+            // Mettre à jour la texture
+            UpdateTexture(temperatureTexture, tempImage.data);
+            UnloadImage(tempImage);
+            
+            // Appliquer la texture de température au sol
+            if (viewMode == MODE_TEMPERATURE) {
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+            } else {
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+            }
+        }
+        //petite actualisation de l'humidite
+        if (viewMode == MODE_HUMIDITE) {
+            Image humImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+            
+            // Mettre à jour l'image avec les couleurs d'humidité
+            for (int x = 0; x < GRID_SIZE; x++) {
+                for (int z = 0; z < GRID_SIZE; z++) {
+                    Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
+                    ImageDrawPixel(&humImage, x, z, humColor);
+                }
+            }
+            
+            // Mettre à jour la texture
+            UpdateTexture(temperatureTexture, humImage.data);
+            UnloadImage(humImage);
+            
+            // Appliquer la texture d'humidité au sol
+            if (viewMode == MODE_HUMIDITE) {
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+            } else {
+                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+            }
+        }
         // Rendu final (vue normale)
         BeginDrawing();
         ClearBackground(SKYBLUE);
@@ -564,14 +700,60 @@ int main(void) {
                 }
             }
         }
+        // Trouver les températures min et max
+        minTemp = 100;
+        maxTemp = 0;
+        for (int x = 0; x < GRID_SIZE; x++) {
+            for (int z = 0; z < GRID_SIZE; z++) {
+                if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
+                if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+                // Update minHum and maxHum
+                if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
+                if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+            }
+        }
         // Trier les objets par profondeur
         qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
         // Dessiner les objets dans l'ordre trié
         for (int i = 0; i < objectCount; i++) {
-            if (sceneObjects[i].model == &model_sol) {
-                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-            } else {
-                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+            if (viewMode == MODE_NORMAL) {
+                if (sceneObjects[i].model == &model_sol) {
+                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+                } else {
+                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+                }
+            }  else if (viewMode == MODE_TEMPERATURE) {
+                if (sceneObjects[i].model == &model_sol) {
+                    // Le sol utilise déjà la texture de température
+                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+                } else {
+                    // Pour les autres objets, utilisez la couleur de température
+                    for (int x = 0; x < GRID_SIZE; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                                Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
+                                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, tempColor);
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if(viewMode == MODE_HUMIDITE){
+                if (sceneObjects[i].model == &model_sol) {
+                    // Le sol utilise déjà la texture d'humidite
+                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+                } else {
+                    // Pour les autres objets, utilisez la couleur de l'humiité
+                    for (int x = 0; x < GRID_SIZE; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                                Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
+                                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, humColor);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
         //pour faire bouger la lumière
@@ -583,7 +765,19 @@ int main(void) {
         EndShaderMode();
         DrawGrid(20, 1.0f);
         EndMode3D();
-        
+        // Ajouter une légende pour le mode température
+        if (viewMode == MODE_TEMPERATURE) {
+            DrawText("Mode température - Appuyez sur T pour revenir", 10, 60, 20, BLACK);
+            // Optionnel : afficher une échelle de température
+            DrawText(TextFormat("Min: %d°C", minTemp), 10, 80, 20, BLUE);
+            DrawText(TextFormat("Max: %d°C", maxTemp), 10, 100, 20, RED);
+        }
+        if (viewMode == MODE_HUMIDITE) {
+            DrawText("Mode humidite - Appuyez sur Y pour revenir", 10, 60, 20, BLACK);
+            // Optionnel : afficher une échelle de température
+            DrawText(TextFormat("Min: %d", minHum), 10, 80, 20, BLUE);
+            DrawText(TextFormat("Max: %d", maxHum), 10, 100, 20, RED);
+        }
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         DrawFPS(10, 40);
@@ -594,6 +788,7 @@ int main(void) {
     UnloadShader(shadowShader);
     UnloadShader(shader_taille);
     // Désallocation des ressources
+    UnloadModel(model_mort);
     UnloadModel(model_sapin);
     UnloadTexture(texture_sapin);
     UnloadModel(model_buisson_europe);
@@ -603,6 +798,7 @@ int main(void) {
     UnloadShader(shader);   // Unload shader
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
+    UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
 
 

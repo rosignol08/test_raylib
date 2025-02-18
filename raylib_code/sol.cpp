@@ -1,24 +1,28 @@
 #include "sol.h"
-
+Model model_mort;
+//Plante plante_morte("Morte", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, true, Model{});
 // Constructeur
 Plante::Plante(string n, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_t, float t, float ta_max, float pen, int a,bool morte, Model mod)
-    : nom(n), humidite_min(h_min), humidite_max(h_max), temperature_max(t_max), temperature_min(t_min), influence_humidite(inf_h), influence_temperature(inf_t),
+    : nom(n), humidite_min(h_min), humidite_max(h_max), temperature_min(t_min), temperature_max(t_max), influence_humidite(inf_h), influence_temperature(inf_t),
       taille(t), taille_max(ta_max), pente_max(pen), age(a), morte(morte), model(mod) {
     // Initialisation des attributs via la liste d'initialisation
 }
+
+
 // Implémentation de la méthode qui influence les voisins
 void Plante::influencerVoisins(std::vector<std::vector<GridCell>>& grille, int x, int y) {
     for (int dx = -1; dx <= 1; dx++) {
         for (int dy = -1; dy <= 1; dy++) {
             int nx = x + dx;
             int ny = y + dy;
-            if (nx >= 0 && nx < grille.size() && ny >= 0 && ny < grille[0].size()) {
+            if (nx >= 0 && nx < static_cast<int>(grille.size()) && ny >= 0 && ny < static_cast<int>(grille[0].size())) {
                 grille[nx][ny].humidite += influence_humidite;
                 grille[nx][ny].temperature += influence_temperature;
             }
         }
     }
 }
+
 void Plante::vieux(){
     if (this->age > 10){
     }
@@ -29,35 +33,34 @@ void Plante::vieux(){
 void Plante::verifierConditionsEtMourir(std::vector<std::vector<GridCell>>& grille, int x, int y) {
     GridCell& cell = grille[x][y];
     // Les conditions d'humidité et de température sont vérifiées directement
-    if (cell.humidite < this->humidite_min || cell.humidite > this->humidite_max ||
-        cell.temperature < this->temperature_min || cell.temperature > this->temperature_max) {
+    if (not(cell.humidite < this->humidite_min || cell.humidite > this->humidite_max ||
+        cell.temperature < this->temperature_min || cell.temperature > this->temperature_max)) {
             // Affichage pour débogage : tu peux vérifier si les conditions de mort sont satisfaites
         //std::cout << "Plante " << this->nom << " meurt (Temp: " << cell.temperature 
         //<< " | Humidite: " << cell.humidite << ")" << std::endl;
         // Si la plante ne survit pas, on la réinitialise
-        this->meurt();
-    }else{
-        // Sinon, on fait vieillir la plante
+        //this->meurt();
+        //on fait vieillir la plante
         this->vieux();
     }
 }
 
 // Méthode pour tuer la plante
 void Plante::meurt() {
-    // Réinitialiser les attributs de la plante
-    this->nom = "";
-    this->humidite_min = 0;
-    this->humidite_max = 0;
-    this->temperature_min = 0;
-    this->temperature_max = 0;
-    this->influence_humidite = 0;
-    this->influence_temperature = 0;
-    this->taille = 0.0f;
-    this->taille_max = 0.0f;
-    this->pente_max = 0.0f;
-    this->age = 0;
-    this->morte = true;
-    this->model = Model{};//TODO mettre un model de plante morte
+    // Copier les attributs de la plante morte
+    //this->nom = plante_morte.nom;
+    //this->humidite_min = plante_morte.humidite_min;
+    //this->humidite_max = plante_morte.humidite_max;
+    //this->temperature_min = plante_morte.temperature_min;
+    //this->temperature_max = plante_morte.temperature_max;
+    //this->influence_humidite = plante_morte.influence_humidite;
+    //this->influence_temperature = plante_morte.influence_temperature;
+    //this->taille = plante_morte.taille;
+    //this->taille_max = plante_morte.taille_max;
+    //this->pente_max = plante_morte.pente_max;
+    //this->age = plante_morte.age;
+    //this->morte = true;
+    //this->model = model_mort;
 }
 
 // Constructeur de GridCell

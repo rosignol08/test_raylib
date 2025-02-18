@@ -7,6 +7,13 @@
 #include <iostream>
 
 using namespace std;
+// Charger un modèle 3D
+//Model Load3DModel(const char* fileName) {
+//    Model model_mort = LoadModel(fileName);
+//    return model;
+//}
+extern Model model_mort;
+//extern Plante plante_morte;
 
 class Plante {
 public:
@@ -32,6 +39,7 @@ public:
     void vieux();
     void verifierConditionsEtMourir(vector<vector<GridCell>>& grille, int x, int y);
     void meurt();
+    
 };
 
 class GridCell {
@@ -48,6 +56,7 @@ public:
     GridCell(Vector3 pos, Model mod, bool act, bool occupee, int temp, int hum, float pen);
     void update(vector<vector<GridCell>>& grille, int x, int y);
 };
+
 
 #endif
 
