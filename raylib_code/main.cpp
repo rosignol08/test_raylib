@@ -26,7 +26,7 @@
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
     #define GLSL_VERSION            100
 #endif
-#define GRID_SIZE 20
+#define GRID_SIZE 10
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 512 //la resolution de la shadowmap
 
@@ -276,7 +276,7 @@ int main(void) {
     Texture2D temperatureTexture = LoadTextureFromImage(temperatureMap);
     UnloadImage(temperatureMap);
 
-    Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 160, 80, 160 }); // Generate heightmap mesh (RAM and VRAM)
+    Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
     Model model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
     Image image_texture_sol = LoadImage("ressources/rocky_terrain_02_diff_1k.png");
     Texture2D texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
@@ -288,7 +288,7 @@ int main(void) {
     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol; // Set map diffuse texture
     model_sol.materials[0].shader = shader_taille; // Assignez le shader au modèle
 
-    Vector3 mapPosition = { -8.0f, 0.0f, -8.0f };           // Define model position
+    Vector3 mapPosition = { -2.0f, 0.0f, -2.0f };// Define model position
 
     //UnloadImage(image_sol);
     //fin test sol
@@ -351,6 +351,7 @@ int main(void) {
     float pente_max;
     int age;
     bool morte;
+    int age_max;
     Model model;
     */
     Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, 100, false, model_buisson_europe);
@@ -364,11 +365,13 @@ int main(void) {
     float taille_max = 0;
     int besoin_retourner = 0;
     
+    //le terrain
+    Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
    // Initialisation de la grille
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
-            float posX = x * 0.30f - 8.0f;  // Ajustez selon votre terrain
-            float posZ = z * 0.30f - 8.0f;
+            float posX = x * 0.30f - 1.0f;  // Ajustez selon votre terrain
+            float posZ = z * 0.30f - 1.0f;
 
             
             // Ajouter une irrégularité aux positions X et Z
@@ -379,17 +382,17 @@ int main(void) {
             posZ += offsetZ;
 
             // Obtenir la hauteur du terrain pour cette cellule
-            float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
+            float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
 
             // Générer une température arbitraire pour cette cellule
             int temperature = random_flottant(0, 30); // Température aléatoire entre TEMP_MIN et TEMP_MAX
 
 
             // Calcul des hauteurs des cellules voisines
-            float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
-            float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, (Vector3){ 16, 8, 16 });
-            float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, (Vector3){ 16, 8, 16 });
-            float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, (Vector3){ 16, 8, 16 });
+            float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+            float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+            float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
+            float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
 
             // Calcul des variations de hauteur
             float deltaLeft = fabs(height - heightLeft);
