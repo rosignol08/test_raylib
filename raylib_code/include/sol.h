@@ -29,16 +29,17 @@ public:
     float pente_max;
     int age;
     bool morte;
+    int age_max;
     Model model;
 
-    //Plante cree_plante(string n, int h_min, int t_min, int inf_h, int inf_t, float taille, float pen, int age, Model mod);
+    //Plante cree_plante(string n, int h_min, int t_min, int inf_h, int inf_temp, float taille, float pen, int age, Model mod);
     // Constructeur
-    Plante(string n, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_t, float taille, float taille_max, float pen, int age, bool morte,Model mod);
+    Plante(string n, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float taille, float taille_max, float pen, int age, bool morte, int age_max, Model mod);
 
     void influencerVoisins(vector<vector<class GridCell>>& grille, int x, int y);
-    void vieux();
-    void verifierConditionsEtMourir(vector<vector<GridCell>>& grille, int x, int y);
-    void meurt();
+    //void vieux();
+    //void verifierConditionsEtMourir(vector<vector<GridCell>>& grille, int x, int y);
+    //void meurt();
     
 };
 
@@ -54,7 +55,7 @@ public:
     Plante plante;
 
     GridCell(Vector3 pos, Model mod, bool act, bool occupee, int temp, int hum, float pen);
-    void update(vector<vector<GridCell>>& grille, int x, int y);
+    //void update(vector<vector<GridCell>>& grille, int x, int y);
 };
 
 

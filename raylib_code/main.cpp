@@ -112,7 +112,6 @@ void update_grille(GridCell grille[GRID_SIZE][GRID_SIZE]){
         }
     }
 }
-//#include "monobjet.h"
 
 float variation_hauteur(GridCell cellule) {
     float time = GetTime();
@@ -145,7 +144,23 @@ int CompareSceneObjects(const void *a, const void *b) {
     return (objA->depth < objB->depth) - (objA->depth > objB->depth); // Tri décroissant
 }
 
-
+//fonction pour vierifie quel plante peut vivre sous les conditions de sa case
+void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte) {
+    for (Plante plante : plantes) {
+        if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
+            cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
+            cellule->pente <= plante.pente_max) {
+            cellule->plante = plante;
+            cellule->plante.age++;
+            cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
+            if (cellule->plante.age > cellule->plante.age_max) {
+                cellule->plante = plante_morte;
+            }
+            return;
+        }
+    }
+    cellule->plante = plante_morte;
+}
 
 //terrain avec hauteur
 float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSize) {
@@ -338,10 +353,11 @@ int main(void) {
     bool morte;
     Model model;
     */
-    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0,false, model_buisson_europe);
-    Plante accacia("Acacia", 10, 20,10 , 30, 2, 1, 0.15f, 0.05f, 0.5f, 0,false, model_acacia);
-    Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0,true, model_mort);
-    Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0,false, model_sapin);
+    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, 100, false, model_buisson_europe);
+    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.15f, 0.05f, 0.5f, 0, false, 100, model_acacia);
+    Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0, 100, true, model_mort);
+    Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0, 100, false, model_sapin);
+    std::vector<Plante> plantes = {buisson, accacia, sapin};
     // Initialisation de la grille
     //GridCell grid[GRID_SIZE][GRID_SIZE];
     float taille_min = 0;
@@ -388,6 +404,7 @@ int main(void) {
             
             // Vérifier si la cellule est sur une pente
             bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
+
             /*
             if (!(pente)){
                 grid[x][z].model = model_acacia;
@@ -409,6 +426,8 @@ int main(void) {
             grille[x][z].occupee = false;
             grille[x][z].humidite = 10;
             grille[x][z].temperature = 15;//random_flottant(0, 30);
+            grille[x][z].pente = tauxPente;
+            /*
             if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
                 grille[x][z].plante = accacia;
             } else if (temperature >= buisson.temperature_min && temperature <= buisson.temperature_max) {
@@ -418,6 +437,8 @@ int main(void) {
             }
             //grid[x][z].model = model_sapin;
             //float taille = random_flottant(taille_min, taille_max);
+            */
+            verifier_plante(&grille[x][z], plantes, plante_morte);
             float taille = grille[x][z].plante.taille;
             Matrix transform = MatrixIdentity();
 
@@ -436,10 +457,11 @@ int main(void) {
             transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
             grille[x][z].model.transform = transform;
             
+            /*
             if (grille[x][z].active && grille[x][z].occupee) {
                 grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
             }
-            
+            */
             // Déterminer la plante appropriée en fonction de la pente et de la température
             /*
             if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
@@ -568,12 +590,13 @@ int main(void) {
         // Mise à jour des cellules
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
-                grille[x][z].update(grille, x, z);
-                grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
+                //grille[x][z].update(grille, x, z);
+                //grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
+                verifier_plante(&grille[x][z], plantes, plante_morte);
                 if (grille[x][z].temperature > 50) {
                     grille[x][z].active = false;
                 }
-                grille[x][z].temperature += 1;
+                //grille[x][z].temperature += 1;
                 if (grille[x][z].temperature > 100) {
                     grille[x][z].temperature = 30;
                 }
