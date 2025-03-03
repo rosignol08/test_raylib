@@ -125,7 +125,7 @@ float random_flottant(float min, float max) {
 // Variables globales pour stocker les angles de rotation
 float angleX = 0.0f; // Rotation autour de l'axe X
 float angleY = 0.0f; // Rotation autour de l'axe Y
-float distance_cam = 10.0f; // Distance entre la caméra et la cible
+float distance_cam = 5.0f; // Distance entre la caméra et la cible
 
 // Variable pour activer/désactiver la rotation
 bool isRotating = false;
@@ -146,16 +146,26 @@ int CompareSceneObjects(const void *a, const void *b) {
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
 void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte) {
+    if (cellule->plante.nom != plante_morte.nom) {
+        if (cellule->temperature >= cellule->plante.temperature_min && cellule->temperature <= cellule->plante.temperature_max &&
+            cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max &&
+            cellule->pente <= cellule->plante.pente_max) {
+            cellule->plante.age++;
+            printf("age Plante : %d\n", cellule->plante.age);
+            cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
+            if (cellule->plante.age > cellule->plante.age_max) {
+                cellule->plante = plante_morte;
+            }
+            return;
+        }
+    }
     for (Plante plante : plantes) {
         if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
             cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
             cellule->pente <= plante.pente_max) {
             cellule->plante = plante;
-            cellule->plante.age++;
-            cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
-            if (cellule->plante.age > cellule->plante.age_max) {
-                cellule->plante = plante_morte;
-            }
+            cellule->plante.age = 0; // Reset age when a new plant is assigned
+            cellule->plante.taille = plante.taille; // Reset size when a new plant is assigned
             return;
         }
     }
@@ -210,8 +220,8 @@ Color GetHumidityColor(int humidity, int minHum, int maxHum) {
 
 int main(void) {
     // Initialisation
-    const int screenWidth = 800;//1920;
-    const int screenHeight = 450;//1080;
+    const int screenWidth = 1280;//1920;
+    const int screenHeight = 720;//1080;
     SetConfigFlags(FLAG_MSAA_4X_HINT); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
     InitWindow(screenWidth, screenHeight, "raylib - Grille avec objets 3D");
@@ -592,6 +602,9 @@ int main(void) {
         // Mise à jour des cellules
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
+                //if ((x + z) % 2 == 0) {
+                //    grille[x][z].temperature += 1;
+                //}
                 //grille[x][z].update(grille, x, z);
                 //grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
                 verifier_plante(&grille[x][z], plantes, plante_morte);
