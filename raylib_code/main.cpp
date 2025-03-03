@@ -292,7 +292,6 @@ int main(void) {
 
     //UnloadImage(image_sol);
     //fin test sol
-
     // Charger le modèle et la texture test commentaire
     Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
     model_mort.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
