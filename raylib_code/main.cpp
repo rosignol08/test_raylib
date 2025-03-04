@@ -312,13 +312,13 @@ int main(void) {
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
 
-    
+    Model herbe = LoadModel("models/herbe/untilted.glb");
     //Model model_acacia = LoadModel("models/caca/scene.gltf");
     //Texture2D texture_acacia = LoadTexture("models/caca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-    Model model_acacia = LoadModel("models/caca/New/scene.gltf");
-    Texture2D texture_acacia = LoadTexture("models/caca/New/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    Model model_acacia = LoadModel("models/arb_mort/scene.gltf");//LoadModel("models/caca/New/scene.gltf");
+    //Texture2D texture_acacia = LoadTexture("models/caca/New/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
 
     Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f); // Génère un cube
     Model cubeModel = LoadModelFromMesh(cubeMesh);
@@ -345,7 +345,7 @@ int main(void) {
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
     // Création d'une grille de cellules
-    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, LoadModel("models/caca/New/scene.gltf"), true, 20, 50, 0.0f, 0.0f)));
+    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, herbe , true, 20, 50, 0.0f, 0.0f)));
     // Création d'une plante
     /*
     string nom;
