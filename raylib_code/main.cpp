@@ -87,16 +87,6 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
         rlUnloadFramebuffer(target.id);
     }
 }
-
-// Structure pour stocker les informations d'un objet 3D dans la grille
-/*
-typedef struct {
-    Vector3 position;   // Position de l'objet
-    Model model;        // Modèle 3D de l'objet
-    bool active;        // Indique si l'objet est actif ou non
-    int temperature;    // Température de l'objet
-} GridCell;
-*/
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
     cellule->temperature = rand() % 100; // Assign a random temperature between 0 and 99
@@ -151,7 +141,7 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max &&
             cellule->pente <= cellule->plante.pente_max) {
             cellule->plante.age++;
-            printf("age Plante : %d\n", cellule->plante.age);
+            //printf("age Plante : %d\n", cellule->plante.age);
             cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
             if (cellule->plante.age > cellule->plante.age_max) {
                 cellule->plante = plante_morte;
@@ -164,6 +154,7 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
             cellule->pente <= plante.pente_max) {
             cellule->plante = plante;
+            cout << "Plante : ajoutée " << plante.nom << endl;//affiche le nom de la plante
             cellule->plante.age = 0; // Reset age when a new plant is assigned
             cellule->plante.taille = plante.taille; // Reset size when a new plant is assigned
             return;
@@ -312,7 +303,8 @@ int main(void) {
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
 
-    Model herbe = LoadModel("models/herbe/untilted.glb");
+    Model model_herbe = LoadModel("models/herbe/untitled.glb");
+    //model_herbe.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
     //Model model_acacia = LoadModel("models/caca/scene.gltf");
     //Texture2D texture_acacia = LoadTexture("models/caca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
@@ -341,11 +333,11 @@ int main(void) {
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_herbe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
 
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
-    // Création d'une grille de cellules
-    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, herbe , true, 20, 50, 0.0f, 0.0f)));
     // Création d'une plante
     /*
     string nom;
@@ -363,12 +355,23 @@ int main(void) {
     int age_max;
     Model model;
     */
+    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 1.0f, 0, 100, false, model_herbe);
     Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, 100, false, model_buisson_europe);
     Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.15f, 0.05f, 0.5f, 0, false, 100, model_acacia);
     Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0, 100, true, model_mort);
     Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0, 100, false, model_sapin);
-    std::vector<Plante> plantes = {buisson, accacia, sapin};
+    std::vector<Plante> plantes = {buisson, accacia, sapin, herbe, plante_morte};
     // Initialisation de la grille
+    /*Vector3 position;
+    Model model;
+    bool active;
+    bool occupee;
+    int temperature;
+    int humidite;
+    float pente;
+    Plante plante;*/
+    // Création d'une grille de cellules
+    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, model_herbe, true, false, 20, 50, 0.0f, herbe)));
     //GridCell grid[GRID_SIZE][GRID_SIZE];
     float taille_min = 0;
     float taille_max = 0;
@@ -395,6 +398,7 @@ int main(void) {
 
             // Générer une température arbitraire pour cette cellule
             int temperature = random_flottant(0, 30); // Température aléatoire entre TEMP_MIN et TEMP_MAX
+            int humidite = random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
 
 
             // Calcul des hauteurs des cellules voisines
@@ -436,8 +440,8 @@ int main(void) {
             grille[x][z].position = (Vector3){ posX, height, posZ };
             grille[x][z].active = true;
             grille[x][z].occupee = false;
-            grille[x][z].humidite = 10;
-            grille[x][z].temperature = 15;//random_flottant(0, 30);
+            grille[x][z].humidite = humidite;
+            grille[x][z].temperature = temperature;//random_flottant(0, 30);
             grille[x][z].pente = tauxPente;
             /*
             if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
@@ -450,19 +454,21 @@ int main(void) {
             //grid[x][z].model = model_sapin;
             //float taille = random_flottant(taille_min, taille_max);
             */
-            verifier_plante(&grille[x][z], plantes, plante_morte);
+            //verifier_plante(&grille[x][z], plantes, plante_morte);
+            grille[x][z].plante = accacia;
+            grille[x][z].plante.age = 0;
             float taille = grille[x][z].plante.taille;
             Matrix transform = MatrixIdentity();
 
             // Appliquer l'échelle pour réduire ou agrandir le modèle
             transform = MatrixMultiply(transform, MatrixScale(taille, taille, taille));
-            if (besoin_retourner == 1){
-                // Rotation pour orienter l'arbre vers le haut (si nécessaire)
-                transform = MatrixMultiply(transform, MatrixRotateX(-(PI / 2.0f))); // Exemple pour une rotation X
-            }else if (besoin_retourner == 2){
-                // Rotation pour orienter l'arbre vers le haut (si nécessaire)
-                transform = MatrixMultiply(transform, MatrixRotateX(PI / 2.0f)); // Exemple pour une rotation X
-            }
+            //if (besoin_retourner == 1){
+            //    // Rotation pour orienter l'arbre vers le haut (si nécessaire)
+            //    transform = MatrixMultiply(transform, MatrixRotateX(-(PI / 2.0f))); // Exemple pour une rotation X
+            //}else if (besoin_retourner == 2){
+            //    // Rotation pour orienter l'arbre vers le haut (si nécessaire)
+            //    transform = MatrixMultiply(transform, MatrixRotateX(PI / 2.0f)); // Exemple pour une rotation X
+            //}
             float randomRotationX = random_flottant(0.0f, 2.0f * PI); // Rotation aléatoire autour de l'axe X
             //convertir en radians
             randomRotationX = DEG2RAD * randomRotationX;
