@@ -136,31 +136,77 @@ int CompareSceneObjects(const void *a, const void *b) {
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
 void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte) {
-    if (cellule->plante.nom != plante_morte.nom) {
-        if (cellule->temperature >= cellule->plante.temperature_min && cellule->temperature <= cellule->plante.temperature_max &&
-            cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max &&
-            cellule->pente <= cellule->plante.pente_max) {
-            cellule->plante.age++;
-            //printf("age Plante : %d\n", cellule->plante.age);
-            cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
-            if (cellule->plante.age > cellule->plante.age_max) {
-                cellule->plante = plante_morte;
+    if(cellule->plante.nom == "morte"){//si la plante est morte
+        if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
+            Plante bestPlante = plante_morte;
+            /*
+            on calcule la plante qui a le plus de chances de spawn à cette case comme ça :
+            on attribue un score à chaque plante en fonction de la température, de l'humidité et de la pente
+            le calcul du score est le suivant : score_temperature + score_humidite and pente
+            score_temperature = temperature_max - temperature_min
+            la plante avec le score_temperature le plus proche de la température de la case aura un score plus élevé qui est :
+            nb_plantes_qui_peuvent_survivre/nb_plantes_qui_peuvent_survivre
+            score_humidite = humidite_max - humidite_min
+            idem pour l'humidité
+
+            pente = true si la pente est inférieure ou égale à la pente max de la plante
+            */
+            float bestScore = 0;
+            int nb_plantes_qui_peuvent_survivre = 0;
+            float scoreTemperature = 0;
+            float scoreHumidite = 0;
+            float score = 0;
+            for (Plante plante : plantes) {
+                if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
+                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
+                    cellule->pente <= plante.pente_max) {
+                    nb_plantes_qui_peuvent_survivre++;
+                }
             }
+            for (Plante plante : plantes) {
+                if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
+                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
+                    cellule->pente <= plante.pente_max) {
+                    scoreTemperature = fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
+                    scoreHumidite = fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
+                    score = scoreTemperature + scoreHumidite;
+                    if (score < bestScore || bestScore == 0) {
+                        bestScore = score;
+                        bestPlante = plante;
+                    }
+                }
+            }
+            cout << "la meilleure plante est : " << bestPlante.nom << endl;
+            cellule->plante = bestPlante;
+            cellule->plante.age = 0;
+            return;
+        }else{
+            cellule->plante.age++;//bug ça incrémente pas l'age de la plante morte TODO
             return;
         }
-    }
-    for (Plante plante : plantes) {
-        if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-            cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
-            cellule->pente <= plante.pente_max) {
-            cellule->plante = plante;
-            cout << "Plante : ajoutée " << plante.nom << endl;//affiche le nom de la plante
-            cellule->plante.age = 0; // Reset age when a new plant is assigned
-            cellule->plante.taille = plante.taille; // Reset size when a new plant is assigned
+    }else{//si la plante n'est pas morte
+        if (cellule->plante.age >= cellule->plante.age_max) {
+            cellule->plante.age = 0;
+            cellule->plante = plante_morte;
+            printf("age Plante : %d\n", cellule->plante.age);
+            printf("plante à cette case : %s\n", cellule->plante.nom.c_str());
             return;
+        }else{
+            if(cellule->plante.nom != plante_morte.nom) {
+            //modifer pout ajouter un système de santée
+                if (cellule->temperature >= cellule->plante.temperature_min && cellule->temperature <= cellule->plante.temperature_max &&
+                    cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max &&
+                    cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
+                    cellule->plante.age++;
+                    printf("age Plante : %d\n", cellule->plante.age);
+                    //printf("age max Plante : %d\n", cellule->plante.age_max);
+                    cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
+                    return;
+                }
+            }
         }
     }
-    cellule->plante = plante_morte;
+    return;
 }
 
 //terrain avec hauteur
@@ -335,7 +381,10 @@ int main(void) {
     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_herbe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-
+    // Create an empty model to represent an empty cell
+    Mesh emptyMesh = GenMeshCube(0.0f, 0.0f, 0.0f); // Generate a cube with zero size
+    Model emptyModel = LoadModelFromMesh(emptyMesh);
+    emptyModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLANK; // Set the color to blank
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
     // Création d'une plante
@@ -355,12 +404,13 @@ int main(void) {
     int age_max;
     Model model;
     */
-    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 1.0f, 0, 100, false, model_herbe);
+    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.010f, 0, 100, false, model_herbe);
     Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, 100, false, model_buisson_europe);
     Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.15f, 0.05f, 0.5f, 0, false, 100, model_acacia);
-    Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0, 100, true, model_mort);
+    Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0, 50, true, model_mort);
     Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0, 100, false, model_sapin);
-    std::vector<Plante> plantes = {buisson, accacia, sapin, herbe, plante_morte};
+    Plante vide("Vide", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, false, emptyModel);
+    std::vector<Plante> plantes = {buisson, accacia, sapin, herbe};
     // Initialisation de la grille
     /*Vector3 position;
     Model model;
@@ -371,7 +421,7 @@ int main(void) {
     float pente;
     Plante plante;*/
     // Création d'une grille de cellules
-    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, model_herbe, true, false, 20, 50, 0.0f, herbe)));
+    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
     //GridCell grid[GRID_SIZE][GRID_SIZE];
     float taille_min = 0;
     float taille_max = 0;
@@ -382,8 +432,8 @@ int main(void) {
    // Initialisation de la grille
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
-            float posX = x * 0.30f - 1.0f;  // Ajustez selon votre terrain
-            float posZ = z * 0.30f - 1.0f;
+            float posX = x * (3.0f / GRID_SIZE) - 1.0f;  //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f 
+            float posZ = z * (3.0f / GRID_SIZE) - 1.0f;
 
             
             // Ajouter une irrégularité aux positions X et Z
@@ -454,7 +504,6 @@ int main(void) {
             //grid[x][z].model = model_sapin;
             //float taille = random_flottant(taille_min, taille_max);
             */
-            //verifier_plante(&grille[x][z], plantes, plante_morte);
             grille[x][z].plante = accacia;
             grille[x][z].plante.age = 0;
             float taille = grille[x][z].plante.taille;
