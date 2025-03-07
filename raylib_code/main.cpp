@@ -136,21 +136,9 @@ int CompareSceneObjects(const void *a, const void *b) {
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
 void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte) {
-    if(cellule->plante.nom == "morte"){//si la plante est morte
+    if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide" ){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
-            Plante bestPlante = plante_morte;
-            /*
-            on calcule la plante qui a le plus de chances de spawn à cette case comme ça :
-            on attribue un score à chaque plante en fonction de la température, de l'humidité et de la pente
-            le calcul du score est le suivant : score_temperature + score_humidite and pente
-            score_temperature = temperature_max - temperature_min
-            la plante avec le score_temperature le plus proche de la température de la case aura un score plus élevé qui est :
-            nb_plantes_qui_peuvent_survivre/nb_plantes_qui_peuvent_survivre
-            score_humidite = humidite_max - humidite_min
-            idem pour l'humidité
-
-            pente = true si la pente est inférieure ou égale à la pente max de la plante
-            */
+            Plante bestPlante = plantes[0];
             float bestScore = 0;
             int nb_plantes_qui_peuvent_survivre = 0;
             float scoreTemperature = 0;
@@ -179,28 +167,35 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             cout << "la meilleure plante est : " << bestPlante.nom << endl;
             cellule->plante = bestPlante;
             cellule->plante.age = 0;
-            return;
-        }else{
-            cellule->plante.age++;//bug ça incrémente pas l'age de la plante morte TODO
+            cellule->plante.taille = bestPlante.taille;
+
             return;
         }
-    }else{//si la plante n'est pas morte
+        else{
+            cellule->plante.age++;//bug ça incrémente pas l'age de la plante morte TODO
+            printf("ag de la plante incrementé : %d\n", cellule->plante.age);
+            return;
+        }
+    }
+    else{//si la plante n'est pas morte
+        cellule->plante.age++;
         if (cellule->plante.age >= cellule->plante.age_max) {
             cellule->plante.age = 0;
             cellule->plante = plante_morte;
-            printf("age Plante : %d\n", cellule->plante.age);
-            printf("plante à cette case : %s\n", cellule->plante.nom.c_str());
+            //printf("age Plante : %d\n", cellule->plante.age);
+            //printf("plante à cette case : %s\n", cellule->plante.nom.c_str());
             return;
-        }else{
+        }
+        else{
             if(cellule->plante.nom != plante_morte.nom) {
             //modifer pout ajouter un système de santée
                 if (cellule->temperature >= cellule->plante.temperature_min && cellule->temperature <= cellule->plante.temperature_max &&
                     cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max &&
                     cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
                     cellule->plante.age++;
-                    printf("age Plante : %d\n", cellule->plante.age);
+                    //printf("age Plante : %d\n", cellule->plante.age);
                     //printf("age max Plante : %d\n", cellule->plante.age_max);
-                    cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
+                    //cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
                     return;
                 }
             }
@@ -351,10 +346,10 @@ int main(void) {
 
     Model model_herbe = LoadModel("models/herbe/untitled.glb");
     //model_herbe.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
-    //Model model_acacia = LoadModel("models/caca/scene.gltf");
-    //Texture2D texture_acacia = LoadTexture("models/caca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-    Model model_acacia = LoadModel("models/arb_mort/scene.gltf");//LoadModel("models/caca/New/scene.gltf");
+    Model model_acacia = LoadModel("models/caca/scene.gltf");
+    Texture2D texture_acacia = LoadTexture("models/caca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    //Model model_acacia = LoadModel("models/arb_mort/scene.gltf");//LoadModel("models/caca/New/scene.gltf");
     //Texture2D texture_acacia = LoadTexture("models/caca/New/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
 
@@ -404,12 +399,12 @@ int main(void) {
     int age_max;
     Model model;
     */
-    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.010f, 0, 100, false, model_herbe);
-    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, 100, false, model_buisson_europe);
-    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.15f, 0.05f, 0.5f, 0, false, 100, model_acacia);
-    Plante plante_morte("Morte", 0, 100,-50 , 200, 0, 0, 01.10f, 01.10f, 01.0f, 0, 50, true, model_mort);
-    Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.15f, 0.05f, 0.01f, 0, 100, false, model_sapin);
-    Plante vide("Vide", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, false, emptyModel);
+    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.010f, 0, false, 100, model_herbe);
+    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, false, 100, model_buisson_europe);
+    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.05f, 0.05f, 0.5f, 0, false, 100, model_acacia);
+    Plante plante_morte("Morte", 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 1.0f, 0, true, 50, model_mort);
+    Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.0025f, 0.0025f, 0.01f, 0, false, 100, model_sapin);
+    Plante vide("Vide", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel);
     std::vector<Plante> plantes = {buisson, accacia, sapin, herbe};
     // Initialisation de la grille
     /*Vector3 position;
@@ -504,7 +499,7 @@ int main(void) {
             //grid[x][z].model = model_sapin;
             //float taille = random_flottant(taille_min, taille_max);
             */
-            grille[x][z].plante = accacia;
+            grille[x][z].plante = vide;
             grille[x][z].plante.age = 0;
             float taille = grille[x][z].plante.taille;
             Matrix transform = MatrixIdentity();
@@ -661,8 +656,9 @@ int main(void) {
                 //    grille[x][z].temperature += 1;
                 //}
                 //grille[x][z].update(grille, x, z);
-                //grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
                 verifier_plante(&grille[x][z], plantes, plante_morte);
+                printf("age Plante numero (%d, %d) : %d\n", x, z, grille[x][z].plante.age);
+                //printf("plante à cette case : %s\n", grille[x][z].plante.nom.c_str());
                 if (grille[x][z].temperature > 50) {
                     grille[x][z].active = false;
                 }
@@ -787,7 +783,9 @@ int main(void) {
             for (int z = 0; z < GRID_SIZE; z++) {
                 if (grille[x][z].active) {
                     sceneObjects[objectCount].position = grille[x][z].position;
-                    sceneObjects[objectCount].model = &grille[x][z].model;
+                    sceneObjects[objectCount].model = &grille[x][z].plante.model;
+                    float scale = grille[x][z].plante.taille;
+                    sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
                     sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
                     objectCount++;
                 }
@@ -886,8 +884,8 @@ int main(void) {
     UnloadTexture(texture_sapin);
     UnloadModel(model_buisson_europe);
     UnloadTexture(texture_buisson_europe);
-    //UnloadModel(model_acacia);
-    //UnloadTexture(texture_acacia);
+    UnloadModel(model_acacia);
+    UnloadTexture(texture_acacia);
     UnloadShader(shader);   // Unload shader
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
