@@ -166,7 +166,7 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             }
             cout << "la meilleure plante est : " << bestPlante.nom << endl;
             cellule->plante = bestPlante;
-            cellule->plante.age = 0;
+            cellule->plante.age = rand() % 250;
             cellule->plante.taille = bestPlante.taille;
 
             return;
@@ -193,6 +193,10 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
                     cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max && cellule->pente >= cellule->plante.pente_min &&
                     cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
                     cellule->plante.age++;
+                    // Augmenter la taille de la plante
+                    if (cellule->plante.taille < cellule->plante.taille_max) {
+                        cellule->plante.taille *= 1.005f;
+                    }
                     //printf("age Plante : %d\n", cellule->plante.age);
                     //printf("age max Plante : %d\n", cellule->plante.age_max);
                     //cellule->plante.taille += 0.01f; // Augmenter la taille de la plante
@@ -400,11 +404,11 @@ int main(void) {
     int age_max;
     Model model;
     */
-    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 100, model_herbe);
-    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.05f,0.05f, 0.01f, 0.5f, 0, false, 100, model_buisson_europe);
-    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.05f, 0.05f, 0.0f, 0.5f, 0, false, 100, model_acacia);
+    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 1000, model_herbe);
+    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.05f,0.05f, 0.01f, 0.5f, 0, false, 1000, model_buisson_europe);
+    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.05f, 0.05f, 0.0f, 0.5f, 0, false, 1000, model_acacia);
     Plante plante_morte("Morte", 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50, model_mort);
-    Plante sapin("Sapin", 5, 10, -30, 20, 1, 1, 0.0025f, 0.0025f, 0.0f , 0.3f, 0, false, 100, model_sapin);
+    Plante sapin("Sapin", 0, 30, -30, 20, 1, 1, 0.00025f, 0.0025f, 0.0f , 0.3f, 0, false, 1000, model_sapin);
     Plante vide("Vide", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel);
     std::vector<Plante> plantes = {buisson, accacia, sapin, herbe};
     // Initialisation de la grille
