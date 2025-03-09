@@ -135,10 +135,10 @@ int CompareSceneObjects(const void *a, const void *b) {
 }
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
-void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte) {
+void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide){
     if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide" ){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
-            Plante bestPlante = plantes[0];
+            Plante bestPlante = vide;
             float bestScore = 0;
             int nb_plantes_qui_peuvent_survivre = 0;
             float scoreTemperature = 0;
@@ -146,14 +146,14 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             float score = 0;
             for (Plante plante : plantes) {
                 if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
+                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
                     cellule->pente <= plante.pente_max) {
                     nb_plantes_qui_peuvent_survivre++;
                 }
             }
             for (Plante plante : plantes) {
                 if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
+                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
                     cellule->pente <= plante.pente_max) {
                     scoreTemperature = fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
                     scoreHumidite = fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
@@ -173,7 +173,7 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
         }
         else{
             cellule->plante.age++;//bug ça incrémente pas l'age de la plante morte TODO
-            printf("ag de la plante incrementé : %d\n", cellule->plante.age);
+            //printf("ag de la plante incrementé : %d\n", cellule->plante.age);
             return;
         }
     }
@@ -190,7 +190,7 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             if(cellule->plante.nom != plante_morte.nom) {
             //modifer pout ajouter un système de santée
                 if (cellule->temperature >= cellule->plante.temperature_min && cellule->temperature <= cellule->plante.temperature_max &&
-                    cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max &&
+                    cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max && cellule->pente >= cellule->plante.pente_min &&
                     cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
                     cellule->plante.age++;
                     //printf("age Plante : %d\n", cellule->plante.age);
@@ -393,18 +393,19 @@ int main(void) {
     int influence_temperature;
     float taille;
     float taille_max;
+    float pente_min;
     float pente_max;
     int age;
     bool morte;
     int age_max;
     Model model;
     */
-    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.010f, 0, false, 100, model_herbe);
-    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.00005f,0.0005f, 0.05f, 0, false, 100, model_buisson_europe);
-    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.05f, 0.05f, 0.5f, 0, false, 100, model_acacia);
-    Plante plante_morte("Morte", 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 1.0f, 0, true, 50, model_mort);
-    Plante sapin("Sapin", 5, 10,10 , 20, 1, 1, 0.0025f, 0.0025f, 0.01f, 0, false, 100, model_sapin);
-    Plante vide("Vide", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel);
+    Plante herbe("Herbe", 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 100, model_herbe);
+    Plante buisson("Buisson", 15, 30, 10 , 30, 3, 1, 0.05f,0.05f, 0.01f, 0.5f, 0, false, 100, model_buisson_europe);
+    Plante accacia("Acacia", 10, 20, 10, 30, 2, 1, 0.05f, 0.05f, 0.0f, 0.5f, 0, false, 100, model_acacia);
+    Plante plante_morte("Morte", 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50, model_mort);
+    Plante sapin("Sapin", 5, 10, -30, 20, 1, 1, 0.0025f, 0.0025f, 0.0f , 0.3f, 0, false, 100, model_sapin);
+    Plante vide("Vide", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel);
     std::vector<Plante> plantes = {buisson, accacia, sapin, herbe};
     // Initialisation de la grille
     /*Vector3 position;
@@ -442,8 +443,8 @@ int main(void) {
             float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
 
             // Générer une température arbitraire pour cette cellule
-            int temperature = random_flottant(0, 30); // Température aléatoire entre TEMP_MIN et TEMP_MAX
-            int humidite = random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
+            int temperature = (int) random_flottant(-10, 10); // Température aléatoire entre TEMP_MIN et TEMP_MAX
+            int humidite = (int) random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
 
 
             // Calcul des hauteurs des cellules voisines
@@ -462,6 +463,7 @@ int main(void) {
             float penteX = (deltaLeft + deltaRight) / 2.0f;
             float penteZ = (deltaUp + deltaDown) / 2.0f;
             float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
+            printf("taux de pente : %f\n", tauxPente);
             
             // Vérifier si la cellule est sur une pente
             bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
@@ -656,16 +658,13 @@ int main(void) {
                 //    grille[x][z].temperature += 1;
                 //}
                 //grille[x][z].update(grille, x, z);
-                verifier_plante(&grille[x][z], plantes, plante_morte);
-                printf("age Plante numero (%d, %d) : %d\n", x, z, grille[x][z].plante.age);
+                verifier_plante(&grille[x][z], plantes, plante_morte, vide);
+                //printf("age Plante numero (%d, %d) : %d\n", x, z, grille[x][z].plante.age);
                 //printf("plante à cette case : %s\n", grille[x][z].plante.nom.c_str());
-                if (grille[x][z].temperature > 50) {
-                    grille[x][z].active = false;
-                }
+                //if (grille[x][z].temperature > 50) {
+                //    grille[x][z].active = false;
+                //}
                 //grille[x][z].temperature += 1;
-                if (grille[x][z].temperature > 100) {
-                    grille[x][z].temperature = 30;
-                }
                 //printf("Temperature : %d\n", grille[x][z].temperature);
             }
         }
