@@ -27,6 +27,7 @@
     #define GLSL_VERSION            100
 #endif
 #define GRID_SIZE 10
+#define NBHERBE 50
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 512 //la resolution de la shadowmap
 
@@ -124,10 +125,9 @@ bool isRotating = false;
 typedef struct {
     Vector3 position;    // Position de l'objet
     Model *model;        // Modèle 3D
+    billboard *model_billboard = nullptr;        // image billboard
     float depth;         // Distance caméra → objet
 } SceneObject;
-
-
 int CompareSceneObjects(const void *a, const void *b) {
     SceneObject *objA = (SceneObject *)a;
     SceneObject *objB = (SceneObject *)b;
@@ -164,7 +164,7 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
                     }
                 }
             }
-            cout << "la meilleure plante est : " << bestPlante.nom << endl;
+            //cout << "la meilleure plante est : " << bestPlante.nom << endl;
             cellule->plante = bestPlante;
             cellule->plante.age = rand() % 500;
             cellule->plante.taille = bestPlante.taille;
@@ -350,7 +350,7 @@ int main(void) {
 
     Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
     Model model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
-    Image image_texture_sol = LoadImage("ressources/rocky_terrain_02_diff_1k.png");
+    Image image_texture_sol = LoadImage("ressources/rocky_terrain_02_diff_1k.jpg"); //rocky_terrain_02_diff_1k.jpg
     Texture2D texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
     Shader shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
     int uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
@@ -375,9 +375,8 @@ int main(void) {
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
 
     Model model_herbe = LoadModel("models/herbe/untitled.glb");
-    //model_herbe.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
-    Texture2D texture_acacia = LoadTexture("models/aicaca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    Texture2D texture_acacia = LoadTexture("models/acacia/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
     Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f); // Génère un cube
     Model cubeModel = LoadModelFromMesh(cubeMesh);
@@ -408,6 +407,9 @@ int main(void) {
     emptyModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLANK; // Set the color to blank
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
+    //La texture pour le billboard d'herbe
+    Texture2D billboard_herbe_texture = LoadTexture("models/herbe/herbe.png");
+
     // Création d'une plante
     /*
     string nom;
@@ -445,30 +447,43 @@ int main(void) {
     // Création d'une grille de cellules
     std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
     //ajoute la grille du sol d'herbe type SolHerbe
-    /* 
+    //les truc du billboard
+    // Entire billboard texture, source is used to take a segment from a larger texture.
+    Rectangle source = { 0.0f, 0.0f, (float)billboard_herbe_texture.width, (float)billboard_herbe_texture.height };
+    Vector3 position_bill = {0,0,0};
+    bool active_bill = true;
+    bool occupee_bill = true;
+    int temperature_bill = 0;
+    int humidite_bill = 0;
+    float pente_bill = 0;
+    Rectangle source_bill = { 0.0f, 0.0f, (float)billboard_herbe_texture.width, (float)billboard_herbe_texture.height };
+    Vector3 billUp = { 0.0f, 1.0f, 0.0f };
+    Vector2 size_bill = { source.width / source.height, 1.0f };
+    //billboard model
+    billboard billboard_herbe = {position_bill, billboard_herbe_texture, active_bill, occupee_bill, temperature_bill, humidite_bill, pente_bill, source_bill, billUp, size_bill};
+
+    /*
     Vector3 position;
-    Model model;
+    billboard model;
     bool active;
     bool occupee;
     int temperature;
     int humidite;
     float pente;
     */
-    std::vector<std::vector<SolHerbe>> prairie(GRID_SIZE, std::vector<SolHerbe>(GRID_SIZE, SolHerbe({0,0,0}, vide.model, true, false, 20, 50, 0.0f)));
-    //GridCell grid[GRID_SIZE][GRID_SIZE];
-    float taille_min = 0;
-    float taille_max = 0;
-    int besoin_retourner = 0;
+    //SolHerbe(Vector3 pos, billboard mod, bool act, bool occupee, int temp, int hum, float pen);
+    std::vector<std::vector<SolHerbe>> prairie(NBHERBE, std::vector<SolHerbe>(NBHERBE, SolHerbe(position_bill, billboard_herbe, active_bill, occupee_bill, temperature_bill, humidite_bill, pente_bill)));
     
     //le terrain
     Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
+    int humidite_moyenne = 0;
+    int temperature_moyenne = 0;
    // Initialisation de la grille
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
+            
             float posX = x * (3.0f / GRID_SIZE) - 1.0f;  //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f 
             float posZ = z * (3.0f / GRID_SIZE) - 1.0f;
-
-            
             // Ajouter une irrégularité aux positions X et Z
             float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
             float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
@@ -482,14 +497,15 @@ int main(void) {
             // Générer une température arbitraire pour cette cellule
             int temperature = (int) random_flottant(0, 40); // Température aléatoire entre TEMP_MIN et TEMP_MAX
             int humidite = (int) random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
-
+            humidite_moyenne += humidite;
+            temperature_moyenne += temperature;
 
             // Calcul des hauteurs des cellules voisines
             float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
             float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
             float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
             float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
-
+            
             // Calcul des variations de hauteur
             float deltaLeft = fabs(height - heightLeft);
             float deltaRight = fabs(height - heightRight);
@@ -500,10 +516,10 @@ int main(void) {
             float penteX = (deltaLeft + deltaRight) / 2.0f;
             float penteZ = (deltaUp + deltaDown) / 2.0f;
             float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
-            printf("taux de pente : %f\n", tauxPente);
+            //printf("taux de pente : %f\n", tauxPente);
             
             // Vérifier si la cellule est sur une pente
-            bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
+            //bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
 
             // Positionner la cellule en fonction de la hauteur du terrain
             grille[x][z].position = (Vector3){ posX, height, posZ };
@@ -517,14 +533,7 @@ int main(void) {
             grille[x][z].plante.age = 0;
             float taille = grille[x][z].plante.taille;
 
-            //on fait la meme pour notre herbe
-            prairie[x][z].position = (Vector3){ posX, height, posZ };
-            prairie[x][z].active = true;
-            prairie[x][z].occupee = true;
-            prairie[x][z].humidite = humidite;
-            prairie[x][z].temperature = temperature;
-            prairie[x][z].pente = tauxPente;
-            prairie[x][z].model = model_herbe;
+            
 
             Matrix transform = MatrixIdentity();
 
@@ -536,9 +545,73 @@ int main(void) {
             randomRotationX = DEG2RAD * randomRotationX;
             transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
             grille[x][z].model.transform = transform;
-            prairie[x][z].model.transform = transform;
+            //prairie[x][z].model.transform = transform;
+
         }
     }
+    for (int x = 0; x < NBHERBE; x++) {
+        for (int z = 0; z < NBHERBE; z++) {
+            
+            //on fait la meme pour notre herbe
+            /*
+            Vector3 position;
+            billboard model;
+            bool active;
+            bool occupee;
+            int temperature;
+            int humidite;
+            float pente;
+            */
+            float posX_bill = (float) x - taille_terrain.x / 2; 
+            float posZ_bill = (float) z - (taille_terrain.y / 2);
+            printf("posX_bill : %f\n", posX_bill);
+            printf("posZ_bill : %f\n", posZ_bill);
+            //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f
+            // Variables d'espacement pour les éléments
+            float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
+            float espacementZ = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe Z
+
+            // Ajuster les positions avec l'espacement
+            posX_bill = x * espacementX - taille_terrain.x / 2;
+            posZ_bill = z * espacementZ - taille_terrain.y / 2;
+            posZ_bill-1;
+
+            float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
+            float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
+            posX_bill += offsetX;
+            posZ_bill += offsetZ;
+
+            float height_bill = GetHeightFromTerrain((Vector3){ posX_bill, 0.0f, posZ_bill }, image_sol, taille_terrain);
+
+            float heightLeft_bill = GetHeightFromTerrain((Vector3){ posX_bill - 0.3f, 0.0f, posZ_bill }, image_sol, taille_terrain);
+            float heightRight_bill = GetHeightFromTerrain((Vector3){ posX_bill + 0.3f, 0.0f, posZ_bill }, image_sol, taille_terrain);
+            float heightUp_bill = GetHeightFromTerrain((Vector3){ posX_bill, 0.0f, posZ_bill - 0.3f }, image_sol, taille_terrain);
+            float heightDown_bill = GetHeightFromTerrain((Vector3){ posX_bill, 0.0f, posZ_bill + 0.3f }, image_sol, taille_terrain);
+            
+            float deltaLeft_bill = fabs(height_bill - heightLeft_bill);
+            float deltaRight_bill = fabs(height_bill - heightRight_bill);
+            float deltaUp_bill = fabs(height_bill - heightUp_bill);
+            float deltaDown_bill = fabs(height_bill - heightDown_bill);
+
+            //calcul du taux de la pente
+            float penteX_bill = (deltaLeft_bill + deltaRight_bill) / 2.0f;
+            float penteZ_bill = (deltaUp_bill + deltaDown_bill) / 2.0f;
+            float tauxPente_bill = sqrt(penteX_bill * penteX_bill + penteZ_bill * penteZ_bill);
+            
+            
+
+            prairie[x][z].position = (Vector3){ posX_bill, height_bill+0.05f, posZ_bill-1  };
+            prairie[x][z].model = billboard_herbe;
+            prairie[x][z].active = true;
+            prairie[x][z].occupee = true;
+            prairie[x][z].temperature = temperature_moyenne / (GRID_SIZE * GRID_SIZE);
+            prairie[x][z].humidite = humidite_moyenne / (GRID_SIZE * GRID_SIZE);
+            prairie[x][z].pente = tauxPente_bill;
+            prairie[x][z].model.billUp = { 0.0f, 0.0f, 0.0f };
+            prairie[x][z].model.size = { source_bill.width / source_bill.height, 0.0f };
+        }
+    }
+            
 
     //on collecte les objets
 
@@ -770,9 +843,9 @@ int main(void) {
         
         //DrawModel(model_sol, mapPosition, 0.50f, MAROON);
         SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
-        SceneObject praitie_Objetc[NBHERBE * NBHERBE]
+        SceneObject praitie_Objets[NBHERBE * NBHERBE + 1];
         int objectCount = 0;
-        
+        int herbeCount = 0;
 
         // Ajouter le sol à la liste
         sceneObjects[objectCount].position = mapPosition;
@@ -791,17 +864,22 @@ int main(void) {
                     sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
                     objectCount++;
                 }
+            }
+        }
+        for (int x = 0; x < NBHERBE; x++) {
+            for (int z = 0; z < NBHERBE; z++) {
                 if (prairie[x][z].active){
                     // Ajouter les herbes de l'objet prairie
-                    sceneObjects[objectCount].position = prairie[x][z].position;
-                    sceneObjects[objectCount].model = &prairie[x][z].model;
-                    float scale = 0.05f;
-                    sceneObjects[objectCount].model->transform = MatrixScale(scale,scale,scale);
-                    sceneObjects[objectCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
-                    objectCount++;
+                    praitie_Objets[herbeCount].position = prairie[x][z].position;
+                    praitie_Objets[herbeCount].model_billboard = &prairie[x][z].model;
+                    //float scale = 0.10f;
+                    //praitie_Objets[herbeCount].model_billboard->size = { prairie[x][z].model.source.width / prairie[x][z].model.source.height * scale, scale };
+                    praitie_Objets[herbeCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
+                    herbeCount++;
                 }
             }
         }
+
         // Trouver les températures min et max
         minTemp = 100;
         maxTemp = 0;
@@ -814,6 +892,38 @@ int main(void) {
                 if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
             }
         }
+        //dessin de l'herbe
+        //DrawBillboard(camera, billboard_herbe_texture, praitie_Objets[i].model_billboard->position, 2.0f, WHITE);
+        qsort(praitie_Objets, herbeCount, sizeof(SceneObject), CompareSceneObjects);
+        for (int i = 0; i < herbeCount; i++) {
+            if(viewMode == MODE_NORMAL){
+                if (praitie_Objets[i].model_billboard == nullptr) {
+                    //printf("son pointeur est : %p\n", praitie_Objets[i].model_billboard);
+                }else{
+                    if(praitie_Objets[i].model_billboard->active){
+                    DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.10f, WHITE);
+                    }
+                }
+            } //else if (viewMode == MODE_TEMPERATURE) {
+              //  for (int x = 0; x < NBHERBE; x++) {
+              //      for (int j = 0; j < NBHERBE; j++) {
+              //          Color tempColor = GetTemperatureColor(prairie[x][j].temperature, minTemp, maxTemp);
+              //          DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.1f, tempColor);
+              //          //if(Vector3Equals(prairie[x][j].position, praitie_Objets[i].position)){
+              //          //}
+              //      }
+              //  }
+            //} //else if (viewMode == MODE_HUMIDITE) {
+              //  for(int x = 0; x < NBHERBE; x++){
+              //      for(int j = 0; j < NBHERBE; j++){
+              //          if(Vector3Equals(prairie[x][j].position, praitie_Objets[i].position)){
+              //              Color humColor = GetHumidityColor(prairie[x][j].humidite, minHum, maxHum);
+              //              DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.1f, humColor);
+              //          }
+              //      }
+              //  }
+            //}
+        }
         // Trier les objets par profondeur
         qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
         // Dessiner les objets dans l'ordre trié
@@ -823,6 +933,8 @@ int main(void) {
                     DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
                 } else {
                     DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+                    //DrawModel(*praitie_Objets[i].model, praitie_Objets[i].position, 1.0f, WHITE);
+                    
                 }
             }  else if (viewMode == MODE_TEMPERATURE) {
                 if (sceneObjects[i].model == &model_sol) {

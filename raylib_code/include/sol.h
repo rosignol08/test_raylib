@@ -60,17 +60,35 @@ public:
     //void update(vector<vector<GridCell>>& grille, int x, int y);
 };
 
+class billboard {
+public:
+    Vector3 position;
+    Texture2D texture;
+    bool active;
+    bool occupee;
+    int temperature;
+    int humidite;
+    float pente;
+    Vector3 billPositionStatic;
+    Vector3 billPositionRotating;
+    Rectangle source;
+    Vector3 billUp;
+    Vector2 size;
+
+    billboard(Vector3 pos, Texture2D tex, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size);
+};
+
 class SolHerbe {
 public:
     Vector3 position;
-    Model model;
+    billboard model;
     bool active;
     bool occupee;
     int temperature;
     int humidite;
     float pente;
 
-    SolHerbe(Vector3 pos, Model mod, bool act, bool occupee, int temp, int hum, float pen);
+    SolHerbe(Vector3 pos, billboard mod, bool act, bool occupee, int temp, int hum, float pen);
 };
 
 #endif

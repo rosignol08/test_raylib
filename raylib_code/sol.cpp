@@ -48,12 +48,18 @@ GridCell::GridCell(Vector3 pos, Model mod, bool act, bool occ, int temp, int hum
     // On initialise plante avec le constructeur par défaut
 }
 
-// Constructeur de SolHerbe
-SolHerbe::SolHerbe(Vector3 pos, Model mod, bool act, bool occ, int temp, int hum, float pen)
-    : position(pos), model(mod), active(act), occupee(occ), temperature(temp), humidite(hum), pente(pen) {
-    // Initialisation des attributs via la liste d'initialisation
+//constructeur billboard
+//billboard(Vector3 pos, Texture2D mod, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size);
+billboard::billboard(Vector3 pos, Texture2D tex, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size)
+    : position(pos), texture(tex), active(act), occupee(occupee), temperature(temp), humidite(hum), pente(pen), source(source), billUp(billUp), size(size){
+    // On initialise plante avec le constructeur par défaut
 }
 
+// Constructeur de SolHerbe
+SolHerbe::SolHerbe(Vector3 pos, billboard mod, bool act, bool occ, int temp, int hum, float pen)
+    : position(pos), model(mod), active(act), occupee(occ), temperature(temp), humidite(hum), pente(pen) {
+    // On initialise plante avec le constructeur par défaut
+}
 /*
 // monobjet.cpp
 #include <iostream>
