@@ -366,23 +366,19 @@ int main(void) {
     //fin test sol
     // Charger le modèle et la texture test commentaire
     Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
-    model_mort.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
-    Model model_sapin = LoadModel("models/pine_tree/scene.gltf");
-    Texture2D texture_sapin = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
-    model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sapin;
+    //model_mort.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
+    Model model_sapin = LoadModel("models/pine_tree/scene.glb");
+    //Texture2D texture_sapin = LoadTexture("models/pine_tree/textures/Leavs_baseColor.png");
+    //model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sapin;
     Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
 
     Model model_herbe = LoadModel("models/herbe/untitled.glb");
     //model_herbe.transform = MatrixScale(1.5f, 1.5f, 1.5f); // Augmenter la taille du modèle
-    Model model_acacia = LoadModel("models/caca/scene.gltf");
-    Texture2D texture_acacia = LoadTexture("models/caca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    Model model_acacia = LoadModel("models/acacia/scene.gltf");
+    Texture2D texture_acacia = LoadTexture("models/aicaca/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-    //Model model_acacia = LoadModel("models/arb_mort/scene.gltf");//LoadModel("models/caca/New/scene.gltf");
-    //Texture2D texture_acacia = LoadTexture("models/caca/New/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-
     Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f); // Génère un cube
     Model cubeModel = LoadModelFromMesh(cubeMesh);
 
@@ -434,7 +430,7 @@ int main(void) {
     Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f,0.1f, 0.01f, 0.5f, 0, false, 1000, model_buisson_europe);
     Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia);
     Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50, model_mort);
-    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.00025f, 0.0025f, 0.0f , 0.3f, 0, false, 1000, model_sapin);
+    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin);
     Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel);
     std::vector<Plante> plantes = {buisson, accacia, sapin, herbe};
     // Initialisation de la grille
@@ -448,6 +444,17 @@ int main(void) {
     Plante plante;*/
     // Création d'une grille de cellules
     std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
+    //ajoute la grille du sol d'herbe type SolHerbe
+    /* 
+    Vector3 position;
+    Model model;
+    bool active;
+    bool occupee;
+    int temperature;
+    int humidite;
+    float pente;
+    */
+    std::vector<std::vector<SolHerbe>> prairie(GRID_SIZE, std::vector<SolHerbe>(GRID_SIZE, SolHerbe({0,0,0}, vide.model, true, false, 20, 50, 0.0f)));
     //GridCell grid[GRID_SIZE][GRID_SIZE];
     float taille_min = 0;
     float taille_max = 0;
@@ -498,21 +505,6 @@ int main(void) {
             // Vérifier si la cellule est sur une pente
             bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
 
-            /*
-            if (!(pente)){
-                grid[x][z].model = model_acacia;
-                taille_min = 0.05f;
-                taille_max = 0.15f;
-                //besoin_retourner = 1;
-            }
-            else{
-                grid[x][z].model = model_buisson_europe;
-                taille_min = 0.00005f;
-                taille_max = 0.0005f;
-                besoin_retourner = 0;
-            }
-            */
-
             // Positionner la cellule en fonction de la hauteur du terrain
             grille[x][z].position = (Vector3){ posX, height, posZ };
             grille[x][z].active = true;
@@ -520,62 +512,31 @@ int main(void) {
             grille[x][z].humidite = humidite;
             grille[x][z].temperature = temperature;//random_flottant(0, 30);
             grille[x][z].pente = tauxPente;
-            /*
-            if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
-                grille[x][z].plante = accacia;
-            } else if (temperature >= buisson.temperature_min && temperature <= buisson.temperature_max) {
-                grille[x][z].plante = buisson;
-            } else {
-                grille[x][z].plante = plante_morte;
-            }
-            //grid[x][z].model = model_sapin;
-            //float taille = random_flottant(taille_min, taille_max);
-            */
+            
             grille[x][z].plante = vide;
             grille[x][z].plante.age = 0;
             float taille = grille[x][z].plante.taille;
+
+            //on fait la meme pour notre herbe
+            prairie[x][z].position = (Vector3){ posX, height, posZ };
+            prairie[x][z].active = true;
+            prairie[x][z].occupee = true;
+            prairie[x][z].humidite = humidite;
+            prairie[x][z].temperature = temperature;
+            prairie[x][z].pente = tauxPente;
+            prairie[x][z].model = model_herbe;
+
             Matrix transform = MatrixIdentity();
 
             // Appliquer l'échelle pour réduire ou agrandir le modèle
             transform = MatrixMultiply(transform, MatrixScale(taille, taille, taille));
-            //if (besoin_retourner == 1){
-            //    // Rotation pour orienter l'arbre vers le haut (si nécessaire)
-            //    transform = MatrixMultiply(transform, MatrixRotateX(-(PI / 2.0f))); // Exemple pour une rotation X
-            //}else if (besoin_retourner == 2){
-            //    // Rotation pour orienter l'arbre vers le haut (si nécessaire)
-            //    transform = MatrixMultiply(transform, MatrixRotateX(PI / 2.0f)); // Exemple pour une rotation X
-            //}
+         
             float randomRotationX = random_flottant(0.0f, 2.0f * PI); // Rotation aléatoire autour de l'axe X
             //convertir en radians
             randomRotationX = DEG2RAD * randomRotationX;
             transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
             grille[x][z].model.transform = transform;
-            
-            /*
-            if (grille[x][z].active && grille[x][z].occupee) {
-                grille[x][z].plante.verifierConditionsEtMourir(grille, x, z);
-            }
-            */
-            // Déterminer la plante appropriée en fonction de la pente et de la température
-            /*
-            if (!pente && temperature >= accacia.temperature_min && temperature <= accacia.temperature_max) {
-                grille[x][z].model = model_acacia;
-                taille_min = accacia.taille;
-                taille_max = accacia.taille_max;
-                besoin_retourner = 1;
-            } else if (temperature >= buisson.temperature_min && temperature <= buisson.temperature_max) {
-                grille[x][z].model = model_buisson_europe;
-                taille_min = buisson.taille;
-                taille_max = buisson.taille_max;
-                besoin_retourner = 0;
-            } else {
-                grille[x][z].model = model_sapin;
-                taille_min = cree_plante.taille;
-                taille_max = cree_plante.taille_max;
-                besoin_retourner = 0;
-            }
-            */
-
+            prairie[x][z].model.transform = transform;
         }
     }
 
@@ -655,7 +616,7 @@ int main(void) {
         // Gestion du zoom avec la molette de la souris
         distance_cam -= GetMouseWheelMove() * 0.5f; // Ajustez le facteur (0.5f) pour contrôler la sensibilité du zoom
         if (distance_cam < 2.0f) distance_cam = 2.0f;   // Distance minimale
-        if (distance_cam > 50.0f) distance_cam = 50.0f; // Distance maximale
+        if (distance_cam > 200.0f) distance_cam = 200.0f; // Distance maximale
 
 
         // Limiter les angles X pour éviter une rotation complète
@@ -689,6 +650,16 @@ int main(void) {
                 //}
                 //grille[x][z].update(grille, x, z);
                 verifier_plante(&grille[x][z], plantes, plante_morte, vide);
+                if (grille[x][z].plante.nom == "Herbe") {
+                    float normalizedTemp = (float)(grille[x][z].temperature - minTemp) / (maxTemp - minTemp);
+                    if (normalizedTemp < 0.25f) {
+                        grille[x][z].plante.model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
+                    } else if (normalizedTemp > 0.75f) {
+                        grille[x][z].plante.model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = YELLOW;
+                    } else {
+                        grille[x][z].plante.model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+                    }
+                }
                 //printf("age Plante numero (%d, %d) : %d\n", x, z, grille[x][z].plante.age);
                 //printf("plante à cette case : %s\n", grille[x][z].plante.nom.c_str());
                 //if (grille[x][z].temperature > 50) {
@@ -799,7 +770,9 @@ int main(void) {
         
         //DrawModel(model_sol, mapPosition, 0.50f, MAROON);
         SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
+        SceneObject praitie_Objetc[NBHERBE * NBHERBE]
         int objectCount = 0;
+        
 
         // Ajouter le sol à la liste
         sceneObjects[objectCount].position = mapPosition;
@@ -816,6 +789,15 @@ int main(void) {
                     float scale = grille[x][z].plante.taille;
                     sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
                     sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
+                    objectCount++;
+                }
+                if (prairie[x][z].active){
+                    // Ajouter les herbes de l'objet prairie
+                    sceneObjects[objectCount].position = prairie[x][z].position;
+                    sceneObjects[objectCount].model = &prairie[x][z].model;
+                    float scale = 0.05f;
+                    sceneObjects[objectCount].model->transform = MatrixScale(scale,scale,scale);
+                    sceneObjects[objectCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
                     objectCount++;
                 }
             }
@@ -910,7 +892,7 @@ int main(void) {
     // Désallocation des ressources
     UnloadModel(model_mort);
     UnloadModel(model_sapin);
-    UnloadTexture(texture_sapin);
+    //UnloadTexture(texture_sapin);
     UnloadModel(model_buisson_europe);
     UnloadTexture(texture_buisson_europe);
     UnloadModel(model_acacia);

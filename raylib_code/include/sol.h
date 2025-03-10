@@ -60,6 +60,18 @@ public:
     //void update(vector<vector<GridCell>>& grille, int x, int y);
 };
 
+class SolHerbe {
+public:
+    Vector3 position;
+    Model model;
+    bool active;
+    bool occupee;
+    int temperature;
+    int humidite;
+    float pente;
+
+    SolHerbe(Vector3 pos, Model mod, bool act, bool occupee, int temp, int hum, float pen);
+};
 
 #endif
 

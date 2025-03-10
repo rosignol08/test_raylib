@@ -48,7 +48,11 @@ GridCell::GridCell(Vector3 pos, Model mod, bool act, bool occ, int temp, int hum
     // On initialise plante avec le constructeur par défaut
 }
 
-
+// Constructeur de SolHerbe
+SolHerbe::SolHerbe(Vector3 pos, Model mod, bool act, bool occ, int temp, int hum, float pen)
+    : position(pos), model(mod), active(act), occupee(occ), temperature(temp), humidite(hum), pente(pen) {
+    // Initialisation des attributs via la liste d'initialisation
+}
 
 /*
 // monobjet.cpp

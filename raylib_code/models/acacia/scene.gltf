@@ -1,408 +1,489 @@
 {
-  "accessors": [
-    {
-      "bufferView": 2,
-      "componentType": 5126,
-      "count": 4730,
-      "max": [
-        481.1716003417969,
-        626.185791015625,
-        420.5023498535156
-      ],
-      "min": [
-        -476.8569030761719,
-        -0.014779999852180481,
-        -379.990966796875
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "byteOffset": 56760,
-      "componentType": 5126,
-      "count": 4730,
-      "max": [
-        0.9987196326255798,
-        0.9995666742324829,
-        0.9991196393966675
-      ],
-      "min": [
-        -0.9996238350868225,
-        -0.9995554685592651,
-        -0.9994228482246399
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 3,
-      "componentType": 5126,
-      "count": 4730,
-      "max": [
-        0.999567985534668,
-        0.999854564666748,
-        0.9999910593032837,
-        1.0
-      ],
-      "min": [
-        -0.9991030693054199,
-        -0.9998571872711182,
-        -0.9999907612800598,
-        1.0
-      ],
-      "type": "VEC4"
-    },
-    {
-      "bufferView": 1,
-      "componentType": 5126,
-      "count": 4730,
-      "max": [
-        0.9995099902153015,
-        18.16642951965332
-      ],
-      "min": [
-        0.0004900000058114529,
-        0.0004900000058114529
-      ],
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 0,
-      "componentType": 5125,
-      "count": 21585,
-      "type": "SCALAR"
-    },
-    {
-      "bufferView": 2,
-      "byteOffset": 113520,
-      "componentType": 5126,
-      "count": 1160,
-      "max": [
-        638.2796020507813,
-        690.4692993164063,
-        555.1931762695313
-      ],
-      "min": [
-        -641.8280029296875,
-        292.4472351074219,
-        -483.8745422363281
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "byteOffset": 127440,
-      "componentType": 5126,
-      "count": 1160,
-      "max": [
-        0.8301938772201538,
-        0.9981244206428528,
-        0.7540315389633179
-      ],
-      "min": [
-        -0.8802773952484131,
-        0.47037991881370544,
-        -0.7742021679878235
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 3,
-      "byteOffset": 75680,
-      "componentType": 5126,
-      "count": 1160,
-      "max": [
-        0.9930176734924316,
-        0.6064972877502441,
-        0.9906480312347412,
-        1.0
-      ],
-      "min": [
-        -0.9996297955513,
-        -0.8275009393692017,
-        -0.9990309476852417,
-        -1.0
-      ],
-      "type": "VEC4"
-    },
-    {
-      "bufferView": 1,
-      "byteOffset": 37840,
-      "componentType": 5126,
-      "count": 1160,
-      "max": [
-        0.9980199933052063,
-        0.9980199933052063
-      ],
-      "min": [
-        0.001979999942705035,
-        0.001979999942705035
-      ],
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 0,
-      "byteOffset": 86340,
-      "componentType": 5125,
-      "count": 2784,
-      "type": "SCALAR"
-    }
-  ],
-  "asset": {
-    "extras": {
-      "author": "evolveduk (https://sketchfab.com/evolveduk)",
-      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/acacia-tree-bb14c2bb679b4d0bb1c578a27e2ddabf",
-      "title": "Acacia tree"
-    },
-    "generator": "Sketchfab-16.15.0",
-    "version": "2.0"
-  },
-  "bufferViews": [
-    {
-      "buffer": 0,
-      "byteLength": 97476,
-      "name": "floatBufferViews",
-      "target": 34963
-    },
-    {
-      "buffer": 0,
-      "byteLength": 47120,
-      "byteOffset": 97476,
-      "byteStride": 8,
-      "name": "floatBufferViews",
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 141360,
-      "byteOffset": 144596,
-      "byteStride": 12,
-      "name": "floatBufferViews",
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 94240,
-      "byteOffset": 285956,
-      "byteStride": 16,
-      "name": "floatBufferViews",
-      "target": 34962
-    }
-  ],
-  "buffers": [
-    {
-      "byteLength": 380196,
-      "uri": "scene.bin"
-    }
-  ],
-  "images": [
-    {
-      "uri": "textures/bark05_0Mat_baseColor.png"
-    },
-    {
-      "uri": "textures/bark05_0Mat_metallicRoughness.png"
-    },
-    {
-      "uri": "textures/bark05_0Mat_normal.png"
-    },
-    {
-      "uri": "textures/acacia_branch_1Mat_baseColor.png"
-    },
-    {
-      "uri": "textures/acacia_branch_1Mat_metallicRoughness.png"
-    },
-    {
-      "uri": "textures/acacia_branch_1Mat_normal.png"
-    }
-  ],
-  "materials": [
-    {
-      "doubleSided": true,
-      "name": "bark05_0Mat",
-      "normalTexture": {
-        "index": 2
-      },
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 0
-        },
-        "metallicFactor": 0.0,
-        "metallicRoughnessTexture": {
-          "index": 1
-        }
-      }
-    },
-    {
-      "alphaCutoff": 0.20898581795579713,
-      "alphaMode": "MASK",
-      "doubleSided": true,
-      "name": "acacia_branch_1Mat",
-      "normalTexture": {
-        "index": 5
-      },
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 3
-        },
-        "metallicFactor": 0.0,
-        "metallicRoughnessTexture": {
-          "index": 4
-        }
-      }
-    }
-  ],
-  "meshes": [
-    {
-      "name": "bark05_0_bark05_0Mat_0",
-      "primitives": [
-        {
-          "attributes": {
-            "NORMAL": 1,
-            "POSITION": 0,
-            "TANGENT": 2,
-            "TEXCOORD_0": 3
-          },
-          "indices": 4,
-          "material": 0,
-          "mode": 4
-        }
-      ]
-    },
-    {
-      "name": "acacia branch_1_acacia branch_1Mat_0",
-      "primitives": [
-        {
-          "attributes": {
-            "NORMAL": 6,
-            "POSITION": 5,
-            "TANGENT": 7,
-            "TEXCOORD_0": 8
-          },
-          "indices": 9,
-          "material": 1,
-          "mode": 4
-        }
-      ]
-    }
-  ],
-  "nodes": [
-    {
-      "children": [
-        1
-      ],
-      "matrix": [
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        2.220446049250313e-16,
-        -1.0,
-        0.0,
-        0.0,
-        1.0,
-        2.220446049250313e-16,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "Sketchfab_model"
-    },
-    {
-      "children": [
-        2
-      ],
-      "matrix": [
-        0.009999999776482582,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.009999999776482582,
-        0.0,
-        0.0,
-        -0.009999999776482582,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "acacia.fbx"
-    },
-    {
-      "children": [
-        3
-      ],
-      "name": "RootNode"
-    },
-    {
-      "children": [
-        4,
-        5
-      ],
-      "name": "bark05_0"
-    },
-    {
-      "mesh": 0,
-      "name": "bark05_0_bark05_0Mat_0"
-    },
-    {
-      "children": [
-        6
-      ],
-      "name": "acacia branch_1"
-    },
-    {
-      "mesh": 1,
-      "name": "acacia branch_1_acacia branch_1Mat_0"
-    }
-  ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987,
-      "wrapS": 10497,
-      "wrapT": 10497
-    }
-  ],
-  "scene": 0,
-  "scenes": [
-    {
-      "name": "Sketchfab_Scene",
-      "nodes": [
-        0
-      ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    },
-    {
-      "sampler": 0,
-      "source": 3
-    },
-    {
-      "sampler": 0,
-      "source": 4
-    },
-    {
-      "sampler": 0,
-      "source": 5
-    }
-  ]
+	"asset":{
+		"generator":"Khronos glTF Blender I/O v4.0.44",
+		"version":"2.0"
+	},
+	"extensionsUsed":[
+		"KHR_materials_specular",
+		"KHR_materials_ior"
+	],
+	"scene":0,
+	"scenes":[
+		{
+			"name":"Scene",
+			"nodes":[
+				7
+			]
+		}
+	],
+	"nodes":[
+		{
+			"name":"Cameras"
+		},
+		{
+			"mesh":0,
+			"name":"Acacia_Dry_Green__Mature__Trunk_Mesh_0"
+		},
+		{
+			"name":"Mats"
+		},
+		{
+			"children":[
+				1,
+				2
+			],
+			"name":"Acacia_Dry_Green__Mature__Trunk_item"
+		},
+		{
+			"children":[
+				3
+			],
+			"name":"Acacia_Dry_Green__Mature__Trunk"
+		},
+		{
+			"children":[
+				4
+			],
+			"name":"Geometry"
+		},
+		{
+			"name":"Materials"
+		},
+		{
+			"children":[
+				0,
+				5,
+				6
+			],
+			"name":"World"
+		}
+	],
+	"materials":[
+		{
+			"doubleSided":true,
+			"extensions":{
+				"KHR_materials_specular":{
+					"specularColorFactor":[
+						0.0,
+						0.0,
+						0.0
+					]
+				},
+				"KHR_materials_ior":{
+					"ior":1.4500000476837158
+				}
+			},
+			"name":"Acacia_Trunk_baked",
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":0
+				},
+				"metallicFactor":0,
+				"roughnessFactor":0.5
+			}
+		},
+		{
+			"alphaMode":"BLEND",
+			"doubleSided":true,
+			"extensions":{
+				"KHR_materials_specular":{
+					"specularColorFactor":[
+						0.4000000059604645,
+						0.4000000059604645,
+						0.4000000059604645
+					]
+				},
+				"KHR_materials_ior":{
+					"ior":1.4500000476837158
+				}
+			},
+			"name":"Acacia_Leaves_1_baked",
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":1
+				},
+				"metallicFactor":0,
+				"roughnessFactor":0.5
+			}
+		},
+		{
+			"alphaMode":"BLEND",
+			"doubleSided":true,
+			"extensions":{
+				"KHR_materials_specular":{
+					"specularColorFactor":[
+						0.4000000059604645,
+						0.4000000059604645,
+						0.4000000059604645
+					]
+				},
+				"KHR_materials_ior":{
+					"ior":1.4500000476837158
+				}
+			},
+			"name":"Acacica_Leaves_2_baked",
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":2
+				},
+				"metallicFactor":0,
+				"roughnessFactor":0.5
+			}
+		},
+		{
+			"alphaMode":"BLEND",
+			"doubleSided":true,
+			"extensions":{
+				"KHR_materials_specular":{
+					"specularColorFactor":[
+						0.4000000059604645,
+						0.4000000059604645,
+						0.4000000059604645
+					]
+				},
+				"KHR_materials_ior":{
+					"ior":1.4500000476837158
+				}
+			},
+			"name":"Acacica_Leaves_3_baked",
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":3
+				},
+				"metallicFactor":0,
+				"roughnessFactor":0.5
+			}
+		}
+	],
+	"meshes":[
+		{
+			"name":"Acacia_Dry_Green__Mature__Trunk_Mesh_0",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":0,
+						"NORMAL":1,
+						"TEXCOORD_0":2
+					},
+					"indices":3,
+					"material":0
+				},
+				{
+					"attributes":{
+						"POSITION":4,
+						"NORMAL":5,
+						"TEXCOORD_0":6
+					},
+					"indices":7,
+					"material":1
+				},
+				{
+					"attributes":{
+						"POSITION":8,
+						"NORMAL":9,
+						"TEXCOORD_0":10
+					},
+					"indices":11,
+					"material":2
+				},
+				{
+					"attributes":{
+						"POSITION":12,
+						"NORMAL":13,
+						"TEXCOORD_0":14
+					},
+					"indices":15,
+					"material":3
+				}
+			]
+		}
+	],
+	"textures":[
+		{
+			"sampler":0,
+			"source":0
+		},
+		{
+			"sampler":0,
+			"source":1
+		},
+		{
+			"sampler":0,
+			"source":2
+		},
+		{
+			"sampler":0,
+			"source":3
+		}
+	],
+	"images":[
+		{
+			"mimeType":"image/png",
+			"name":"Acacia_Dry_Green__Mature__Acacia_Trunk_baked_Color",
+			"uri":"Acacia_Dry_Green__Mature__Acacia_Trunk_baked_Color.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity",
+			"uri":"Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"Acacia_Dry_Green__Mature__Acacica_Leaves_2_baked_Color-Acacia_Dry_Green__Mature__Acacica_Leaves_2_baked_Opacity",
+			"uri":"Acacia_Dry_Green__Mature__Acacica_Leaves_2_baked_Color-Acacia_Dry_Green__Mature__Acacica_Leaves_2_baked_Opacity.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"Acacia_Dry_Green__Mature__Acacica_Leaves_3_baked_Color-Acacia_Dry_Green__Mature__Acacica_Leaves_3_baked_Opacity",
+			"uri":"Acacia_Dry_Green__Mature__Acacica_Leaves_3_baked_Color-Acacia_Dry_Green__Mature__Acacica_Leaves_3_baked_Opacity.png"
+		}
+	],
+	"accessors":[
+		{
+			"bufferView":0,
+			"componentType":5126,
+			"count":26995,
+			"max":[
+				2.981955051422119,
+				5.0904340744018555,
+				2.751579999923706
+			],
+			"min":[
+				-3.074697732925415,
+				0,
+				-3.0505943298339844
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":1,
+			"componentType":5126,
+			"count":26995,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":2,
+			"componentType":5126,
+			"count":26995,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":3,
+			"componentType":5123,
+			"count":93705,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":4,
+			"componentType":5126,
+			"count":1632,
+			"max":[
+				2.9360668659210205,
+				5.024202346801758,
+				3.0229244232177734
+			],
+			"min":[
+				-3.196723222732544,
+				2.7747409343719482,
+				-3.253612995147705
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":5,
+			"componentType":5126,
+			"count":1632,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":6,
+			"componentType":5126,
+			"count":1632,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":7,
+			"componentType":5123,
+			"count":2448,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":8,
+			"componentType":5126,
+			"count":1468,
+			"max":[
+				3.1907715797424316,
+				5.122502326965332,
+				2.57684326171875
+			],
+			"min":[
+				-3.221942663192749,
+				3.0258305072784424,
+				-3.3710620403289795
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":9,
+			"componentType":5126,
+			"count":1468,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":10,
+			"componentType":5126,
+			"count":1468,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":11,
+			"componentType":5123,
+			"count":2202,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":12,
+			"componentType":5126,
+			"count":1664,
+			"max":[
+				3.1382369995117188,
+				5.216423511505127,
+				2.9951839447021484
+			],
+			"min":[
+				-3.3526108264923096,
+				2.700573205947876,
+				-3.33866548538208
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":13,
+			"componentType":5126,
+			"count":1664,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":14,
+			"componentType":5126,
+			"count":1664,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":15,
+			"componentType":5123,
+			"count":2496,
+			"type":"SCALAR"
+		}
+	],
+	"bufferViews":[
+		{
+			"buffer":0,
+			"byteLength":323940,
+			"byteOffset":0,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":323940,
+			"byteOffset":323940,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":215960,
+			"byteOffset":647880,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":187410,
+			"byteOffset":863840,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":19584,
+			"byteOffset":1051252,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":19584,
+			"byteOffset":1070836,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":13056,
+			"byteOffset":1090420,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":4896,
+			"byteOffset":1103476,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":17616,
+			"byteOffset":1108372,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":17616,
+			"byteOffset":1125988,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":11744,
+			"byteOffset":1143604,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":4404,
+			"byteOffset":1155348,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":19968,
+			"byteOffset":1159752,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":19968,
+			"byteOffset":1179720,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":13312,
+			"byteOffset":1199688,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":4992,
+			"byteOffset":1213000,
+			"target":34963
+		}
+	],
+	"samplers":[
+		{
+			"magFilter":9729,
+			"minFilter":9987
+		}
+	],
+	"buffers":[
+		{
+			"byteLength":1217992,
+			"uri":"scene.bin"
+		}
+	]
 }
