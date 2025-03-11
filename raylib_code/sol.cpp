@@ -50,8 +50,8 @@ GridCell::GridCell(Vector3 pos, Model mod, bool act, bool occ, int temp, int hum
 
 //constructeur billboard
 //billboard(Vector3 pos, Texture2D mod, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size);
-billboard::billboard(Vector3 pos, Texture2D tex, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size)
-    : position(pos), texture(tex), active(act), occupee(occupee), temperature(temp), humidite(hum), pente(pen), source(source), billUp(billUp), size(size){
+billboard::billboard(Vector3 pos, Texture2D tex, Shader shad, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size)
+    : position(pos), texture(tex), shader(shad), active(act), occupee(occupee), temperature(temp), humidite(hum), pente(pen), source(source), billUp(billUp), size(size){
     // On initialise plante avec le constructeur par défaut
 }
 

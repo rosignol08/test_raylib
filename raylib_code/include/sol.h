@@ -64,6 +64,7 @@ class billboard {
 public:
     Vector3 position;
     Texture2D texture;
+    Shader shader; // Add shader to the billboard class
     bool active;
     bool occupee;
     int temperature;
@@ -75,7 +76,7 @@ public:
     Vector3 billUp;
     Vector2 size;
 
-    billboard(Vector3 pos, Texture2D tex, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size);
+    billboard(Vector3 pos, Texture2D tex, Shader shd, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size);
 };
 
 class SolHerbe {

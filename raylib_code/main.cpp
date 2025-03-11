@@ -329,7 +329,9 @@ int main(void) {
     //Lumière directionnelle
     // Load basic lighting shader
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
-    
+    //"billboard.vs", "billboard.fs"
+    Shader billboardShader = LoadShader("ressources/billboard.vs","ressources/billboard.fs");
+
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl120/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl120/shadowmap.fs", GLSL_VERSION));
 
@@ -347,6 +349,11 @@ int main(void) {
     int lightColLoc = GetShaderLocation(shadowShader, "lightColor");
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
+    
+    // Appliquer les valeurs initiales
+    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
+    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC3);
+
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
     float ambient[4] = {0.1f, 0.1f, 0.1f, 1.0f};
     SetShaderValue(shadowShader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
@@ -414,6 +421,11 @@ int main(void) {
     for (int i = 0; i < model_acacia.materialCount; i++)
     {
         model_acacia.materials[i].shader = shader;
+    }
+    model_mort.materials[0].shader = shader;
+    for (int i = 0; i < model_mort.materialCount; i++)
+    {
+        model_mort.materials[i].shader = shader;
     }
     
     model_sol.materials[0].shader = shader;
@@ -484,7 +496,8 @@ int main(void) {
     Vector3 billUp = { 0.0f, 1.0f, 0.0f };
     Vector2 size_bill = { source.width / source.height, 1.0f };
     //billboard model
-    billboard billboard_herbe = {position_bill, billboard_herbe_texture, active_bill, occupee_bill, temperature_bill, humidite_bill, pente_bill, source_bill, billUp, size_bill};
+    billboard billboard_herbe = {position_bill, billboard_herbe_texture, billboardShader, active_bill, occupee_bill, temperature_bill, humidite_bill, pente_bill, source_bill, billUp, size_bill};
+
 
     /*
     Vector3 position;
@@ -591,7 +604,7 @@ int main(void) {
             //posZ_bill -= 1;
             //printf("X : %f\n", posX_bill);
             //printf("Z : %f\n", posZ_bill);
-            printf("taille terrain x z: %f , %f\n", taille_terrain.x, taille_terrain.z);
+            //printf("taille terrain x z: %f , %f\n", taille_terrain.x, taille_terrain.z);
             //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f
             // Variables d'espacement pour les éléments
             float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
@@ -634,6 +647,7 @@ int main(void) {
             prairie[x][z].pente = tauxPente_bill;
             prairie[x][z].model.billUp = { 0.0f, 0.0f, 0.0f };
             prairie[x][z].model.size = { source_bill.width / source_bill.height, 0.0f };
+            prairie[x][z].model.shader = billboardShader;
         }
     }
             
@@ -854,6 +868,9 @@ int main(void) {
         BeginMode3D(camera);
         
         BeginShaderMode(shader);
+
+        BeginShaderMode(billboardShader);
+        //dessine les billboards
         /*
         // Ajoutez les données de shadow map
         int shadowMapSlot = 10;
@@ -931,25 +948,7 @@ int main(void) {
                     DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.10f, WHITE);
                     }
                 }
-            } //else if (viewMode == MODE_TEMPERATURE) {
-              //  for (int x = 0; x < NBHERBE; x++) {
-              //      for (int j = 0; j < NBHERBE; j++) {
-              //          Color tempColor = GetTemperatureColor(prairie[x][j].temperature, minTemp, maxTemp);
-              //          DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.1f, tempColor);
-              //          //if(Vector3Equals(prairie[x][j].position, praitie_Objets[i].position)){
-              //          //}
-              //      }
-              //  }
-            //} //else if (viewMode == MODE_HUMIDITE) {
-              //  for(int x = 0; x < NBHERBE; x++){
-              //      for(int j = 0; j < NBHERBE; j++){
-              //          if(Vector3Equals(prairie[x][j].position, praitie_Objets[i].position)){
-              //              Color humColor = GetHumidityColor(prairie[x][j].humidite, minHum, maxHum);
-              //              DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.1f, humColor);
-              //          }
-              //      }
-              //  }
-            //}
+            }
         }
         // Trier les objets par profondeur
         qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
@@ -1003,6 +1002,8 @@ int main(void) {
         UpdateLightValues(shader, directionalLight);
         
         EndShaderMode();
+
+        EndShaderMode();
         DrawGrid(20, 1.0f);
         EndMode3D();
         // Ajouter une légende pour le mode température
@@ -1043,6 +1044,9 @@ int main(void) {
         directionalLight.position = Vector3Scale(lightDirection, -1.0f); // Inverse la direction pour pointer vers la source
         directionalLight.target = Vector3Zero();
         directionalLight.color = GetSunColor(timeOfDay);
+        
+        //SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDirection, SHADER_UNIFORM_VEC3);
+
 
         // Affichage de l'heure
         DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
