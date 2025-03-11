@@ -9,6 +9,8 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 #include <stdlib.h>
 #include <stdio.h>//pour les printf
 #include <vector>
@@ -321,7 +323,7 @@ int main(void) {
     shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
 
     // cree la lumiere
-    Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ -1.0f, -1.0f, -1.0f }, WHITE, shader);
+    Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ 0.0f, 10.0f, 0.0f }, WHITE, shader);
     //pour l'ombre
     
     Vector3 lightDir = Vector3Normalize((Vector3){ 0.35f, -1.0f, -0.35f });
@@ -705,7 +707,9 @@ int main(void) {
         camera.position.y = distance_cam * sin(radAngleX);
         camera.position.z = distance_cam * cos(radAngleX) * cos(radAngleY);
 
-        DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
+        //DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
+        ShowCursor();//pour voir le curseur
+        
         //Lumière directionnelle
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
         float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
@@ -971,9 +975,8 @@ int main(void) {
                 }
             }
         }
-        //pour faire bouger la lumière
-        directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
-        directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
+        //directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
+        //directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
         //update la lumière
         UpdateLightValues(shader, directionalLight);
         
@@ -996,6 +999,13 @@ int main(void) {
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         DrawFPS(10, 40);
+
+        /*
+        l'ui pour controler les paramètres
+        */
+        //pour changer la direction de la lumiere
+        GuiSliderBar((Rectangle){ 100, 10, 200, 20 }, "Light direction X", NULL, &directionalLight.position.x, -5.0f, 5.0f);
+        GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
         
         EndDrawing();
     }
