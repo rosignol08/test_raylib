@@ -27,7 +27,7 @@
     #define GLSL_VERSION            100
 #endif
 #define GRID_SIZE 10
-#define NBHERBE 50
+#define NBHERBE 75
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 512 //la resolution de la shadowmap
 
@@ -577,7 +577,7 @@ int main(void) {
             posX_bill = x * espacementX - taille_terrain.x / 2;
             posZ_bill = z * espacementZ - taille_terrain.z / 2;
 
-            float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
+            float offsetX = random_flottant(-0.1f , 0.1f); // Décalage aléatoire pour X
             float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
             posX_bill += offsetX;
             posZ_bill += offsetZ;
