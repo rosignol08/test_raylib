@@ -563,9 +563,11 @@ int main(void) {
             float pente;
             */
             float posX_bill = (float) x - taille_terrain.x / 2; 
-            float posZ_bill = (float) z - (taille_terrain.y / 2);
-            printf("posX_bill : %f\n", posX_bill);
-            printf("posZ_bill : %f\n", posZ_bill);
+            float posZ_bill = (float) z - taille_terrain.z / 2;
+            //posZ_bill -= 1;
+            //printf("X : %f\n", posX_bill);
+            //printf("Z : %f\n", posZ_bill);
+            printf("taille terrain x z: %f , %f\n", taille_terrain.x, taille_terrain.z);
             //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f
             // Variables d'espacement pour les éléments
             float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
@@ -573,8 +575,7 @@ int main(void) {
 
             // Ajuster les positions avec l'espacement
             posX_bill = x * espacementX - taille_terrain.x / 2;
-            posZ_bill = z * espacementZ - taille_terrain.y / 2;
-            posZ_bill-1;
+            posZ_bill = z * espacementZ - taille_terrain.z / 2;
 
             float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
             float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
@@ -600,7 +601,7 @@ int main(void) {
             
             
 
-            prairie[x][z].position = (Vector3){ posX_bill, height_bill+0.05f, posZ_bill-1  };
+            prairie[x][z].position = (Vector3){ posX_bill, height_bill+0.05f, posZ_bill  };
             prairie[x][z].model = billboard_herbe;
             prairie[x][z].active = true;
             prairie[x][z].occupee = true;
