@@ -1,0 +1,9 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/romaric/Documents/prog_graphique/test_raylib/raylib_code",
+            "binaryPath": "/home/romaric/Documents/prog_graphique/test_raylib/raylib_code/main",
+            "binaryArgs": []
+        }
+    ]
+}

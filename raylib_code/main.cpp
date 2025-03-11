@@ -41,6 +41,20 @@ int viewMode = MODE_NORMAL;
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 
+float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
+const float pI = 3.14159265359f;
+
+// Ajoutez ce code pour changer la couleur de la lumière en fonction de l'heure
+Color GetSunColor(float timeOfDay) {
+    if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
+        return (Color){ 20, 20, 50, 255 }; // Nuit - bleu foncé
+    } else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
+        return (Color){ 255, 198, 108, 255 }; // Lever/Coucher - orange
+    } else {
+        return (Color){ 255, 255, 255, 255 }; // Journée - blanc
+    }
+}
+
 //les ombres
 //by @TheManTheMythTheGameDev
 RenderTexture2D LoadShadowmapRenderTexture(int width, int height);
@@ -322,7 +336,7 @@ int main(void) {
     // Configurez les locations du shader de l'ombre
     shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
 
-    // cree la lumiere
+    // cree la lumiere LIGHT_DIRECTIONAL ou LIGHT_POINT
     Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ 0.0f, 10.0f, 0.0f }, WHITE, shader);
     //pour l'ombre
     
@@ -384,15 +398,22 @@ int main(void) {
     Model cubeModel = LoadModelFromMesh(cubeMesh);
 
     cubeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-
+    //on applique la lumière sur toutes les plantes
     model_sapin.materials[0].shader = shader;
-
+    for (int i = 0; i < model_sapin.materialCount; i++)
+    {
+        model_sapin.materials[i].shader = shader;
+    }
     model_buisson_europe.materials[0].shader = shader;
+    for (int i = 0; i < model_buisson_europe.materialCount; i++)
+    {
+        model_buisson_europe.materials[i].shader = shader;
+    }
     
-    model_acacia.materials[0].shader = shadowShader;
+    model_acacia.materials[0].shader = shader;
     for (int i = 0; i < model_acacia.materialCount; i++)
     {
-        model_acacia.materials[i].shader = shadowShader;
+        model_acacia.materials[i].shader = shader;
     }
     
     model_sol.materials[0].shader = shader;
@@ -411,7 +432,8 @@ int main(void) {
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
     //La texture pour le billboard d'herbe
     Texture2D billboard_herbe_texture = LoadTexture("models/herbe/herbe.png");
-
+    //shader pour le billboard
+    
     // Création d'une plante
     /*
     string nom;
@@ -1003,10 +1025,29 @@ int main(void) {
         /*
         l'ui pour controler les paramètres
         */
-        //pour changer la direction de la lumiere
-        GuiSliderBar((Rectangle){ 100, 10, 200, 20 }, "Light direction X", NULL, &directionalLight.position.x, -5.0f, 5.0f);
-        GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
-        
+        // Pour changer la direction de la lumière
+        GuiSliderBar((Rectangle){ 100, 100, 200, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
+
+        // Calculez la direction du soleil en fonction de l'heure
+        float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
+
+        // Calculer la direction de la lumière (normalisée)
+        Vector3 lightDirection = {
+            cosf(sunAngle),           // X: Est-Ouest
+            -sinf(sunAngle),          // Y: Hauteur du soleil
+            0.0f                      // Z: Nord-Sud
+        };
+        lightDirection = Vector3Normalize(lightDirection);
+
+        // Mise à jour de la lumière directionnelle
+        directionalLight.position = Vector3Scale(lightDirection, -1.0f); // Inverse la direction pour pointer vers la source
+        directionalLight.target = Vector3Zero();
+        directionalLight.color = GetSunColor(timeOfDay);
+
+        // Affichage de l'heure
+        DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
+        //GuiSliderBar((Rectangle){ 100, 10, 200, 20 }, "Light direction X", NULL, &directionalLight.position.x, -5.0f, 5.0f);
+        //GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
         EndDrawing();
     }
     UnloadShader(shader);
