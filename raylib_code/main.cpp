@@ -1025,7 +1025,6 @@ int main(void) {
 void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
     int objectCount = 0;
-    int herbeCount = 0;
     // Ajouter le sol à la liste
     sceneObjects[objectCount].position = mapPosition;
     sceneObjects[objectCount].model = &model_sol;
