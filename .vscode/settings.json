@@ -4,5 +4,18 @@
         "stdlib.h": "c",
         "rlights.h": "c"
     },
-    "makefile.compileCommandsPath": "D:\\test_raylib\\raylib_code"
+    "makefile.compileCommandsPath": "D:\\test_raylib\\raylib_code",
+    "makefile.makefilePath": "/home/romaric/Documents/prog_graphique/test_raylib/raylib_code",
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/romaric/Documents/prog_graphique/test_raylib",
+            "binaryPath": "/home/romaric/Documents/prog_graphique/test_raylib/main",
+            "binaryArgs": []
+        },
+        {
+            "cwd": "/home/romaric/Documents/prog_graphique/test_raylib",
+            "binaryPath": "/home/romaric/Documents/prog_graphique/test_raylib/maine",
+            "binaryArgs": []
+        }
+    ]
 }

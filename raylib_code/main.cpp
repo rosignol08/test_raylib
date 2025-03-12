@@ -923,6 +923,7 @@ int main(void) {
             lightView = rlGetMatrixModelview();
             lightProj = rlGetMatrixProjection();
             dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition, herbe_mesh, herbe_material, position_instances_herbe);
+            DrawMeshInstanced(herbe_mesh, herbe_material, position_instances_herbe, NBHERBE*NBHERBE);
         EndMode3D();
         EndTextureMode();
         Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
@@ -938,6 +939,7 @@ int main(void) {
         rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
         BeginMode3D(camera);
             dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition, herbe_mesh, herbe_material, position_instances_herbe);
+            DrawMeshInstanced(herbe_mesh, herbe_material, position_instances_herbe, NBHERBE*NBHERBE);
         EndMode3D();
         BeginShaderMode(shader);
 
@@ -999,6 +1001,7 @@ int main(void) {
         //GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
         EndDrawing();
     }
+
     UnloadShader(shader);
     UnloadShader(shadowShader);
     UnloadShader(shader_taille);
@@ -1015,8 +1018,6 @@ int main(void) {
     UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
 
-
-
     CloseWindow();
 
     return 0;
@@ -1024,114 +1025,111 @@ int main(void) {
 
 void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition, Mesh herbe_mesh, Material herbe_material, const Matrix *transforms) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
-        SceneObject praitie_Objets[NBHERBE * NBHERBE + 1];
-        int objectCount = 0;
-        int herbeCount = 0;
-
-        // Ajouter le sol à la liste
-        sceneObjects[objectCount].position = mapPosition;
-        sceneObjects[objectCount].model = &model_sol;
-        sceneObjects[objectCount].depth = Vector3Distance(camera.position, mapPosition);
-        objectCount++;
-
-        // Ajouter les arbres à la liste
-        for (int x = 0; x < GRID_SIZE; x++) {
-            for (int z = 0; z < GRID_SIZE; z++) {
-                if (grille[x][z].active) {
-                    sceneObjects[objectCount].position = grille[x][z].position;
-                    sceneObjects[objectCount].model = &grille[x][z].plante.model;
-                    float scale = grille[x][z].plante.taille;
-                    sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
-                    sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
-                    objectCount++;
+    SceneObject praitie_Objets[NBHERBE * NBHERBE + 1];
+    int objectCount = 0;
+    int herbeCount = 0;
+    // Ajouter le sol à la liste
+    sceneObjects[objectCount].position = mapPosition;
+    sceneObjects[objectCount].model = &model_sol;
+    sceneObjects[objectCount].depth = Vector3Distance(camera.position, mapPosition);
+    objectCount++;
+    // Ajouter les arbres à la liste
+    for (int x = 0; x < GRID_SIZE; x++) {
+        for (int z = 0; z < GRID_SIZE; z++) {
+            if (grille[x][z].active) {
+                sceneObjects[objectCount].position = grille[x][z].position;
+                sceneObjects[objectCount].model = &grille[x][z].plante.model;
+                float scale = grille[x][z].plante.taille;
+                sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
+                sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
+                objectCount++;
+            }
+        }
+    }
+    DrawMeshInstanced(herbe_mesh, herbe_material, transforms, NBHERBE * NBHERBE);
+    //for (int x = 0; x < NBHERBE; x++) {
+    //    for (int z = 0; z < NBHERBE; z++) {
+    //        if (prairie[x][z].active){
+    //            // Ajouter les herbes de l'objet prairie
+    //            praitie_Objets[herbeCount].position = prairie[x][z].position;
+    //            praitie_Objets[herbeCount].model_billboard = &prairie[x][z].model;
+    //            //float scale = 0.10f;
+    //            //praitie_Objets[herbeCount].model_billboard->size = { prairie[x][z].model.source.width / prairie[x][z].model.source.height * scale, scale };
+    //            praitie_Objets[herbeCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
+    //            herbeCount++;
+    //        }
+    //    }
+    //}
+    // Trouver les températures min et max
+    minTemp = 100;
+    maxTemp = 0;
+    for (int x = 0; x < GRID_SIZE; x++) {
+        for (int z = 0; z < GRID_SIZE; z++) {
+            if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
+            if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+            // Update minHum and maxHum
+            if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
+            if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+        }
+    }
+    //dessin de l'herbe
+    //DrawBillboard(camera, billboard_herbe_texture, praitie_Objets[i].model_billboard->position, 2.0f, WHITE);
+    qsort(praitie_Objets, herbeCount, sizeof(SceneObject), CompareSceneObjects);
+    for (int i = 0; i < herbeCount; i++) {
+        if(viewMode == MODE_NORMAL){
+            if (praitie_Objets[i].model_billboard == nullptr) {
+                //printf("son pointeur est : %p\n", praitie_Objets[i].model_billboard);
+            }else{
+                if(praitie_Objets[i].model_billboard->active){
+                DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.10f, WHITE);
                 }
             }
         }
-        DrawMeshInstanced(herbe_mesh, herbe_material, transforms, NBHERBE * NBHERBE);
-        //for (int x = 0; x < NBHERBE; x++) {
-        //    for (int z = 0; z < NBHERBE; z++) {
-        //        if (prairie[x][z].active){
-        //            // Ajouter les herbes de l'objet prairie
-        //            praitie_Objets[herbeCount].position = prairie[x][z].position;
-        //            praitie_Objets[herbeCount].model_billboard = &prairie[x][z].model;
-        //            //float scale = 0.10f;
-        //            //praitie_Objets[herbeCount].model_billboard->size = { prairie[x][z].model.source.width / prairie[x][z].model.source.height * scale, scale };
-        //            praitie_Objets[herbeCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
-        //            herbeCount++;
-        //        }
-        //    }
-        //}
-
-        // Trouver les températures min et max
-        minTemp = 100;
-        maxTemp = 0;
-        for (int x = 0; x < GRID_SIZE; x++) {
-            for (int z = 0; z < GRID_SIZE; z++) {
-                if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
-                if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
-                // Update minHum and maxHum
-                if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
-                if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+    }
+    // Trier les objets par profondeur
+    qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
+    // Dessiner les objets dans l'ordre trié
+    for (int i = 0; i < objectCount; i++) {
+        if (viewMode == MODE_NORMAL) {
+            if (sceneObjects[i].model == &model_sol) {
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+            } else {
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
+                //DrawModel(*praitie_Objets[i].model, praitie_Objets[i].position, 1.0f, WHITE);
+                
             }
-        }
-        //dessin de l'herbe
-        //DrawBillboard(camera, billboard_herbe_texture, praitie_Objets[i].model_billboard->position, 2.0f, WHITE);
-        qsort(praitie_Objets, herbeCount, sizeof(SceneObject), CompareSceneObjects);
-        for (int i = 0; i < herbeCount; i++) {
-            if(viewMode == MODE_NORMAL){
-                if (praitie_Objets[i].model_billboard == nullptr) {
-                    //printf("son pointeur est : %p\n", praitie_Objets[i].model_billboard);
-                }else{
-                    if(praitie_Objets[i].model_billboard->active){
-                    DrawBillboard(camera, praitie_Objets[i].model_billboard->texture, praitie_Objets[i].position, 0.10f, WHITE);
-                    }
-                }
-            }
-        }
-        // Trier les objets par profondeur
-        qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
-        // Dessiner les objets dans l'ordre trié
-        for (int i = 0; i < objectCount; i++) {
-            if (viewMode == MODE_NORMAL) {
-                if (sceneObjects[i].model == &model_sol) {
-                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-                } else {
-                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);
-                    //DrawModel(*praitie_Objets[i].model, praitie_Objets[i].position, 1.0f, WHITE);
-                    
-                }
-            }  else if (viewMode == MODE_TEMPERATURE) {
-                if (sceneObjects[i].model == &model_sol) {
-                    // Le sol utilise déjà la texture de température
-                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-                } else {
-                    // Pour les autres objets, utilisez la couleur de température
-                    for (int x = 0; x < GRID_SIZE; x++) {
-                        for (int z = 0; z < GRID_SIZE; z++) {
-                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                                Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
-                                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, tempColor);
-                                break;
-                            }
+        }  else if (viewMode == MODE_TEMPERATURE) {
+            if (sceneObjects[i].model == &model_sol) {
+                // Le sol utilise déjà la texture de température
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+            } else {
+                // Pour les autres objets, utilisez la couleur de température
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                            Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
+                            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, tempColor);
+                            break;
                         }
                     }
                 }
-            } else if(viewMode == MODE_HUMIDITE){
-                if (sceneObjects[i].model == &model_sol) {
-                    // Le sol utilise déjà la texture d'humidite
-                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-                } else {
-                    // Pour les autres objets, utilisez la couleur de l'humiité
-                    for (int x = 0; x < GRID_SIZE; x++) {
-                        for (int z = 0; z < GRID_SIZE; z++) {
-                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                                Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
-                                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, humColor);
-                                break;
-                            }
+            }
+        } else if(viewMode == MODE_HUMIDITE){
+            if (sceneObjects[i].model == &model_sol) {
+                // Le sol utilise déjà la texture d'humidite
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+            } else {
+                // Pour les autres objets, utilisez la couleur de l'humiité
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                            Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
+                            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, humColor);
+                            break;
                         }
                     }
                 }
             }
         }
+    }
 }
