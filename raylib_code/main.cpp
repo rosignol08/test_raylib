@@ -26,7 +26,7 @@
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION            330
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
-    #define GLSL_VERSION            100
+    #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 #define GRID_SIZE 10
 #define NBHERBE 75
@@ -104,6 +104,10 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
         rlUnloadFramebuffer(target.id);
     }
 }
+
+//pour dessiner la scene 
+void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition);
+
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
     cellule->temperature = rand() % 100; // Assign a random temperature between 0 and 99
@@ -302,7 +306,7 @@ int main(void) {
     const int screenHeight = 720;//1080;
     SetConfigFlags(FLAG_MSAA_4X_HINT); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
-    InitWindow(screenWidth, screenHeight, "raylib - Grille avec objets 3D");
+    InitWindow(screenWidth, screenHeight, "raylib - Projet tutore");
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
     /*
     rlEnableDepthTest();
@@ -330,10 +334,10 @@ int main(void) {
     // Load basic lighting shader
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     //"billboard.vs", "billboard.fs"
-    Shader billboardShader = LoadShader("ressources/billboard.vs","ressources/billboard.fs");
+    Shader billboardShader = LoadShader(TextFormat("ressources/custom_shader/glsl%i/billboard.vs",GLSL_VERSION),TextFormat("ressources/custom_shader/glsl%i/billboard.fs",GLSL_VERSION));
 
     //les ombres
-    Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl120/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl120/shadowmap.fs", GLSL_VERSION));
+    Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
 
     // Configurez les locations du shader de l'ombre
     shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
@@ -350,10 +354,6 @@ int main(void) {
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
     
-    // Appliquer les valeurs initiales
-    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
-    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC3);
-
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
     float ambient[4] = {0.1f, 0.1f, 0.1f, 1.0f};
     SetShaderValue(shadowShader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
@@ -362,6 +362,10 @@ int main(void) {
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     
+    // Appliquer les valeurs initiales
+    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
+    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC3);
+
     //test sol
     Image image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)
     //Texture2D texture_sol = LoadTextureFromImage(image_sol);        // Convert image to texture (VRAM)
@@ -406,29 +410,29 @@ int main(void) {
 
     cubeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     //on applique la lumière sur toutes les plantes
-    model_sapin.materials[0].shader = shader;
+    model_sapin.materials[0].shader = shadowShader;
     for (int i = 0; i < model_sapin.materialCount; i++)
     {
-        model_sapin.materials[i].shader = shader;
+        model_sapin.materials[i].shader = shadowShader;
     }
-    model_buisson_europe.materials[0].shader = shader;
+    model_buisson_europe.materials[0].shader = shadowShader;
     for (int i = 0; i < model_buisson_europe.materialCount; i++)
     {
-        model_buisson_europe.materials[i].shader = shader;
+        model_buisson_europe.materials[i].shader = shadowShader;
     }
     
-    model_acacia.materials[0].shader = shader;
+    model_acacia.materials[0].shader = shadowShader;
     for (int i = 0; i < model_acacia.materialCount; i++)
     {
-        model_acacia.materials[i].shader = shader;
+        model_acacia.materials[i].shader = shadowShader;
     }
-    model_mort.materials[0].shader = shader;
+    model_mort.materials[0].shader = shadowShader;
     for (int i = 0; i < model_mort.materialCount; i++)
     {
-        model_mort.materials[i].shader = shader;
+        model_mort.materials[i].shader = shadowShader;
     }
     
-    model_sol.materials[0].shader = shader;
+    model_sol.materials[0].shader = shadowShader;
     
     model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
@@ -442,6 +446,15 @@ int main(void) {
     emptyModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLANK; // Set the color to blank
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
+    
+    //la light camera
+    Camera3D lightCam = { 0 };
+    lightCam.position = Vector3Scale(lightDir, -15.0f);
+    lightCam.target = Vector3Zero();
+    lightCam.projection = CAMERA_ORTHOGRAPHIC;
+    lightCam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+    lightCam.fovy = 20.0f;
+
     //La texture pour le billboard d'herbe
     Texture2D billboard_herbe_texture = LoadTexture("models/herbe/herbe.png");
     //shader pour le billboard
@@ -650,27 +663,18 @@ int main(void) {
             prairie[x][z].model.shader = billboardShader;
         }
     }
-            
-
-    //on collecte les objets
-
+    
     
     DisableCursor();// Limit cursor to relative movement inside the window
-    
-    // For the shadowmapping algorithm, we will be rendering everything from the light's point of view
-    Camera3D lightCam = (Camera3D){ 0 };
-    lightCam.position = Vector3Scale(lightDir, -15.0f);
-    lightCam.target = Vector3Zero();
-
-    // Use an orthographic projection for directional lights
-    lightCam.projection = CAMERA_ORTHOGRAPHIC;
-    lightCam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
-    lightCam.fovy = 20.0f;
 
     SetTargetFPS(165);
 
     // Boucle principale
     while (!WindowShouldClose()) {
+
+        // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
+        Vector3 cameraPos = camera.position;
+        SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
         
         //pour la temperature
         if (IsKeyPressed(KEY_T)) {
@@ -747,9 +751,6 @@ int main(void) {
         ShowCursor();//pour voir le curseur
         
         //Lumière directionnelle
-        // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
-        float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
-        SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
         // Parcours de toute la grille pour mettre à jour les températures
         //for (int x = 0; x < GRID_SIZE; x++) {
         //    for (int z = 0; z < GRID_SIZE; z++) {
@@ -861,12 +862,39 @@ int main(void) {
                 model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
             }
         }
+
+        lightDir = Vector3Normalize(lightDir);
+        lightCam.position = Vector3Scale(lightDir, -15.0f);
+        SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+
         // Rendu final (vue normale)
         BeginDrawing();
+
+        Matrix lightView;
+        Matrix lightProj;
+        BeginTextureMode(shadowMap);
         ClearBackground(SKYBLUE);
 
+        BeginMode3D(lightCam);
+            lightView = rlGetMatrixModelview();
+            lightProj = rlGetMatrixProjection();
+            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+        EndMode3D();
+        EndTextureMode();
+        Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
+
+        ClearBackground(SKYBLUE);
+
+        SetShaderValueMatrix(shadowShader, lightVPLoc, lightViewProj);
+
+        rlEnableShader(shadowShader.id);
+        int slot = 10;
+        rlActiveTextureSlot(10);
+        rlEnableTexture(shadowMap.depth.id);
+        rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
         BeginMode3D(camera);
-        
+            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+        EndMode3D();
         BeginShaderMode(shader);
 
         BeginShaderMode(billboardShader);
@@ -886,7 +914,90 @@ int main(void) {
         */
         
         //DrawModel(model_sol, mapPosition, 0.50f, MAROON);
-        SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
+        
+        //directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
+        //directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
+        //update la lumière
+        //UpdateLightValues(shader, directionalLight);
+        
+        EndShaderMode();
+
+        EndShaderMode();
+        DrawGrid(20, 1.0f);
+        EndMode3D();
+        // Ajouter une légende pour le mode température
+        if (viewMode == MODE_TEMPERATURE) {
+            DrawText("Mode température - Appuyez sur T pour revenir", 10, 60, 20, BLACK);
+            // Optionnel : afficher une échelle de température
+            DrawText(TextFormat("Min: %d°C", minTemp), 10, 80, 20, BLUE);
+            DrawText(TextFormat("Max: %d°C", maxTemp), 10, 100, 20, RED);
+        }
+        if (viewMode == MODE_HUMIDITE) {
+            DrawText("Mode humidite - Appuyez sur Y pour revenir", 10, 60, 20, BLACK);
+            // Optionnel : afficher une échelle de température
+            DrawText(TextFormat("Min: %d", minHum), 10, 80, 20, BLUE);
+            DrawText(TextFormat("Max: %d", maxHum), 10, 100, 20, RED);
+        }
+        DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
+        DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
+        DrawFPS(10, 40);
+
+        /*
+        l'ui pour controler les paramètres
+        */
+        // Pour changer la direction de la lumière
+        GuiSliderBar((Rectangle){ 100, 100, 200, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
+
+        // Calculez la direction du soleil en fonction de l'heure
+        float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
+
+        // Calculer la direction de la lumière (normalisée)
+        Vector3 lightDirection = {
+            cosf(sunAngle),           // X: Est-Ouest
+            -sinf(sunAngle),          // Y: Hauteur du soleil
+            0.0f                      // Z: Nord-Sud
+        };
+        lightDirection = Vector3Normalize(lightDirection);
+
+        // Mise à jour de la lumière directionnelle
+        directionalLight.position = Vector3Scale(lightDirection, -1.0f); // Inverse la direction pour pointer vers la source
+        directionalLight.target = Vector3Zero();
+        directionalLight.color = GetSunColor(timeOfDay);
+        
+        //SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDirection, SHADER_UNIFORM_VEC3);
+
+
+        // Affichage de l'heure
+        DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
+        //GuiSliderBar((Rectangle){ 100, 10, 200, 20 }, "Light direction X", NULL, &directionalLight.position.x, -5.0f, 5.0f);
+        //GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
+        EndDrawing();
+    }
+    UnloadShader(shader);
+    UnloadShader(shadowShader);
+    UnloadShader(shader_taille);
+    // Désallocation des ressources
+    UnloadModel(model_mort);
+    UnloadModel(model_sapin);
+    //UnloadTexture(texture_sapin);
+    UnloadModel(model_buisson_europe);
+    UnloadTexture(texture_buisson_europe);
+    UnloadModel(model_acacia);
+    UnloadTexture(texture_acacia);
+    UnloadModel(model_sol);
+    UnloadTexture(texture_sol);
+    UnloadTexture(temperatureTexture);
+    UnloadShadowmapRenderTexture(shadowMap);
+
+
+
+    CloseWindow();
+
+    return 0;
+}
+
+void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition){
+    SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
         SceneObject praitie_Objets[NBHERBE * NBHERBE + 1];
         int objectCount = 0;
         int herbeCount = 0;
@@ -996,84 +1107,4 @@ int main(void) {
                 }
             }
         }
-        //directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
-        //directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
-        //update la lumière
-        UpdateLightValues(shader, directionalLight);
-        
-        EndShaderMode();
-
-        EndShaderMode();
-        DrawGrid(20, 1.0f);
-        EndMode3D();
-        // Ajouter une légende pour le mode température
-        if (viewMode == MODE_TEMPERATURE) {
-            DrawText("Mode température - Appuyez sur T pour revenir", 10, 60, 20, BLACK);
-            // Optionnel : afficher une échelle de température
-            DrawText(TextFormat("Min: %d°C", minTemp), 10, 80, 20, BLUE);
-            DrawText(TextFormat("Max: %d°C", maxTemp), 10, 100, 20, RED);
-        }
-        if (viewMode == MODE_HUMIDITE) {
-            DrawText("Mode humidite - Appuyez sur Y pour revenir", 10, 60, 20, BLACK);
-            // Optionnel : afficher une échelle de température
-            DrawText(TextFormat("Min: %d", minHum), 10, 80, 20, BLUE);
-            DrawText(TextFormat("Max: %d", maxHum), 10, 100, 20, RED);
-        }
-        DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
-        DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
-        DrawFPS(10, 40);
-
-        /*
-        l'ui pour controler les paramètres
-        */
-        // Pour changer la direction de la lumière
-        GuiSliderBar((Rectangle){ 100, 100, 200, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
-
-        // Calculez la direction du soleil en fonction de l'heure
-        float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
-
-        // Calculer la direction de la lumière (normalisée)
-        Vector3 lightDirection = {
-            cosf(sunAngle),           // X: Est-Ouest
-            -sinf(sunAngle),          // Y: Hauteur du soleil
-            0.0f                      // Z: Nord-Sud
-        };
-        lightDirection = Vector3Normalize(lightDirection);
-
-        // Mise à jour de la lumière directionnelle
-        directionalLight.position = Vector3Scale(lightDirection, -1.0f); // Inverse la direction pour pointer vers la source
-        directionalLight.target = Vector3Zero();
-        directionalLight.color = GetSunColor(timeOfDay);
-        
-        //SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDirection, SHADER_UNIFORM_VEC3);
-
-
-        // Affichage de l'heure
-        DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
-        //GuiSliderBar((Rectangle){ 100, 10, 200, 20 }, "Light direction X", NULL, &directionalLight.position.x, -5.0f, 5.0f);
-        //GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
-        EndDrawing();
-    }
-    UnloadShader(shader);
-    UnloadShader(shadowShader);
-    UnloadShader(shader_taille);
-    // Désallocation des ressources
-    UnloadModel(model_mort);
-    UnloadModel(model_sapin);
-    //UnloadTexture(texture_sapin);
-    UnloadModel(model_buisson_europe);
-    UnloadTexture(texture_buisson_europe);
-    UnloadModel(model_acacia);
-    UnloadTexture(texture_acacia);
-    UnloadShader(shader);   // Unload shader
-    UnloadModel(model_sol);
-    UnloadTexture(texture_sol);
-    UnloadTexture(temperatureTexture);
-    UnloadShadowmapRenderTexture(shadowMap);
-
-
-
-    CloseWindow();
-
-    return 0;
 }
