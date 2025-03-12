@@ -29,7 +29,7 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 #define GRID_SIZE 10
-#define NBHERBE 75
+#define NBHERBE 10
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
@@ -106,7 +106,7 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
 }
 
 //pour dessiner la scene 
-void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition);
+void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition, Mesh herbe_mesh, Material herbe_material, const Matrix *transforms);
 
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
@@ -402,6 +402,11 @@ int main(void) {
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
 
     Model model_herbe = LoadModel("models/herbe/untitled.glb");
+    
+    //pour l'herbe du sol
+    Model model_herbe_instance = LoadModel("models/herbe/multi_herbe/her.glb");
+    //ou pour dessiner         void DrawCylinder(Vector3 position, float radiusTop, float radiusBottom, float height, int slices, Color color); // Draw a cylinder/cone
+    Mesh herbe_mesh = GenMeshCone(5.5f, 2.0f, 6);
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
     Texture2D texture_acacia = LoadTexture("models/acacia/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
@@ -432,6 +437,22 @@ int main(void) {
         model_mort.materials[i].shader = shadowShader;
     }
     
+    model_herbe.materials[0].shader = shadowShader;
+    for (int i = 0; i < model_herbe.materialCount; i++)
+    {
+        model_herbe.materials[i].shader = shadowShader;
+    }
+    model_herbe_instance.materials[0].shader = shadowShader;
+    for (int i = 0; i < model_herbe_instance.materialCount; i++)
+    {
+        model_herbe_instance.materials[i].shader = shadowShader;
+    }
+
+    Material herbe_material = LoadMaterialDefault();
+    herbe_material.shader = shadowShader;
+    herbe_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE; //TODO change en vert
+
+
     model_sol.materials[0].shader = shadowShader;
     
     model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
@@ -599,6 +620,8 @@ int main(void) {
 
         }
     }
+    //c'est pour stocker les positions des plantes
+    Matrix *position_instances_herbe = (Matrix *)RL_CALLOC(NBHERBE*NBHERBE, sizeof(Matrix));   // Pre-multiplied transformations passed to rlgl
     for (int x = 0; x < NBHERBE; x++) {
         for (int z = 0; z < NBHERBE; z++) {
             
@@ -649,18 +672,23 @@ int main(void) {
             float penteZ_bill = (deltaUp_bill + deltaDown_bill) / 2.0f;
             float tauxPente_bill = sqrt(penteX_bill * penteX_bill + penteZ_bill * penteZ_bill);
             
-            
+            position_instances_herbe [x * NBHERBE + z] = MatrixTranslate(posX_bill*2.0f, height_bill*2.0f, posZ_bill*2.0f);
+            printf("Matrix for instance %d: \n", x * NBHERBE + z);
+            printf("[ %f, %f, %f, %f ]\n", position_instances_herbe[x * NBHERBE + z].m0, position_instances_herbe[x * NBHERBE + z].m1, position_instances_herbe[x * NBHERBE + z].m2, position_instances_herbe[x * NBHERBE + z].m3);
+            printf("[ %f, %f, %f, %f ]\n", position_instances_herbe[x * NBHERBE + z].m4, position_instances_herbe[x * NBHERBE + z].m5, position_instances_herbe[x * NBHERBE + z].m6, position_instances_herbe[x * NBHERBE + z].m7);
+            printf("[ %f, %f, %f, %f ]\n", position_instances_herbe[x * NBHERBE + z].m8, position_instances_herbe[x * NBHERBE + z].m9, position_instances_herbe[x * NBHERBE + z].m10, position_instances_herbe[x * NBHERBE + z].m11);
+            printf("[ %f, %f, %f, %f ]\n", position_instances_herbe[x * NBHERBE + z].m12, position_instances_herbe[x * NBHERBE + z].m13, position_instances_herbe[x * NBHERBE + z].m14, position_instances_herbe[x * NBHERBE + z].m15);
 
-            prairie[x][z].position = (Vector3){ posX_bill, height_bill+0.05f, posZ_bill  };
-            prairie[x][z].model = billboard_herbe;
-            prairie[x][z].active = true;
-            prairie[x][z].occupee = true;
-            prairie[x][z].temperature = temperature_moyenne / (GRID_SIZE * GRID_SIZE);
-            prairie[x][z].humidite = humidite_moyenne / (GRID_SIZE * GRID_SIZE);
-            prairie[x][z].pente = tauxPente_bill;
-            prairie[x][z].model.billUp = { 0.0f, 0.0f, 0.0f };
-            prairie[x][z].model.size = { source_bill.width / source_bill.height, 0.0f };
-            prairie[x][z].model.shader = billboardShader;
+            //prairie[x][z].position = (Vector3){ posX_bill, height_bill+0.05f, posZ_bill  };
+            //prairie[x][z].model = billboard_herbe;
+            //prairie[x][z].active = true;
+            //prairie[x][z].occupee = true;
+            //prairie[x][z].temperature = temperature_moyenne / (GRID_SIZE * GRID_SIZE);
+            //prairie[x][z].humidite = humidite_moyenne / (GRID_SIZE * GRID_SIZE);
+            //prairie[x][z].pente = tauxPente_bill;
+            //prairie[x][z].model.billUp = { 0.0f, 0.0f, 0.0f };
+            //prairie[x][z].model.size = { source_bill.width / source_bill.height, 0.0f };
+            //prairie[x][z].model.shader = billboardShader;
         }
     }
     
@@ -894,7 +922,7 @@ int main(void) {
         BeginMode3D(lightCam);
             lightView = rlGetMatrixModelview();
             lightProj = rlGetMatrixProjection();
-            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition, herbe_mesh, herbe_material, position_instances_herbe);
         EndMode3D();
         EndTextureMode();
         Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
@@ -909,7 +937,7 @@ int main(void) {
         rlEnableTexture(shadowMap.depth.id);
         rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
         BeginMode3D(camera);
-            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition, herbe_mesh, herbe_material, position_instances_herbe);
         EndMode3D();
         BeginShaderMode(shader);
 
@@ -994,7 +1022,7 @@ int main(void) {
     return 0;
 }
 
-void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition){
+void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition, Mesh herbe_mesh, Material herbe_material, const Matrix *transforms) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
         SceneObject praitie_Objets[NBHERBE * NBHERBE + 1];
         int objectCount = 0;
@@ -1019,6 +1047,7 @@ void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, M
                 }
             }
         }
+        DrawMeshInstanced(herbe_mesh, herbe_material, transforms, NBHERBE * NBHERBE);
         //for (int x = 0; x < NBHERBE; x++) {
         //    for (int z = 0; z < NBHERBE; z++) {
         //        if (prairie[x][z].active){
