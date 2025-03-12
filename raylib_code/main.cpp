@@ -31,7 +31,7 @@
 #define GRID_SIZE 10
 #define NBHERBE 75
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
-#define SHADOWMAP_RESOLUTION 512 //la resolution de la shadowmap
+#define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
@@ -863,8 +863,24 @@ int main(void) {
             }
         }
 
+        //lightDir = Vector3Normalize(lightDir);
+        //lightCam.position = Vector3Scale(lightDir, -15.0f);
+        // Calculez la direction du soleil en fonction de l'heure
+        float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
+
+        // Calculer la direction de la lumière (normalisée)
+        Vector3 lightDir = {
+            cosf(sunAngle),           // X: Est-Ouest
+            -sinf(sunAngle),          // Y: Hauteur du soleil
+            0.0f                      // Z: Nord-Sud
+        };
         lightDir = Vector3Normalize(lightDir);
-        lightCam.position = Vector3Scale(lightDir, -15.0f);
+
+        // Mise à jour de la lumière directionnelle
+        directionalLight.position = Vector3Scale(lightDir, -1.0f); // Inverse la direction pour pointer vers la source
+        directionalLight.target = Vector3Zero();
+        directionalLight.color = GetSunColor(timeOfDay);
+        
         SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
 
         // Rendu final (vue normale)
@@ -897,7 +913,7 @@ int main(void) {
         EndMode3D();
         BeginShaderMode(shader);
 
-        BeginShaderMode(billboardShader);
+        
         //dessine les billboards
         /*
         // Ajoutez les données de shadow map
@@ -918,9 +934,7 @@ int main(void) {
         //directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
         //directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
         //update la lumière
-        //UpdateLightValues(shader, directionalLight);
-        
-        EndShaderMode();
+        UpdateLightValues(shader, directionalLight);
 
         EndShaderMode();
         DrawGrid(20, 1.0f);
@@ -948,22 +962,6 @@ int main(void) {
         // Pour changer la direction de la lumière
         GuiSliderBar((Rectangle){ 100, 100, 200, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
 
-        // Calculez la direction du soleil en fonction de l'heure
-        float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
-
-        // Calculer la direction de la lumière (normalisée)
-        Vector3 lightDirection = {
-            cosf(sunAngle),           // X: Est-Ouest
-            -sinf(sunAngle),          // Y: Hauteur du soleil
-            0.0f                      // Z: Nord-Sud
-        };
-        lightDirection = Vector3Normalize(lightDirection);
-
-        // Mise à jour de la lumière directionnelle
-        directionalLight.position = Vector3Scale(lightDirection, -1.0f); // Inverse la direction pour pointer vers la source
-        directionalLight.target = Vector3Zero();
-        directionalLight.color = GetSunColor(timeOfDay);
-        
         //SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDirection, SHADER_UNIFORM_VEC3);
 
 
@@ -1021,19 +1019,19 @@ void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, M
                 }
             }
         }
-        for (int x = 0; x < NBHERBE; x++) {
-            for (int z = 0; z < NBHERBE; z++) {
-                if (prairie[x][z].active){
-                    // Ajouter les herbes de l'objet prairie
-                    praitie_Objets[herbeCount].position = prairie[x][z].position;
-                    praitie_Objets[herbeCount].model_billboard = &prairie[x][z].model;
-                    //float scale = 0.10f;
-                    //praitie_Objets[herbeCount].model_billboard->size = { prairie[x][z].model.source.width / prairie[x][z].model.source.height * scale, scale };
-                    praitie_Objets[herbeCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
-                    herbeCount++;
-                }
-            }
-        }
+        //for (int x = 0; x < NBHERBE; x++) {
+        //    for (int z = 0; z < NBHERBE; z++) {
+        //        if (prairie[x][z].active){
+        //            // Ajouter les herbes de l'objet prairie
+        //            praitie_Objets[herbeCount].position = prairie[x][z].position;
+        //            praitie_Objets[herbeCount].model_billboard = &prairie[x][z].model;
+        //            //float scale = 0.10f;
+        //            //praitie_Objets[herbeCount].model_billboard->size = { prairie[x][z].model.source.width / prairie[x][z].model.source.height * scale, scale };
+        //            praitie_Objets[herbeCount].depth = Vector3Distance(camera.position, prairie[x][z].position);
+        //            herbeCount++;
+        //        }
+        //    }
+        //}
 
         // Trouver les températures min et max
         minTemp = 100;
