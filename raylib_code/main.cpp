@@ -29,7 +29,7 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 #define GRID_SIZE 10
-#define NBHERBE 10
+#define NBHERBE 100
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 4096 //la resolution de la shadowmap
 
@@ -409,7 +409,7 @@ int main(void) {
     Model model_herbe = LoadModel("models/herbe/untitled.glb");
     
     //pour l'herbe du sol
-    Model model_herbe_instance = LoadModel("models/herbe/multi_herbe/grass_green.glb");
+    Model model_herbe_instance = LoadModel("models/herbe/multi_herbe/her.glb");
     model_herbe_instance.materials[0].shader = shadowShader;
     //ou pour dessiner         void DrawCylinder(Vector3 position, float radiusTop, float radiusBottom, float height, int slices, Color color); // Draw a cylinder/cone
     Mesh herbe_mesh = GenMeshCube(16.0f, 16.0f, 16.0f);
@@ -909,7 +909,7 @@ int main(void) {
             
             //DrawMeshInstanced(herbe_mesh, herbe_material, position_instances_herbe, NBHERBE*NBHERBE);
             for (int i = 0; i < herbeCount ; i++){
-                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.001f,WHITE);
+                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.1f,WHITE);
             }
         EndMode3D();
         EndTextureMode();
@@ -933,7 +933,7 @@ int main(void) {
             //    DrawTriangle3D(herbeTriangles[i].v1, herbeTriangles[i].v2, herbeTriangles[i].v3, GREEN);
             //}
             for (int i = 0; i < herbeCount ; i++){
-                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.001f,WHITE);
+                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.1f,WHITE);
             }
 
 
