@@ -29,9 +29,9 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 #define GRID_SIZE 10
-#define NBHERBE 50
+#define NBHERBE 25
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
-#define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
+#define SHADOWMAP_RESOLUTION 4096 //la resolution de la shadowmap
 
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
@@ -44,14 +44,58 @@ const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
 const float pI = 3.14159265359f;
 
-// Ajoutez ce code pour changer la couleur de la lumière en fonction de l'heure
 Color GetSunColor(float timeOfDay) {
-    if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
-        return (Color){ 20, 20, 50, 255 }; // Nuit - bleu foncé
-    } else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
-        return (Color){ 255, 198, 108, 255 }; // Lever/Coucher - orange
+    if (timeOfDay < 6.0f || timeOfDay >= 20.0f) {
+        return (Color){ 10, 10, 30, 255 }; // Nuit profonde - bleu très foncé
+    } else if (timeOfDay < 7.0f) {
+        float t = (timeOfDay - 6.0f); // Transition de 6h à 7h
+        return (Color){
+            (unsigned char)(255 * t),        // Rouge augmente
+            (unsigned char)(165 * t),  // Vert augmente255,165,0
+            (unsigned char)(10 * t),   // Bleu diminue
+            255
+        }; // Lever du soleil - transition du bleu foncé au rose
+    } else if (timeOfDay < 8.0f) {
+        float t = (timeOfDay - 7.0f); // Transition de 7h à 8h
+        return (Color){
+            255,                     // Rouge constant
+            (unsigned char)(200 + t * 55),   // Vert augmente légèrement
+            (unsigned char)(100 - t * 50),   // Bleu diminue
+            255
+        }; // Lever du soleil - transition du rose au doré
+    } else if (timeOfDay < 17.0f) {
+        return (Color){ 255, 255, 255, 255 }; // Journée - blanc éclatant
+    } else if (timeOfDay < 18.0f) {
+        float t = (timeOfDay - 17.0f); // Transition de 17h à 18h
+        return (Color){
+            (unsigned char)(255 - t * 5),  // Rouge diminue
+            (unsigned char)(255 - t * 55),   // Vert diminue légèrement
+            (unsigned char)(100 + t * 50),   // Bleu augmente
+            255
+        }; // Coucher du soleil - transition du blanc au doré
+    } else if (timeOfDay < 19.0f) {
+        float t = (timeOfDay - 18.0f); // Transition de 18h à 19h
+        return (Color){
+            255,  // Rouge constant
+            (unsigned char)(105 + t * 45),  // Vert augmente légèrement
+            (unsigned char)(180 - t * 80),  // Bleu diminue
+            255
+        }; // Transition vers la couleur 255,105,180
+        t = (timeOfDay - 18.0f); // Transition de 18h à 19h
+        return (Color){
+            (unsigned char)(255 - t * 155),  // Rouge diminue
+            (unsigned char)(150 - t * 100),  // Vert diminue
+            (unsigned char)(100 + t * 50),   // Bleu augmente
+            255
+        }; // Coucher du soleil - transition du doré au bleu foncé
     } else {
-        return (Color){ 255, 255, 255, 255 }; // Journée - blanc
+        float t = (timeOfDay - 19.0f); // Transition de 19h à 20h
+        return (Color){
+            (unsigned char)(100 - t * 90),   // Rouge diminue
+            (unsigned char)(50 - t * 40),    // Vert diminue
+            (unsigned char)(150 + t * 10),   // Bleu augmente légèrement
+            255
+        }; // Fin du coucher du soleil - transition vers la nuit
     }
 }
 //les ombres
@@ -607,48 +651,70 @@ int main(void) {
     std::vector<Vector3> position_herbe(NBHERBE * NBHERBE);
     
     int herbeCount = 0;
-
-    printf("truc initialisés\n");
     for (int x = 0; x < NBHERBE; x++) {
         for (int z = 0; z < NBHERBE; z++) {
-            float posX_bill = (float) x - taille_terrain.x / 2; 
-            float posZ_bill = (float) z - taille_terrain.z / 2;
+
+            float posX = (float) x - taille_terrain.x / 2; 
+            float posZ = (float) z - taille_terrain.z / 2;
             
             // Variables d'espacement pour les éléments
             float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
             float espacementZ = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe Z
             // Ajuster les positions avec l'espacement
-            posX_bill = x * espacementX - taille_terrain.x / 2;
-            posZ_bill = z * espacementZ - taille_terrain.z / 2;
+            posX = x * espacementX - taille_terrain.x / 2;
+            posZ = z * espacementZ - taille_terrain.z / 2;
             
             float offsetX = random_flottant(-0.1f , 0.1f); // Décalage aléatoire pour X
             float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
-            posX_bill += offsetX;
-            posZ_bill += offsetZ;
+            posX += offsetX;
+            posZ += offsetZ;
             
-            float height_bill = GetHeightFromTerrain((Vector3){ posX_bill, 0.0f, posZ_bill }, image_sol, taille_terrain);
- 
-            // Appliquer une rotation aléatoire autour de l'axe Y
-            float randomRotationY = random_flottant(0.0f, 2.0f * PI);
-            
-            // Créer une copie du modèle AVANT de modifier transform
-            Model modelHerbe = model_herbe_instance;
+            float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
 
-            // Appliquer la transformation
-            Matrix transform = MatrixIdentity();
-            //transform = MatrixMultiply(transform, MatrixTranslate(posX_bill, height_bill, posZ_bill));
-            transform = MatrixMultiply(transform, MatrixRotateY(randomRotationY));
-            
-            modelHerbe.transform = transform; // Appliquer la transformation à la copie
 
-            // Stocker dans le vecteur
-            models_herbe_vecteur[herbeCount] = modelHerbe;
-            position_herbe[herbeCount] = (Vector3){ posX_bill, height_bill, posZ_bill };
+
+            // Calcul des hauteurs des cellules voisines
+            float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+            float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+            float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
+            float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
             
-            herbeCount++;
+            // Calcul des variations de hauteur
+            float deltaLeft = fabs(height - heightLeft);
+            float deltaRight = fabs(height - heightRight);
+            float deltaUp = fabs(height - heightUp);
+            float deltaDown = fabs(height - heightDown);
+            
+            // Calcul du taux de pente
+            float penteX = (deltaLeft + deltaRight) / 2.0f;
+            float penteZ = (deltaUp + deltaDown) / 2.0f;
+            float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
+
+            if (tauxPente > 0.2f) {
+                continue; // Skip this position if the slope is too steep
+            }else{
+                // Appliquer une rotation aléatoire autour de l'axe Y
+                float randomRotationY = random_flottant(0.0f, 2.0f * PI);
+                
+                // Créer une copie du modèle AVANT de modifier transform
+                Model modelHerbe = model_herbe_instance;
+
+                // Appliquer la transformation
+                Matrix transform = MatrixIdentity();
+                //transform = MatrixMultiply(transform, MatrixTranslate(posX, height, posZ));
+                transform = MatrixMultiply(transform, MatrixRotateY(randomRotationY));
+                
+                modelHerbe.transform = transform; // Appliquer la transformation à la copie
+
+                // Stocker dans le vecteur
+                models_herbe_vecteur[herbeCount] = modelHerbe;
+                position_herbe[herbeCount] = (Vector3){ posX, height-0.0f, posZ };
+                
+                herbeCount++;
+            }
+            
         }
     }
-    printf("fin initialisation");
     
     DisableCursor();// Limit cursor to relative movement inside the window
 
