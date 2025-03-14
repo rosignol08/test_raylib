@@ -433,10 +433,6 @@ int main(void) {
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
     Texture2D texture_acacia = LoadTexture("models/acacia/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-    Mesh cubeMesh = GenMeshCube(1.0f, 1.0f, 1.0f); // Génère un cube
-    Model cubeModel = LoadModelFromMesh(cubeMesh);
-
-    cubeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     //on applique la lumière sur toutes les plantes
     model_sapin.materials[0].shader = shadowShader;
     for (int i = 0; i < model_sapin.materialCount; i++)
@@ -470,13 +466,6 @@ int main(void) {
     {
         model_herbe_instance.materials[i].shader = shadowShader;
     }
-
-    Material herbe_material = LoadMaterialDefault();
-    herbe_material.shader = shadowShader;
-    herbe_material.maps[MATERIAL_MAP_DIFFUSE].color = RED;
-    //herbe_material.shader = shadowShader;
-    //herbe_material.maps[MATERIAL_MAP_DIFFUSE].color = RED; //TODO change en vert
-
 
     model_sol.materials[0].shader = shadowShader;
     
@@ -940,20 +929,18 @@ int main(void) {
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
-
-    // Clear the memory of vector models
-    for (Model& model : models_herbe_vecteur) {
-        UnloadModel(model);
-    }
+    models_herbe_vecteur.clear();
+    position_herbe.clear();
 
     // Clear the memory of other resources
     UnloadModel(model_herbe_instance);
+    printf("model herbe unload\n");
     UnloadModel(model_herbe);
-    UnloadModel(cubeModel);
+    printf("model herbe unload\n");
     UnloadImage(image_sol);
+    printf("image sol unload\n");
     UnloadImage(image_texture_sol);
-    UnloadMaterial(herbe_material);
-
+    printf("image texture sol unload\n");
     CloseWindow();
 
     return 0;
@@ -980,7 +967,6 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
             }
         }
     }
-    //DrawMeshInstanced(herbe_mesh, herbe_material, transforms, NBHERBE);
     // Trouver les températures min et max
     minTemp = 0;
     maxTemp = 10;
