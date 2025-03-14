@@ -29,9 +29,9 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 #define GRID_SIZE 10
-#define NBHERBE 100
+#define NBHERBE 50
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
-#define SHADOWMAP_RESOLUTION 4096 //la resolution de la shadowmap
+#define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
@@ -54,12 +54,6 @@ Color GetSunColor(float timeOfDay) {
         return (Color){ 255, 255, 255, 255 }; // Journée - blanc
     }
 }
-
-//pour les brins d'herbe
-struct Triangle {
-    Vector3 v1, v2, v3;
-};
-
 //les ombres
 //by @TheManTheMythTheGameDev
 RenderTexture2D LoadShadowmapRenderTexture(int width, int height);
@@ -111,7 +105,7 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
 }
 
 //pour dessiner la scene 
-void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition);
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition);
 
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
@@ -150,7 +144,6 @@ bool isRotating = false;
 typedef struct {
     Vector3 position;    // Position de l'objet
     Model *model;        // Modèle 3D
-    billboard *model_billboard = nullptr;        // image billboard
     float depth;         // Distance caméra → objet
 } SceneObject;
 int CompareSceneObjects(const void *a, const void *b) {
@@ -271,8 +264,39 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
     return (pixel.r / 255.0f) * terrainSize.y;
 }
 
-int minTemp = 100;
-int maxTemp = 0;
+// Fonction pour créer un support rectangulaire qui s'étend de -2y jusqu'au terrain
+void DrawRectangularSupport(Vector3 position, float width, float height, Image heightmap, Vector3 terrainSize, Color color) {
+    // Obtenir la hauteur du terrain à la position donnée
+    float terrainHeight = GetHeightFromTerrain(position, heightmap, terrainSize);
+    
+    // Calculer la hauteur du support (depuis -2 jusqu'à la hauteur du terrain)
+    float supportHeight = terrainHeight + 2.0f;  // +2.0f car on commence à -2
+    
+    // Position du bas du support
+    Vector3 supportBottomPos = {
+        position.x,
+        -2.0f,  // Commence à -2 unités en Y
+        position.z
+    };
+    
+    // Dessiner un cube étiré pour former le support
+    DrawCubeV(
+        Vector3{
+            supportBottomPos.x,
+            supportBottomPos.y + supportHeight / 2.0f,  // Centre du cube en Y
+            supportBottomPos.z
+        },
+        Vector3{
+            width,             // Largeur du support
+            supportHeight,     // Hauteur du support (de -2 jusqu'à la hauteur du terrain)
+            width              // Profondeur du support
+        },
+        color
+    );
+}
+
+int minTemp = 0;
+int maxTemp = 10;
 //pour la temperature
 Color GetTemperatureColor(int temperature, int minTemp, int maxTemp) {
     float normalizedTemp = (float)(temperature - minTemp) / (maxTemp - minTemp);
@@ -289,7 +313,7 @@ Color GetTemperatureColor(int temperature, int minTemp, int maxTemp) {
 }
 
 int minHum = 0;
-int maxHum = 0;
+int maxHum = 10;
 //pour l'humidite
 Color GetHumidityColor(int humidity, int minHum, int maxHum) {
     float normalizedHum = (float)(humidity - minHum) / (maxHum - minHum);
@@ -338,9 +362,6 @@ int main(void) {
     //Lumière directionnelle
     // Load basic lighting shader
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
-    //"billboard.vs", "billboard.fs"
-    Shader billboardShader = LoadShader(TextFormat("ressources/custom_shader/glsl%i/billboard.vs",GLSL_VERSION),TextFormat("ressources/custom_shader/glsl%i/billboard.fs",GLSL_VERSION));
-
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
 
@@ -348,7 +369,7 @@ int main(void) {
     shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
 
     // cree la lumiere LIGHT_DIRECTIONAL ou LIGHT_POINT
-    Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ 0.0f, 10.0f, 0.0f }, WHITE, shader);
+    //Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ 0.0f, 10.0f, 0.0f }, WHITE, shadowShader);
     //pour l'ombre
     
     Vector3 lightDir = Vector3Normalize((Vector3){ 0.35f, -1.0f, -0.35f });
@@ -366,10 +387,6 @@ int main(void) {
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
-    
-    // Appliquer les valeurs initiales
-    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
-    SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC3);
 
     //test sol
     Image image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)
@@ -409,9 +426,8 @@ int main(void) {
     Model model_herbe = LoadModel("models/herbe/untitled.glb");
     
     //pour l'herbe du sol
-    Model model_herbe_instance = LoadModel("models/herbe/multi_herbe/her.glb");
+    Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
     model_herbe_instance.materials[0].shader = shadowShader;
-    //ou pour dessiner         void DrawCylinder(Vector3 position, float radiusTop, float radiusBottom, float height, int slices, Color color); // Draw a cylinder/cone
     Mesh herbe_mesh = GenMeshCube(16.0f, 16.0f, 16.0f);
 
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
@@ -485,8 +501,6 @@ int main(void) {
     lightCam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     lightCam.fovy = 20.0f;
 
-    //La texture pour le billboard d'herbe
-    Texture2D billboard_herbe_texture = LoadTexture("models/herbe/herbe.png");
     //shader pour le billboard
     
     // Création d'une plante
@@ -526,34 +540,6 @@ int main(void) {
     // Création d'une grille de cellules
     std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
     //ajoute la grille du sol d'herbe type SolHerbe
-    //les truc du billboard
-    // Entire billboard texture, source is used to take a segment from a larger texture.
-    Rectangle source = { 0.0f, 0.0f, (float)billboard_herbe_texture.width, (float)billboard_herbe_texture.height };
-    Vector3 position_bill = {0,0,0};
-    bool active_bill = true;
-    bool occupee_bill = true;
-    int temperature_bill = 0;
-    int humidite_bill = 0;
-    float pente_bill = 0;
-    Rectangle source_bill = { 0.0f, 0.0f, (float)billboard_herbe_texture.width, (float)billboard_herbe_texture.height };
-    Vector3 billUp = { 0.0f, 1.0f, 0.0f };
-    Vector2 size_bill = { source.width / source.height, 1.0f };
-    //billboard model
-    billboard billboard_herbe = {position_bill, billboard_herbe_texture, billboardShader, active_bill, occupee_bill, temperature_bill, humidite_bill, pente_bill, source_bill, billUp, size_bill};
-
-
-    /*
-    Vector3 position;
-    billboard model;
-    bool active;
-    bool occupee;
-    int temperature;
-    int humidite;
-    float pente;
-    */
-    //SolHerbe(Vector3 pos, billboard mod, bool act, bool occupee, int temp, int hum, float pen);
-    std::vector<std::vector<SolHerbe>> prairie(NBHERBE, std::vector<SolHerbe>(NBHERBE, SolHerbe(position_bill, billboard_herbe, active_bill, occupee_bill, temperature_bill, humidite_bill, pente_bill)));
-    
     //le terrain
     Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
     int humidite_moyenne = 0;
@@ -623,7 +609,6 @@ int main(void) {
             randomRotationX = DEG2RAD * randomRotationX;
             transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
             grille[x][z].model.transform = transform;
-            //prairie[x][z].model.transform = transform;
 
         }
     }
@@ -679,6 +664,11 @@ int main(void) {
     DisableCursor();// Limit cursor to relative movement inside the window
 
     SetTargetFPS(165);
+    Mesh sphere_test = GenMeshSphere(1.0f, 16, 16);
+    Material material_test = LoadMaterialDefault();
+    material_test.shader = shadowShader;
+    material_test.maps[MATERIAL_MAP_DIFFUSE].color = RED;
+    
 
     // Boucle principale
     while (!WindowShouldClose()) {
@@ -686,7 +676,7 @@ int main(void) {
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
         Vector3 cameraPos = camera.position;
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
-        
+        float dt = GetFrameTime();
         //pour la temperature
         if (IsKeyPressed(KEY_T)) {
             viewMode = (viewMode == MODE_NORMAL) ? MODE_TEMPERATURE : MODE_NORMAL;
@@ -761,70 +751,12 @@ int main(void) {
         //DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
         ShowCursor();//pour voir le curseur
         
-        //Lumière directionnelle
-        // Parcours de toute la grille pour mettre à jour les températures
-        //for (int x = 0; x < GRID_SIZE; x++) {
-        //    for (int z = 0; z < GRID_SIZE; z++) {
-        //        test_variation(&grid[x][z]);
-        //    }
-        //}
         // Mise à jour des cellules
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
-                //if ((x + z) % 2 == 0) {
-                //    grille[x][z].temperature += 1;
-                //}
-                //grille[x][z].update(grille, x, z);
                 verifier_plante(&grille[x][z], plantes, plante_morte, vide);
-                //if (grille[x][z].plante.nom == "Herbe") {
-                //    float normalizedTemp = (float)(grille[x][z].temperature - minTemp) / (maxTemp - minTemp);
-                //    if (normalizedTemp < 0.25f) {
-                //        grille[x][z].plante.model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
-                //    } else if (normalizedTemp > 0.75f) {
-                //        grille[x][z].plante.model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = YELLOW;
-                //    } else {
-                //        grille[x][z].plante.model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-                //    }
-                //}
-                //printf("age Plante numero (%d, %d) : %d\n", x, z, grille[x][z].plante.age);
-                //printf("plante à cette case : %s\n", grille[x][z].plante.nom.c_str());
-                //if (grille[x][z].temperature > 50) {
-                //    grille[x][z].active = false;
-                //}
-                //grille[x][z].temperature += 1;
-                //printf("Temperature : %d\n", grille[x][z].temperature);
             }
         }
-        // Mise à jour de la grille en fonction des nouvelles températures
-        //update_grille(grid);
-        /*
-        //l'ombre
-        lightDir = Vector3Normalize(lightDir);
-        lightCam.position = Vector3Scale(lightDir, -15.0f);
-        SetShaderValue(shadowShader, shadowShader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
-        SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
-        // Rendu de la shadow map (vue depuis la lumière)
-        BeginTextureMode(shadowMap);
-        ClearBackground(WHITE);  // La shadow map stocke les profondeurs
-        BeginMode3D(lightCam);
-            DrawModel(cubeModel, (Vector3){ 1.0f, 1.0f, 2.0f }, 1.0f, WHITE);
-            DrawModel(model_sol, mapPosition, 1.0f, MAROON);
-            for (int x = 0; x < GRID_SIZE; x++) {
-                for (int z = 0; z < GRID_SIZE; z++) {
-                    if (grid[x][z].active) {
-                        DrawModel(grid[x][z].model, grid[x][z].position, 1.0f, WHITE);
-                    }
-                }
-            }
-        EndMode3D();
-        EndTextureMode();
-
-        // Enregistrer les matrices de la lumière pour le shader
-        Matrix lightView = rlGetMatrixModelview();
-        Matrix lightProj = rlGetMatrixProjection();
-        Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
-        SetShaderValueMatrix(shader, lightVPLoc, lightViewProj);
-        */
         
         //petite actualisation de la temperature
         
@@ -874,9 +806,6 @@ int main(void) {
             }
         }
 
-        //lightDir = Vector3Normalize(lightDir);
-        //lightCam.position = Vector3Scale(lightDir, -15.0f);
-        // Calculez la direction du soleil en fonction de l'heure
         float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
 
         // Calculer la direction de la lumière (normalisée)
@@ -886,17 +815,35 @@ int main(void) {
             0.0f                      // Z: Nord-Sud
         };
         lightDir = Vector3Normalize(lightDir);
-
         // Mise à jour de la lumière directionnelle
-        directionalLight.position = Vector3Scale(lightDir, -1.0f); // Inverse la direction pour pointer vers la source
-        directionalLight.target = Vector3Zero();
-        directionalLight.color = GetSunColor(timeOfDay);
+        //directionalLight.position = Vector3Scale(lightDir, -1.0f); // Inverse la direction pour pointer vers la source
+        //directionalLight.target = Vector3Zero();
+        //directionalLight.color = GetSunColor(timeOfDay);
+
+        //on bouge light dir aussi
+        //lightDir = Vector3Normalize((Vector3){ cosf(sunAngle), -sinf(sunAngle), 0.0f });
+
+        //on bouge aussi la camera de lumière
+        lightCam.position = Vector3Scale(lightDir, -15.0f);
+        lightCam.target = Vector3Zero();
         
+        // Ajuster l'intensité de la lumière en fonction de l'heure
+        float lightIntensity = 1.0f;
+        if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
+            lightIntensity = 0.0f; // Nuit
+        } else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
+            lightIntensity = 0.6f; // Lever/Coucher du soleil
+        }
+
+        lightColor = GetSunColor(timeOfDay);  // Utilisez votre fonction existante
+        lightColorNormalized = ColorNormalize(lightColor);
+
+        SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
         SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
 
         // Rendu final (vue normale)
         BeginDrawing();
-
+        //on dessine les ombres ici
         Matrix lightView;
         Matrix lightProj;
         BeginTextureMode(shadowMap);
@@ -905,12 +852,15 @@ int main(void) {
         BeginMode3D(lightCam);
             lightView = rlGetMatrixModelview();
             lightProj = rlGetMatrixProjection();
-            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+            dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
             
-            //DrawMeshInstanced(herbe_mesh, herbe_material, position_instances_herbe, NBHERBE*NBHERBE);
+            rlEnableBackfaceCulling();
+            DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
             for (int i = 0; i < herbeCount ; i++){
-                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.1f,WHITE);
+                //active backface culling ici
+                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.05f,WHITE);
             }
+            rlDisableBackfaceCulling();
         EndMode3D();
         EndTextureMode();
         Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
@@ -920,50 +870,31 @@ int main(void) {
         SetShaderValueMatrix(shadowShader, lightVPLoc, lightViewProj);
 
         rlEnableShader(shadowShader.id);
+
         int slot = 10;
         rlActiveTextureSlot(10);
         rlEnableTexture(shadowMap.depth.id);
         rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
+
         BeginMode3D(camera);
-            dessine_scene(camera, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, billboard_herbe_texture, billboardShader, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, prairie, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
-            //DrawMeshInstanced(herbe_mesh, herbe_material, position_instances_herbe, NBHERBE*NBHERBE);
-            //DrawMesh(herbe_mesh, herbe_material, MatrixScale(5.0f, 5.0f, 5.0f));
-            // on va utiliser cette fonction void DrawTriangle3D(Vector3 v1, Vector3 v2, Vector3 v3, Color color);                              // Draw a color-filled triangle (vertex in counter-clockwise order!)
-            //for (int i = 0; i < herbeTriangles.size(); i++) {
-            //    DrawTriangle3D(herbeTriangles[i].v1, herbeTriangles[i].v2, herbeTriangles[i].v3, GREEN);
-            //}
+            dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+            rlEnableBackfaceCulling();
+            DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
+
             for (int i = 0; i < herbeCount ; i++){
-                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.1f,WHITE);
+                //active backface culling ici
+                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.05f,WHITE);
             }
+            rlDisableBackfaceCulling();
 
 
         EndMode3D();
-        BeginShaderMode(shader);
+        //BeginShaderMode(shader);
 
-        
-        //dessine les billboards
-        /*
-        // Ajoutez les données de shadow map
-        int shadowMapSlot = 10;
-        rlActiveTextureSlot(shadowMapSlot);
-        rlEnableTexture(shadowMap.depth.id);
-        rlSetUniform(shadowMapLoc, &shadowMapSlot, SHADER_UNIFORM_INT, 1);
-
-        // Passez les matrices de la lumière
-        lightView = rlGetMatrixModelview();
-        lightProj = rlGetMatrixProjection();
-        lightViewProj = MatrixMultiply(lightView, lightProj);
-        SetShaderValueMatrix(shader, lightVPLoc, lightViewProj);
-        */
-        
-        //DrawModel(model_sol, mapPosition, 0.50f, MAROON);
-        
-        //directionalLight.position.x = 5.0f * cos(GetTime() * 0.5f);
-        //directionalLight.position.z = 5.0f * sin(GetTime() * 0.5f);
         //update la lumière
-        UpdateLightValues(shader, directionalLight);
+        //UpdateLightValues(shader, directionalLight);
 
-        EndShaderMode();
+        //EndShaderMode();
         DrawGrid(20, 1.0f);
         EndMode3D();
         // Ajouter une légende pour le mode température
@@ -989,13 +920,8 @@ int main(void) {
         // Pour changer la direction de la lumière
         GuiSliderBar((Rectangle){ 100, 100, 200, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
 
-        //SetShaderValue(billboardShader, GetShaderLocation(billboardShader, "lightDir"), &lightDirection, SHADER_UNIFORM_VEC3);
-
-
         // Affichage de l'heure
         DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
-        //GuiSliderBar((Rectangle){ 100, 10, 200, 20 }, "Light direction X", NULL, &directionalLight.position.x, -5.0f, 5.0f);
-        //GuiSliderBar((Rectangle){ 100, 40, 200, 20 }, "Light direction Z", NULL, &directionalLight.position.z, -5.0f, 5.0f);
         EndDrawing();
     }
 
@@ -1015,14 +941,25 @@ int main(void) {
     UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
 
-    //herbeTriangles.clear();
+    // Clear the memory of vector models
+    for (Model& model : models_herbe_vecteur) {
+        UnloadModel(model);
+    }
+
+    // Clear the memory of other resources
+    UnloadModel(model_herbe_instance);
+    UnloadModel(model_herbe);
+    UnloadModel(cubeModel);
+    UnloadImage(image_sol);
+    UnloadImage(image_texture_sol);
+    UnloadMaterial(herbe_material);
 
     CloseWindow();
 
     return 0;
 }
 
-void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Texture2D billboard_herbe_texture, Shader billboardShader, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, std::vector<std::vector<SolHerbe>> prairie, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition) {
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
     int objectCount = 0;
     // Ajouter le sol à la liste
@@ -1045,8 +982,8 @@ void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, M
     }
     //DrawMeshInstanced(herbe_mesh, herbe_material, transforms, NBHERBE);
     // Trouver les températures min et max
-    minTemp = 100;
-    maxTemp = 0;
+    minTemp = 0;
+    maxTemp = 10;
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
             if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
@@ -1062,6 +999,14 @@ void dessine_scene(Camera camera, Model model_sol, Model model_buisson_europe, M
     for (int i = 0; i < objectCount; i++) {
         if (viewMode == MODE_NORMAL) {
             if (sceneObjects[i].model == &model_sol) {
+                DrawRectangularSupport(
+                    sceneObjects[i].position,
+                    taille_terrain.x, // Largeur du support
+                    taille_terrain.z, // Hauteur du support (sera ajustée dans la fonction)
+                    image_sol, // Heightmap du terrain
+                    taille_terrain, // Taille du terrain
+                    GRAY // Couleur du support
+                );
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);                
