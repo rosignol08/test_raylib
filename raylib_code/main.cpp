@@ -149,7 +149,7 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
 }
 
 //pour dessiner la scene 
-void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition);
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition);
 
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
@@ -308,39 +308,8 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
     return (pixel.r / 255.0f) * terrainSize.y;
 }
 
-// Fonction pour créer un support rectangulaire qui s'étend de -2y jusqu'au terrain
-void DrawRectangularSupport(Vector3 position, float width, float height, Image heightmap, Vector3 terrainSize, Color color) {
-    // Obtenir la hauteur du terrain à la position donnée
-    float terrainHeight = GetHeightFromTerrain(position, heightmap, terrainSize);
-    
-    // Calculer la hauteur du support (depuis -2 jusqu'à la hauteur du terrain)
-    float supportHeight = terrainHeight + 2.0f;  // +2.0f car on commence à -2
-    
-    // Position du bas du support
-    Vector3 supportBottomPos = {
-        position.x,
-        -2.0f,  // Commence à -2 unités en Y
-        position.z
-    };
-    
-    // Dessiner un cube étiré pour former le support
-    DrawCubeV(
-        Vector3{
-            supportBottomPos.x,
-            supportBottomPos.y + supportHeight / 2.0f,  // Centre du cube en Y
-            supportBottomPos.z
-        },
-        Vector3{
-            width,             // Largeur du support
-            supportHeight,     // Hauteur du support (de -2 jusqu'à la hauteur du terrain)
-            width              // Profondeur du support
-        },
-        color
-    );
-}
-
-int minTemp = 0;
-int maxTemp = 10;
+int minTemp = 100;
+int maxTemp = 0;
 //pour la temperature
 Color GetTemperatureColor(int temperature, int minTemp, int maxTemp) {
     float normalizedTemp = (float)(temperature - minTemp) / (maxTemp - minTemp);
@@ -910,10 +879,22 @@ int main(void) {
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
             
             rlEnableBackfaceCulling();
-            DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
+            //DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
             for (int i = 0; i < herbeCount ; i++){
                 //active backface culling ici
-                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.05f,WHITE);
+                // Determine the grid cell corresponding to the current position
+                int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
+                int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
+
+                // Clamp the grid coordinates to ensure they are within bounds
+                gridX = Clamp(gridX, 0, GRID_SIZE - 1);
+                gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
+
+                //verifie si l'herbe peut pousser à cette temperature
+                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 100) {
+                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
+                }
+                //DrawModel(models_herbe_vecteur[i],position_herbe[i],0.05f,WHITE);
             }
             rlDisableBackfaceCulling();
         EndMode3D();
@@ -934,11 +915,23 @@ int main(void) {
         BeginMode3D(camera);
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
             rlEnableBackfaceCulling();
-            DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
+            //DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
 
             for (int i = 0; i < herbeCount ; i++){
                 //active backface culling ici
-                DrawModel(models_herbe_vecteur[i],position_herbe[i],0.05f,WHITE);
+                // Determine the grid cell corresponding to the current position
+                int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
+                int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
+
+                // Clamp the grid coordinates to ensure they are within bounds
+                gridX = Clamp(gridX, 0, GRID_SIZE - 1);
+                gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
+
+                //verifie si l'herbe peut pousser à cette temperature
+                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 100) {
+                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
+                }
+                //DrawModel(models_herbe_vecteur[i],position_herbe[i],0.05f,WHITE);
             }
             rlDisableBackfaceCulling();
 
@@ -1012,7 +1005,7 @@ int main(void) {
     return 0;
 }
 
-void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int minTemp, int maxTemp, int minHum, int maxHum, Vector3 mapPosition) {
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model model_buisson_europe, Model model_acacia, Model model_sapin, Model model_mort, Model emptyModel, Plante buisson, Plante accacia, Plante sapin, Plante plante_morte, Plante herbe, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
     int objectCount = 0;
     // Ajouter le sol à la liste
@@ -1035,7 +1028,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
     }
     // Trouver les températures min et max
     minTemp = 0;
-    maxTemp = 10;
+    maxTemp = 1;
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
             if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
@@ -1051,14 +1044,8 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
     for (int i = 0; i < objectCount; i++) {
         if (viewMode == MODE_NORMAL) {
             if (sceneObjects[i].model == &model_sol) {
-                DrawRectangularSupport(
-                    sceneObjects[i].position,
-                    taille_terrain.x, // Largeur du support
-                    taille_terrain.z, // Hauteur du support (sera ajustée dans la fonction)
-                    image_sol, // Heightmap du terrain
-                    taille_terrain, // Taille du terrain
-                    GRAY // Couleur du support
-                );
+                //DrawCubeV((Vector3){ mapPosition.x, mapPosition.y - 0.1f, mapPosition.z }, taille_terrain, GRAY);
+                DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);                
@@ -1066,6 +1053,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         }  else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture de température
+                DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 // Pour les autres objets, utilisez la couleur de température
@@ -1082,6 +1070,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         } else if(viewMode == MODE_HUMIDITE){
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture d'humidite
+                DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 // Pour les autres objets, utilisez la couleur de l'humiité
