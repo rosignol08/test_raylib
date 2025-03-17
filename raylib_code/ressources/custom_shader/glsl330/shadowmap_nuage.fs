@@ -31,7 +31,7 @@ uniform int shadowMapResolution;
 void main()
 {
     // Adjust shadow intensity for semi-transparent objects
-    float shadowIntensity = 0.5; // Adjust this value to control shadow darkness for semi-transparent objects
+    float shadowIntensity = 0.3; // Adjust this value to control shadow darkness for semi-transparent objects
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
     if (texelColor.a < 0.1) {discard;} // Ne pas écrire dans le depth buffer
@@ -90,7 +90,7 @@ void main()
         }
     }
     //finalColor = mix(finalColor, vec4(0, 0, 0, 1), float(shadowCounter) / float(numSamples));
-    finalColor = mix(finalColor, vec4(shadowIntensity, shadowIntensity, 0, 1), (float(shadowCounter) / float(numSamples)) * (shadowIntensity));
+    finalColor = mix(finalColor, vec4(0, 0, 0, 1), (float(shadowCounter) / float(numSamples)) * (shadowIntensity));
     
     // Add ambient lighting whether in shadow or not
     finalColor += texelColor*(ambient/10.0)*colDiffuse;

@@ -59,28 +59,31 @@ Texture2D GenererTextureNuage(int largeur, int hauteur, int seed, float seuil = 
     // Une valeur d'échelle plus élevée donne des variations plus petites
     Image nuageImage = GenImagePerlinNoise(largeur, hauteur, seed, seed + 20, echelle);
     
-    // Modifier l'image pour créer la transparence
+    // Modifier l'image pour créer des nuages toujours un peu translucides
     for(int y = 0; y < nuageImage.height; y++) {
         for(int x = 0; x < nuageImage.width; x++) {
             Color pixel = GetImageColor(nuageImage, x, y);
             
-            // Plus c'est blanc, plus c'est opaque
-            // Plus c'est sombre, plus c'est transparent
+            // Normaliser la valeur du pixel
             float normalizedValue = (float)pixel.r / 255.0f;
             
-            // Application du seuil avec un dégradé doux
+            // Application du seuil avec un maximum d'opacité limité
             float alpha;
             if (normalizedValue < seuil) {
-                alpha = 0.0f; // Complètement transparent
-            } else if (normalizedValue < seuil + 0.1f) {
-                // Transition douce à la bordure du seuil
-                alpha = ((normalizedValue - seuil) / 0.1f) * 255.0f;
+                alpha = 0.0f; // Complètement transparent sous le seuil
             } else {
-                // Opacité basée sur la valeur du bruit
-                alpha = 255.0f * ((normalizedValue - seuil) / (1.0f - seuil));
+                // Calculer l'opacité mais avec un maximum de ~70% pour garder une translucidité permanente
+                // Plage de 0 à 180 (au lieu de 0 à 255)
+                alpha = 180.0f * ((normalizedValue - seuil) / (1.0f - seuil));
+                
+                // Ajouter une légère variation aléatoire pour un aspect plus naturel
+                alpha *= (0.8f + ((float)GetRandomValue(0, 40) / 100.0f));
             }
             
-            // Définir la couleur avec la transparence
+            // Limiter l'alpha à une valeur maximum (180 est environ 70% opaque)
+            alpha = Clamp(alpha, 0.0f, 180.0f);
+            
+            // Définir la couleur du nuage avec la transparence
             Color nuageColor = {255, 255, 255, (unsigned char)alpha};
             ImageDrawPixel(&nuageImage, x, y, nuageColor);
         }
