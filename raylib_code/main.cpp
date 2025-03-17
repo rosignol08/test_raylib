@@ -49,6 +49,8 @@ struct Nuage {
     std::vector<float> scales;
     std::vector<Texture2D> textures;  //pour stocker les textures
     std::vector<float> rotations; // Nouvelle propriété pour stocker les rotations
+    std::vector<float> rotationsX; // Nouvelles rotations pour les plans
+    std::vector<float> rotationsZ;
 };
 
 // Fonction pour générer une texture de nuage personnalisée pour chaque sphère
@@ -93,6 +95,52 @@ Texture2D GenererTextureNuage(int largeur, int hauteur, int seed) {
 
 // la fonction de génération de nuage pour utiliser des textures personnalisées
 Nuage GenererNuage(Vector3 centre, float taille, int densite) {
+    Nuage nuage;
+    
+    for (int i = 0; i < densite; i++) {
+        // Dimensions du plan
+        float largeur = GetRandomValue(2, 4) * (taille / 10.0f);
+        float hauteur = largeur * 0.8f; // Hauteur similaire à la largeur pour aspect plus naturel
+        
+        // Générer un plan (quad) au lieu d'un cube
+        Mesh planeMesh = GenMeshPlane(largeur, hauteur, 1, 1);
+        Model model = LoadModelFromMesh(planeMesh);
+        
+        // Créer une texture de nuage unique pour ce plan
+        int seed = GetRandomValue(0, 1000) + i * 100;
+        Texture2D nuageTexture = GenererTextureNuage(256, 256, seed);
+        
+        // Appliquer la texture au plan
+        model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = nuageTexture;
+        
+        // Position aléatoire autour du centre
+        Vector3 pos = {
+            centre.x + GetRandomValue(-taille, taille) * 0.7f,
+            centre.y - GetRandomValue(0, 3), // Positionnement plus bas
+            centre.z + GetRandomValue(-taille, taille) * 0.7f
+        };
+        
+        // Rotation aléatoire (plus importante pour les plans que pour les cubes)
+        float rotationX = GetRandomValue(0, 360);
+        float rotationY = GetRandomValue(0, 360);
+        float rotationZ = GetRandomValue(0, 360);
+        
+        nuage.models.push_back(model);
+        nuage.positions.push_back(pos);
+        nuage.scales.push_back(GetRandomValue(5, 10) / 10.0f);
+        nuage.rotations.push_back(rotationY); // On ne garde que la rotation Y pour compatibilité
+        
+        // Stocker toutes les rotations pour un rendu plus complet
+        nuage.rotationsX.push_back(rotationX);
+        nuage.rotationsZ.push_back(rotationZ);
+        
+        // Stocker la texture pour pouvoir la décharger plus tard
+        nuage.textures.push_back(nuageTexture);
+    }
+    
+    return nuage;
+}
+Nuage GenererNuage_rectanges(Vector3 centre, float taille, int densite) {
     Nuage nuage;
     
     for (int i = 0; i < densite; i++) {
@@ -1048,18 +1096,44 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
             
             // Dans la boucle principale, lors du rendu
             rlEnableColorBlend();
-            rlEnableDepthMask();  // Désactiver l'écriture dans le tampon de profondeur pour les objets transparents
             //rlDisableDepthTest();
+            rlEnableDepthMask();  // Désactiver l'écriture dans le tampon de profondeur pour les objets transparents
             
+
+            for (auto& nuage : nuages) {
+                for (size_t i = 0; i < nuage.models.size(); i++) {
+                    // Création d'une matrice de transformation complète
+                    Matrix transform = MatrixIdentity();
+
+                    // Appliquer les rotations dans le bon ordre
+                    transform = MatrixMultiply(transform, MatrixRotateX(DEG2RAD * nuage.rotationsX[i]));
+                    transform = MatrixMultiply(transform, MatrixRotateY(DEG2RAD * nuage.rotations[i]));
+                    transform = MatrixMultiply(transform, MatrixRotateZ(DEG2RAD * nuage.rotationsZ[i]));
+
+                    // Appliquer l'échelle
+                    transform = MatrixMultiply(transform, 
+                                MatrixScale(nuage.scales[i], nuage.scales[i], nuage.scales[i]));
+                    
+                    // Dessiner le modèle avec la transformation
+                    DrawModelEx(nuage.models[i], 
+                               nuage.positions[i],
+                               (Vector3){0, 1, 0},  // Axe de rotation (non utilisé car on a déjà la matrice transform)
+                               0,                  // Angle (non utilisé car inclus dans transform)
+                               (Vector3){1, 1, 1}, // Échelle (non utilisée car incluse dans transform)
+                               lightColor);
+                }
+            }
+            /*pour le rectangle
             for (auto& nuage : nuages) {
                 for (size_t i = 0; i < nuage.models.size(); i++) {
                     DrawModelEx(nuage.models[i], nuage.positions[i], 
                                (Vector3){0, 1, 0}, nuage.rotations[i], 
-                               (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
+                               (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, lightColor);
                 }
             }
             rlEnableDepthTest();
             rlEnableDepthMask();
+            */
             //rlDisableColorBlend();
             //for (auto& nuage : nuages) {
             //    for (size_t i = 0; i < nuage.models.size(); i++) {
@@ -1133,7 +1207,7 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
                 for (size_t i = 0; i < nuage.models.size(); i++) {
                     DrawModelEx(nuage.models[i], nuage.positions[i], 
                                (Vector3){0, 1, 0}, nuage.rotations[i], 
-                               (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
+                               (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, lightColor);
                 }
             }
             rlEnableDepthTest();
