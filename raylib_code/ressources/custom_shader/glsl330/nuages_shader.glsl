@@ -11,6 +11,7 @@ uniform vec4 colDiffuse;
 uniform float cloudDensity = 0.5;  // Contrôle la densité des nuages (0.0 - 1.0)
 uniform float cloudSharpness = 3.0; // Contrôle la netteté des bords des nuages
 uniform float timeValue;          // Pour l'animation
+uniform float noiseScale = 5.0;    // Nouvelle variable pour contrôler l'échelle du bruit (valeurs plus élevées = variations plus petites)
 
 void main() {
     // Texture de base (la sphère)

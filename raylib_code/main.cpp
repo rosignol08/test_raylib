@@ -44,39 +44,44 @@ const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 //test nuage
 // Structure pour stocker un nuage plus détaillé
 struct Nuage {
-    std::vector<Model> models;  // Plusieurs sphères
-    std::vector<Vector3> positions;
-    std::vector<float> scales;
+    std::vector<Model> plans; // Ensemble de plans formant un grand nuage
+    std::vector<Vector3> positions; // Positions des différentes parties du nuage
+    std::vector<float> scales; // Tailles des différentes parties
     std::vector<Texture2D> textures;  //pour stocker les textures
     std::vector<float> rotations; // Nouvelle propriété pour stocker les rotations
-    std::vector<float> rotationsX; // Nouvelles rotations pour les plans
-    std::vector<float> rotationsZ;
+    float vitesseDefile; // Vitesse de défilement du nuage
+    float largeurTotale; // Largeur totale du nuage (pour savoir quand le faire revenir)
 };
 
 // Fonction pour générer une texture de nuage personnalisée pour chaque sphère
-Texture2D GenererTextureNuage(int largeur, int hauteur, int seed) {
-    // Générer une image de bruit de Perlin avec un seed unique
-    Image nuageImage = GenImagePerlinNoise(largeur, hauteur, seed, seed + 20, 1.0f);
+Texture2D GenererTextureNuage(int largeur, int hauteur, int seed, float seuil = 0.2f, float echelle = 10.0f) {
+    // Générer une image de bruit de Perlin avec un seed unique et une échelle ajustable
+    // Une valeur d'échelle plus élevée donne des variations plus petites
+    Image nuageImage = GenImagePerlinNoise(largeur, hauteur, seed, seed + 20, echelle);
     
     // Modifier l'image pour créer la transparence
     for(int y = 0; y < nuageImage.height; y++) {
         for(int x = 0; x < nuageImage.width; x++) {
             Color pixel = GetImageColor(nuageImage, x, y);
             
-            // Valeur de seuil pour la transparence (ajustable)
-            float seuil = 0.5f;
-            
             // Plus c'est blanc, plus c'est opaque
             // Plus c'est sombre, plus c'est transparent
-            unsigned char alpha = (unsigned char)(255.0f * (pixel.r / 255.0f));
+            float normalizedValue = (float)pixel.r / 255.0f;
             
-            // Rendre complètement transparent si en dessous du seuil
-            if ((float)pixel.r / 255.0f < seuil) {
-                alpha = 0;
+            // Application du seuil avec un dégradé doux
+            float alpha;
+            if (normalizedValue < seuil) {
+                alpha = 0.0f; // Complètement transparent
+            } else if (normalizedValue < seuil + 0.1f) {
+                // Transition douce à la bordure du seuil
+                alpha = ((normalizedValue - seuil) / 0.1f) * 255.0f;
+            } else {
+                // Opacité basée sur la valeur du bruit
+                alpha = 255.0f * ((normalizedValue - seuil) / (1.0f - seuil));
             }
             
             // Définir la couleur avec la transparence
-            Color nuageColor = {255, 255, 255, alpha};
+            Color nuageColor = {255, 255, 255, (unsigned char)alpha};
             ImageDrawPixel(&nuageImage, x, y, nuageColor);
         }
     }
@@ -92,9 +97,45 @@ Texture2D GenererTextureNuage(int largeur, int hauteur, int seed) {
     
     return nuageTexture;
 }
-
+// Fonction pour générer un grand nuage composé d'un seul plan sans rotation
+Nuage GenererGrandNuage(Vector3 position, float longueur, float hauteur, int nombrePlans, float seuil = 0.2f, float echelle = 10.0f) {
+    Nuage nuage;
+    nuage.vitesseDefile = 0.2f;
+    nuage.largeurTotale = longueur * 2.0f;
+    
+    // Dimensions du plan
+    float largeurPlan = longueur;
+    float hauteurPlan = hauteur;
+    
+    // Générer un plan (quad)
+    Mesh planeMesh = GenMeshPlane(largeurPlan, hauteurPlan, 1, 1);
+    Model model = LoadModelFromMesh(planeMesh);
+    
+    // Créer une texture de nuage unique pour ce plan avec les paramètres spécifiés
+    int seed = GetRandomValue(0, 1000);
+    Texture2D nuageTexture = GenererTextureNuage(1024, 1024, seed, seuil, echelle);
+    
+    // Appliquer la texture au plan
+    model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = nuageTexture;
+    
+    // Position du plan
+    Vector3 pos = {
+        position.x,
+        position.y,
+        position.z
+    };
+    
+    nuage.plans.push_back(model);
+    nuage.positions.push_back(pos);
+    nuage.scales.push_back(1.0f);
+    nuage.rotations.push_back(0.0f);
+    nuage.textures.push_back(nuageTexture);
+    
+    return nuage;
+}
+/*
 // la fonction de génération de nuage pour utiliser des textures personnalisées
-Nuage GenererNuage(Vector3 centre, float taille, int densite) {
+Nuage GenererNuage_plat(Vector3 centre, float taille, int densite) {
     Nuage nuage;
     
     for (int i = 0; i < densite; i++) {
@@ -140,6 +181,8 @@ Nuage GenererNuage(Vector3 centre, float taille, int densite) {
     
     return nuage;
 }
+
+
 Nuage GenererNuage_rectanges(Vector3 centre, float taille, int densite) {
     Nuage nuage;
     
@@ -177,7 +220,7 @@ Nuage GenererNuage_rectanges(Vector3 centre, float taille, int densite) {
     //TraceLog(LOG_INFO, "Nuage rectangulaire généré : %d rectangles", densite);
     return nuage;
 }
-
+*/
 float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
 const float pI = 3.14159265359f;
 
@@ -824,7 +867,7 @@ int main(void) {
     
     DisableCursor();// Limit cursor to relative movement inside the window
 
-    SetTargetFPS(165);
+    SetTargetFPS(60);
     Mesh sphere_test = GenMeshSphere(1.0f, 16, 16);
     Material material_test = LoadMaterialDefault();
     Texture2D argyleTexture = LoadTexture("ressources/argyle.png");
@@ -832,33 +875,43 @@ int main(void) {
     material_test.shader = shadowShader;
     //material_test.maps[MATERIAL_MAP_DIFFUSE].color = RED;
     
-    std::vector<Nuage> nuages;
-for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
-    // Position plus basse (5.0f au lieu de 10.0f pour Y)
-    nuages.push_back(GenererNuage({(float)GetRandomValue(-7, 7), 5.0f, (float)GetRandomValue(-7, 7)}, 8, 4));
-}
+    std::vector<Nuage> grandsNuages;
+    float cloudThreshold = 0.6f;  // Seuil initial
+    float noiseScale = 7.0f;     // Échelle initiale
+    grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 5.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
+    //for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
+    //    // Position plus basse (5.0f au lieu de 10.0f pour Y)
+    //    nuages.push_back(GenererNuage({(float)GetRandomValue(-7, 7), 5.0f, (float)GetRandomValue(-7, 7)}, 8, 4));
+    //}
     Shader shaderNuage = LoadShader(0, "ressources/custom_shader/glsl330/nuages_shader.glsl");
     // Lors de l'initialisation
     int cloudDensityLoc = GetShaderLocation(shaderNuage, "cloudDensity");
     int cloudSharpnessLoc = GetShaderLocation(shaderNuage, "cloudSharpness"); 
     int timeValueLoc = GetShaderLocation(shaderNuage, "timeValue");
+    //int noiseScaleLoc = GetShaderLocation(shaderNuage, "noiseScale");
+    //float noiseScale = 5.0f; // Valeurs plus élevées = variations plus petites
+
     // Dans la boucle principale
     float cloudDensity = 0.5f; // Ajustez entre 0.0 et 1.0
     float cloudSharpness = 3.0f; // Plus la valeur est élevée, plus les bords sont nets
 
-    Image noiseImage = GenImagePerlinNoise(512, 512, 0, 0, 1.0f);
+    Image noiseImage = GenImagePerlinNoise(512, 512, 0, 0, 10.0f);
     Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
     if (noiseTexture.id == 0) {
         TraceLog(LOG_ERROR, "Erreur : La texture de bruit n'a pas été chargée correctement !");
     }
 
     SetShaderValueTexture(shaderNuage, GetShaderLocation(shaderNuage, "noiseTexture"), noiseTexture);
-
-    for (auto& nuage : nuages) {
-        for (auto& model : nuage.models) {
-            model.materials[0].shader = shaderNuage;
+    for (auto& nuage : grandsNuages) {
+        for (auto& plan : nuage.plans) {
+            plan.materials[0].shader = shaderNuage;
         }
     }
+    //for (auto& nuage : nuages) {
+    //    for (auto& model : nuage.models) {
+    //        model.materials[0].shader = shaderNuage;
+    //    }
+    //}
 
     // Boucle principale
     while (!WindowShouldClose()) {
@@ -870,18 +923,32 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
         SetShaderValue(shaderNuage, cloudDensityLoc, &cloudDensity, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shaderNuage, cloudSharpnessLoc, &cloudSharpness, SHADER_UNIFORM_FLOAT);    
         SetShaderValue(shaderNuage, timeValueLoc, &timeValue, SHADER_UNIFORM_FLOAT);
+        //SetShaderValue(shaderNuage, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
+
         const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
 
         // Faire dériver les nuages horizontalement
-        for (auto& nuage : nuages) {
+        for (auto& nuage : grandsNuages) {
+            // Distance parcourue depuis la position initiale
+            static float distanceParcourue = 0.0f;
+            float distanceDeReset = taille_terrain.x * 2.0f; // La largeur du nuage
+            
+            // Déplacer le nuage
             for (size_t i = 0; i < nuage.positions.size(); i++) {
-                // Déplacer les nuages sur l'axe X
-                nuage.positions[i].x += dt * driftSpeed;
-                
-                // Si un nuage sort trop loin, le replacer de l'autre côté
-                if (nuage.positions[i].x > taille_terrain.x * 1.5f) {
-                    nuage.positions[i].x = -taille_terrain.x * 1.5f;
+                nuage.positions[i].x += dt * nuage.vitesseDefile;
+            }
+            
+            // Mettre à jour la distance parcourue
+            distanceParcourue += dt * nuage.vitesseDefile;
+            
+            // Vérifier si le nuage a parcouru sa propre largeur
+            if (distanceParcourue >= distanceDeReset) {
+                // Réinitialiser la position du nuage
+                for (size_t i = 0; i < nuage.positions.size(); i++) {
+                    nuage.positions[i].x = -taille_terrain.x; // Position initiale
                 }
+                // Réinitialiser le compteur de distance
+                distanceParcourue = 0.0f;
             }
         }
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
@@ -1084,22 +1151,28 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
             }
             rlDisableBackfaceCulling();
             // Après avoir généré les nuages
-            for (auto& nuage : nuages) {
-                for (size_t i = 0; i < nuage.models.size(); i++) {
+            for (auto& nuage : grandsNuages) {
+                for (size_t i = 0; i < nuage.plans.size(); i++) {
                     // Configurer le matériau pour la transparence
-                    nuage.models[i].materials[0].shader = shadowShader;
+                    nuage.plans[i].materials[0].shader = shadowShader;
                     
                     // Activer le blending pour la transparence
-                    nuage.models[i].materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+                    nuage.plans[i].materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
                 }
             }
             
             // Dans la boucle principale, lors du rendu
             rlEnableColorBlend();
             //rlDisableDepthTest();
+            DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, WHITE);
+            //for (auto& nuage : grandsNuages) {
+            //    for (size_t i = 0; i < nuage.plans.size(); i++) {
+            //        DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
+            //    }
+            //}
+            /*
             rlEnableDepthMask();  // Désactiver l'écriture dans le tampon de profondeur pour les objets transparents
             
-
             for (auto& nuage : nuages) {
                 for (size_t i = 0; i < nuage.models.size(); i++) {
                     // Création d'une matrice de transformation complète
@@ -1123,6 +1196,7 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
                                lightColor);
                 }
             }
+                */
             /*pour le rectangle
             for (auto& nuage : nuages) {
                 for (size_t i = 0; i < nuage.models.size(); i++) {
@@ -1188,6 +1262,7 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
             //    }
             //}
             // Après avoir généré les nuages
+            /*
             for (auto& nuage : nuages) {
                 for (size_t i = 0; i < nuage.models.size(); i++) {
                     // Configurer le matériau pour la transparence
@@ -1212,7 +1287,14 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
             }
             rlEnableDepthTest();
             rlEnableDepthMask();
-            
+            */
+           //dessine le grand nuage
+           DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, lightColor);
+           //DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
+        //   for (auto& nuage : grandsNuages) {
+        //    for (size_t i = 0; i < nuage.plans.size(); i++) {
+        //    }
+        //}
 
 
         EndMode3D();
@@ -1239,13 +1321,23 @@ for (int i = 0; i < 5; i++) { // Plus de nuages pour meilleure couverture
         }
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
-        // Dans la section UI de votre code
-        GuiSliderBar((Rectangle){ 100, 130, 200, 20 }, "Cloud Density", TextFormat("%.2f", cloudDensity), &cloudDensity, 0.0f, 1.0f);
-        GuiSliderBar((Rectangle){ 100, 160, 200, 20 }, "Cloud Sharpness", TextFormat("%.2f", cloudSharpness), &cloudSharpness, 0.5f, 5.0f);
-            
+        GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
+        GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
+
+        // Si l'un des paramètres change, régénérer la texture
+        static float lastCloudThreshold = cloudThreshold;
+        static float lastNoiseScale = noiseScale;
+        if (fabsf(cloudThreshold - lastCloudThreshold) > 0.01f || fabsf(noiseScale - lastNoiseScale) > 0.1f) {
+            // Régénérer la texture avec les nouveaux paramètres
+            UnloadTexture(grandsNuages[0].textures[0]);
+            grandsNuages[0].textures[0] = GenererTextureNuage(1024, 1024, GetRandomValue(0, 1000), cloudThreshold, noiseScale);
+            grandsNuages[0].plans[0].materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = grandsNuages[0].textures[0];
+            lastCloudThreshold = cloudThreshold;
+            lastNoiseScale = noiseScale;
+        }
         // Mettre à jour les valeurs du shader
-        SetShaderValue(shaderNuage, cloudDensityLoc, &cloudDensity, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(shaderNuage, cloudSharpnessLoc, &cloudSharpness, SHADER_UNIFORM_FLOAT);
+        //SetShaderValue(shaderNuage, cloudDensityLoc, &cloudDensity, SHADER_UNIFORM_FLOAT);
+        //SetShaderValue(shaderNuage, cloudSharpnessLoc, &cloudSharpness, SHADER_UNIFORM_FLOAT);
         DrawFPS(10, 40);
 
         /*
@@ -1331,7 +1423,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         if (viewMode == MODE_NORMAL) {
             if (sceneObjects[i].model == &model_sol) {
                 //DrawCubeV((Vector3){ mapPosition.x, mapPosition.y - 0.1f, mapPosition.z }, taille_terrain, GRAY);
-                DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
+                //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);                
@@ -1339,7 +1431,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         }  else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture de température
-                DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
+                //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 // Pour les autres objets, utilisez la couleur de température
@@ -1356,7 +1448,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         } else if(viewMode == MODE_HUMIDITE){
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture d'humidite
-                DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
+                //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 // Pour les autres objets, utilisez la couleur de l'humiité
