@@ -8,6 +8,7 @@ in vec3 fragPosition;
 in vec2 fragTexCoord;
 //in vec4 fragColor;
 in vec3 fragNormal;
+//uniform int isnuage;
 
 // Input uniform values
 uniform sampler2D texture0;
@@ -26,25 +27,18 @@ uniform vec3 viewPos;
 uniform mat4 lightVP; // Light source view-projection matrix
 uniform sampler2D shadowMap;
 
+
 uniform int shadowMapResolution;
 
 void main()
 {
     // Adjust shadow intensity for semi-transparent objects
     float shadowIntensity = 0.5; // Adjust this value to control shadow darkness for semi-transparent objects
+    float testeur = 0.0;
+    float testeur2 = 0.0;
     // Texel color fetching from texture sampler
     vec4 texelColor = texture(texture0, fragTexCoord);
-    if (texelColor.a < 0.1) {discard;} // Ne pas écrire dans le depth buffer
-    else if (texelColor.a < 1.0) {
-        // Pour les objets semi-transparents, l'intensité de l'ombre est proportionnelle à leur opacité
-        shadowIntensity = texelColor.a * 0.5; // Multiplier par 0.5 pour des ombres plus légères
-        gl_FragDepth = gl_FragCoord.z; // Assurer que la profondeur est correctement écrite
-    }
-    else {
-        // Pour les objets opaques, ombre complète
-        shadowIntensity = 0.8; // Ombre assez sombre mais pas complètement noire
-        gl_FragDepth = gl_FragCoord.z;
-    }
+    
     vec3 lightDot = vec3(0.0);
     vec3 normal = normalize(fragNormal);
     vec3 viewD = normalize(viewPos - fragPosition);
@@ -89,8 +83,28 @@ void main()
             }
         }
     }
+    if (texelColor.a < 0.1) {discard;} // Ne pas écrire dans le depth buffer
+    else if (texelColor.a <= 0.90) {
+        // Pour les objets semi-transparents, l'intensité de l'ombre est proportionnelle à leur opacité
+        shadowIntensity =0.3; // Multiplier par 0.5 pour des ombres plus légères
+        testeur = 0.0;
+        testeur2 = 1.0;
+        gl_FragDepth = gl_FragCoord.z; // Assurer que la profondeur est correctement écrite
+    }
+    else {
+        // Pour les objets opaques, ombre complète
+        shadowIntensity = 0.8; // Ombre assez sombre mais pas complètement noire
+        testeur = 1.0;
+        testeur2 = 0.0;
+        gl_FragDepth = gl_FragCoord.z;
+    }
     //finalColor = mix(finalColor, vec4(0, 0, 0, 1), float(shadowCounter) / float(numSamples));
-    finalColor = mix(finalColor, vec4(shadowIntensity, shadowIntensity, 0, 1), (float(shadowCounter) / float(numSamples)) * (shadowIntensity));
+    //if (isnuage == 0) {
+    //    testeur = 0.5;
+    //}else if (isnuage == 1) {
+    //    testeur = 1.0;
+    //}
+        finalColor = mix(finalColor, vec4(0, 0, 0, 1), (shadowIntensity)*(float(shadowCounter) / float(numSamples)));
     
     // Add ambient lighting whether in shadow or not
     finalColor += texelColor*(ambient/10.0)*colDiffuse;

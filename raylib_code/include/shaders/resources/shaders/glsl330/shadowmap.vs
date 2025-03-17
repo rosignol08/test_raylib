@@ -18,6 +18,8 @@ out vec4 fragColor;
 out vec3 fragNormal;
 
 // NOTE: Add here your custom variables
+// Input vertex boolean attribute
+in int nuage;
 
 void main()
 {
