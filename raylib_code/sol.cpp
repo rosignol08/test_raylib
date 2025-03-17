@@ -27,7 +27,7 @@ void Plante::influencerVoisins(std::vector<std::vector<GridCell>>& grille, int x
 // Méthode pour tuer la plante
 //void Plante::meurt() {
     // Copier les attributs de la plante morte
-    //this->nom = plante_morte.nom;
+    //this->nom = plante_morte.nom; 
     //this->humidite_min = plante_morte.humidite_min;
     //this->humidite_max = plante_morte.humidite_max;
     //this->temperature_min = plante_morte.temperature_min;
