@@ -728,11 +728,6 @@ int main(void) {
     grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 3.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
     grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 2.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
 
-    Shader shaderNuage = LoadShader("ressources/custom_shader/glsl330/shadowmap_nuage.vs", "ressources/custom_shader/glsl330/shadowmap_nuage.fs");
-    // Lors de l'initialisation
-    int cloudDensityLoc = GetShaderLocation(shaderNuage, "cloudDensity");
-    int cloudSharpnessLoc = GetShaderLocation(shaderNuage, "cloudSharpness"); 
-    int timeValueLoc = GetShaderLocation(shaderNuage, "timeValue");
     // Dans la boucle principale
     float cloudDensity = 0.5f; // Ajustez entre 0.0 et 1.0
     float cloudSharpness = 3.0f; // Plus la valeur est élevée, plus les bords sont nets
@@ -745,7 +740,6 @@ int main(void) {
         TraceLog(LOG_ERROR, "Erreur : La texture de bruit n'a pas été chargée correctement !");
     }
 
-    SetShaderValueTexture(shaderNuage, GetShaderLocation(shaderNuage, "noiseTexture"), noiseTexture);
     //couleur qui va changer en fonction de la santé je la decale ici pour pas la declarer a chaque frame
     Color couleur_sante = WHITE;
     // Boucle principale
@@ -791,9 +785,6 @@ int main(void) {
         static float accumulatedTime = 0.0f;
         accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
         float timeValue = accumulatedTime;
-        SetShaderValue(shaderNuage, cloudDensityLoc, &cloudDensity, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(shaderNuage, cloudSharpnessLoc, &cloudSharpness, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(shaderNuage, timeValueLoc, &timeValue, SHADER_UNIFORM_FLOAT);
 
         const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
 
