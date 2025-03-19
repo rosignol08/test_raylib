@@ -33,10 +33,11 @@ public:
     bool morte;
     int age_max;
     Model model;
+    Color couleur;
 
     //Plante cree_plante(string n, int h_min, int t_min, int inf_h, int inf_temp, float taille, float pen, int age, Model mod);
     // Constructeur
-    Plante(string n,int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float taille, float taille_max, float pente_min, float pente_max, int age, bool morte, int age_max, Model mod);
+    Plante(string n,int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float taille, float taille_max, float pente_min, float pente_max, int age, bool morte, int age_max, Model mod, Color couleur);
 
     void influencerVoisins(vector<vector<class GridCell>>& grille, int x, int y);
     //void vieux();

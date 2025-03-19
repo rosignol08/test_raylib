@@ -2,9 +2,9 @@
 Model model_mort;
 //Plante plante_morte("Morte", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, true, Model{});
 // Constructeur
-Plante::Plante(string n, int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float t, float ta_max, float pente_min, float pente_max, int a,bool morte, int age_max, Model mod)
+Plante::Plante(string n, int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float t, float ta_max, float pente_min, float pente_max, int a,bool morte, int age_max, Model mod, Color col)
     : nom(n), sante(sante), humidite_min(h_min), humidite_max(h_max), temperature_min(t_min), temperature_max(t_max), influence_humidite(inf_h), influence_temperature(inf_temp),
-      taille(t), taille_max(ta_max),pente_min(pente_min), pente_max(pente_max), age(a), morte(morte), age_max(age_max), model(mod) {
+      taille(t), taille_max(ta_max),pente_min(pente_min), pente_max(pente_max), age(a), morte(morte), age_max(age_max), model(mod), couleur(col) {
     // Initialisation des attributs via la liste d'initialisation
 }
 

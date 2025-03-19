@@ -199,7 +199,7 @@ int CompareSceneObjects(const void *a, const void *b) {
 }
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
-void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum){
+void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante){
     if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide" || cellule->plante.sante <= 0){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
             Plante bestPlante = vide;
@@ -307,6 +307,13 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                     }
                     if(bestPlante.nom != cellule->plante.nom){
                         cellule->plante.sante -= 1;
+                        couleur_sante = (Color){
+                            (unsigned char)(cellule->plante.couleur.r * 0.9f),
+                            (unsigned char)(cellule->plante.couleur.g * 0.9f),
+                            (unsigned char)(cellule->plante.couleur.b * 0.9f),
+                            cellule->plante.couleur.a
+                        };
+                        cellule->plante.couleur = couleur_sante;
                     }
                     // Augmenter la taille de la plante
                     if (cellule->plante.taille < cellule->plante.taille_max) {
@@ -531,12 +538,13 @@ int main(void) {
     int age_max;
     Model model;
     */
-    Plante herbe("Herbe", 100, 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 1000, model_herbe);
-    Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f,0.1f, 0.01f, 0.5f, 0, false, 1000, model_buisson_europe);
-    Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia);
-    Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50, model_mort);
-    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin);
-    Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel);
+    Color couleur = WHITE;
+    Plante herbe("Herbe", 100, 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 1000, model_herbe, couleur);
+    Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f, 0.1f, 0.01f, 0.5f, 0, false, 1000, model_buisson_europe, couleur);
+    Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia, couleur);
+    Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50, model_mort, couleur);
+    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin, couleur);
+    Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
     std::vector<Plante> plantes = {buisson, accacia, sapin, herbe};
     // Initialisation de la grille
     /*Vector3 position;
@@ -723,7 +731,8 @@ int main(void) {
     }
 
     SetShaderValueTexture(shaderNuage, GetShaderLocation(shaderNuage, "noiseTexture"), noiseTexture);
-
+    //couleur qui va changer en fonction de la santé je la decale ici pour pas la declarer a chaque frame
+    Color couleur_sante = WHITE;
     // Boucle principale
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
@@ -841,7 +850,7 @@ int main(void) {
         // Mise à jour des cellules
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
-                verifier_plante(grille, &grille[x][z], plantes, plante_morte, vide, minTemp, maxTemp, minHum, maxHum);
+                verifier_plante(grille, &grille[x][z], plantes, plante_morte, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante);
             }
         }
         
@@ -1134,7 +1143,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
-                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, WHITE);                
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].model->plante.color);                
             }
         }  else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
