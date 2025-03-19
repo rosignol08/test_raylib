@@ -191,6 +191,7 @@ typedef struct {
     Vector3 position;    // Position de l'objet
     Model *model;        // Modèle 3D
     float depth;         // Distance caméra → objet
+    Color color = WHITE; // Couleur de l'objet, par défaut blanche
 } SceneObject;
 int CompareSceneObjects(const void *a, const void *b) {
     SceneObject *objA = (SceneObject *)a;
@@ -200,7 +201,7 @@ int CompareSceneObjects(const void *a, const void *b) {
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
 void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante){
-    if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide" || cellule->plante.sante <= 0){//si la plante est morte
+    if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide"){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
             Plante bestPlante = vide;
             float bestScore = 0;
@@ -269,14 +270,22 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             float taille_actuelle = cellule->plante.taille;
             Plante planteMorteActuelle = plante_morte;
             planteMorteActuelle.taille = taille_actuelle;
-            cellule->plante = planteMorteActuelle;//TODO faire en sorte que les modèles font la meme taille pour que la plante morte fasse aussi la meme taille
+            cellule->plante = planteMorteActuelle;
             return;
         }
         else{
             if(cellule->plante.nom != plante_morte.nom) {
+                if (cellule->plante.sante <= 1){
+                    cellule->plante.sante = 0;
+                    cellule->plante.age = 0;
+                    float taille_actuelle = cellule->plante.taille;
+                    Plante planteMorteActuelle = plante_morte;
+                    planteMorteActuelle.taille = taille_actuelle;
+                    cellule->plante = planteMorteActuelle;
+                    return;
+                }
             //modifer pout ajouter un système de santée
-                if (cellule->temperature >= cellule->plante.temperature_min && cellule->temperature <= cellule->plante.temperature_max &&
-                    cellule->humidite >= cellule->plante.humidite_min && cellule->humidite <= cellule->plante.humidite_max && cellule->pente >= cellule->plante.pente_min &&
+                if (cellule->pente >= cellule->plante.pente_min &&
                     cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
                     //verifier si la plante à cette case est la meilleure sinon on baisse sa santée
                     Plante bestPlante = cellule->plante;
@@ -306,15 +315,17 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                         }
                     }
                     if(bestPlante.nom != cellule->plante.nom){
-                        cellule->plante.sante -= 1;
+                        cellule->plante.sante -= 4;
                         couleur_sante = (Color){
-                            (unsigned char)(cellule->plante.couleur.r * 0.9f),
-                            (unsigned char)(cellule->plante.couleur.g * 0.9f),
-                            (unsigned char)(cellule->plante.couleur.b * 0.9f),
+                            (unsigned char)Clamp(cellule->plante.couleur.r - 10.0f, 0, 255),
+                            (unsigned char)Clamp(cellule->plante.couleur.g - 10.0f, 0, 255),
+                            (unsigned char)Clamp(cellule->plante.couleur.b - 10.0f, 0, 255),
                             cellule->plante.couleur.a
                         };
                         cellule->plante.couleur = couleur_sante;
+                        //printf("santé : %d\n", cellule->plante.sante);
                     }
+                    
                     // Augmenter la taille de la plante
                     if (cellule->plante.taille < cellule->plante.taille_max) {
                         cellule->plante.taille *= 1.005f;
@@ -579,10 +590,12 @@ int main(void) {
             float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
 
             // Générer une température arbitraire pour cette cellule
-            int temperature = (int) random_flottant(0, 40); // Température aléatoire entre TEMP_MIN et TEMP_MAX
+            int temperature = (int) random_flottant(0, 20); // Température aléatoire entre TEMP_MIN et TEMP_MAX
             int humidite = (int) random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
             humidite_moyenne += humidite;
-            temperature_moyenne += temperature;
+            temperature_moyenne += temperature;//TODO voir si c'est utile
+
+            
 
             // Calcul des hauteurs des cellules voisines
             float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
@@ -723,6 +736,8 @@ int main(void) {
     // Dans la boucle principale
     float cloudDensity = 0.5f; // Ajustez entre 0.0 et 1.0
     float cloudSharpness = 3.0f; // Plus la valeur est élevée, plus les bords sont nets
+    float temperature_modifieur = 0;
+    float hum_modifieur = 0;
 
     Image noiseImage = GenImagePerlinNoise(512, 512, 0, 0, 10.0f);
     Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
@@ -734,14 +749,50 @@ int main(void) {
     //couleur qui va changer en fonction de la santé je la decale ici pour pas la declarer a chaque frame
     Color couleur_sante = WHITE;
     // Boucle principale
+
     while (!WindowShouldClose()) {
+        // Appliquer temperature_modifieur à toutes les cases une seule fois
+        static int last_temp_modif = 0; // Stocker la dernière valeur appliquée
+        int temp_modif = (int)temperature_modifieur;
+
+        if (temp_modif != last_temp_modif) { // Vérifier si la valeur a changé
+            int delta = temp_modif - last_temp_modif; // Calculer la différence
+            for (int x = 0; x < GRID_SIZE; x++) {
+            for (int z = 0; z < GRID_SIZE; z++) {
+                grille[x][z].temperature += delta; // Modifier la température de chaque case
+                if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
+                if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+            }
+            }
+            last_temp_modif = temp_modif; // Mettre à jour la dernière valeur appliquée
+        }
+
+        static int last_hum_modif = 0; // Stocker la dernière valeur appliquée
+        int hum_modif = (int)hum_modifieur;
+
+        if (hum_modif != last_hum_modif) { // Vérifier si la valeur a changé
+            int delta = hum_modif - last_hum_modif; // Calculer la différence
+            for (int x = 0; x < GRID_SIZE; x++) {
+                for (int z = 0; z < GRID_SIZE; z++) {
+                    grille[x][z].humidite += delta; // Modifier l'humidite de chaque case
+                    
+                    //comme ça l'humidité reste dans la plage 0-100
+                    grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
+            
+                    if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
+                    if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+                }
+            }
+            last_hum_modif = hum_modif; // Mettre à jour la dernière valeur appliquée
+        }
+
         float dt = GetFrameTime();
 
         static float accumulatedTime = 0.0f;
         accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
         float timeValue = accumulatedTime;
         SetShaderValue(shaderNuage, cloudDensityLoc, &cloudDensity, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(shaderNuage, cloudSharpnessLoc, &cloudSharpness, SHADER_UNIFORM_FLOAT);    
+        SetShaderValue(shaderNuage, cloudSharpnessLoc, &cloudSharpness, SHADER_UNIFORM_FLOAT);
         SetShaderValue(shaderNuage, timeValueLoc, &timeValue, SHADER_UNIFORM_FLOAT);
 
         const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
@@ -1037,7 +1088,8 @@ int main(void) {
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
         GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
-
+        GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -50.0, 50.0);
+        GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
         static float lastNoiseScale = noiseScale;
@@ -1056,6 +1108,7 @@ int main(void) {
             lastNoiseScale = noiseScale;
         }
         DrawFPS(10, 40);
+        
 
         /*
         l'ui pour controler les paramètres
@@ -1117,18 +1170,20 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 float scale = grille[x][z].plante.taille;
                 sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
                 sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
+                sceneObjects[objectCount].color = grille[x][z].plante.couleur;
                 objectCount++;
             }
         }
     }
-    // Trouver les températures min et max
-    minTemp = 0;
-    maxTemp = 1;
+    // update des températures min et max
+    //minTemp = 0;
+    //maxTemp = 1;
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
             if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
             if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
             // Update minHum and maxHum
+            grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
             if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
             if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
         }
@@ -1143,9 +1198,10 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
-                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].model->plante.color);                
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+                //printf("couleur : R=%d, G=%d, B=%d, A=%d\n", sceneObjects[i].color.r, sceneObjects[i].color.g, sceneObjects[i].color.b, sceneObjects[i].color.a);
             }
-        }  else if (viewMode == MODE_TEMPERATURE) {
+        } else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture de température
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
