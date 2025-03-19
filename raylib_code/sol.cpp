@@ -43,8 +43,8 @@ void Plante::influencerVoisins(std::vector<std::vector<GridCell>>& grille, int x
 //}
 
 // Constructeur de GridCell
-GridCell::GridCell(Vector3 pos, Model mod, bool act, bool occ, int temp, int hum, float pen, Plante plante)
-    : position(pos), model(mod), active(act),occupee(occ), temperature(temp), humidite(hum), pente(pen), plante(plante) {
+GridCell::GridCell(int id, Vector3 pos, Model mod, bool act, bool occ, int temp, int hum, float pen, Plante plante)
+    : identifiant(id), position(pos), model(mod), active(act),occupee(occ), temperature(temp), humidite(hum), pente(pen), plante(plante) {
     // On initialise plante avec le constructeur par défaut
 }
 

@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "sol.h"
+#include "nuages.h"
 #define RLIGHTS_IMPLEMENTATION
 #if defined(_WIN32) || defined(_WIN64)
 #include "include/shaders/rlights.h"
@@ -41,101 +42,6 @@ int viewMode = MODE_NORMAL;
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 
-//test nuage
-// Structure pour stocker un nuage plus détaillé
-struct Nuage {
-    std::vector<Model> plans; // Ensemble de plans formant un grand nuage
-    std::vector<Vector3> positions; // Positions des différentes parties du nuage
-    std::vector<float> scales; // Tailles des différentes parties
-    std::vector<Texture2D> textures;  //pour stocker les textures
-    std::vector<float> rotations; // Nouvelle propriété pour stocker les rotations
-    float vitesseDefile; // Vitesse de défilement du nuage
-    float largeurTotale; // Largeur totale du nuage (pour savoir quand le faire revenir)
-};
-
-// Fonction pour générer une texture de nuage personnalisée pour chaque sphère
-Texture2D GenererTextureNuage(int largeur, int hauteur, int seed, float seuil = 0.2f, float echelle = 10.0f) {
-    // Générer une image de bruit de Perlin avec un seed unique et une échelle ajustable
-    // Une valeur d'échelle plus élevée donne des variations plus petites
-    Image nuageImage = GenImagePerlinNoise(largeur, hauteur, seed, seed + 20, echelle);
-    
-    // Modifier l'image pour créer des nuages toujours un peu translucides
-    for(int y = 0; y < nuageImage.height; y++) {
-        for(int x = 0; x < nuageImage.width; x++) {
-            Color pixel = GetImageColor(nuageImage, x, y);
-            
-            // Normaliser la valeur du pixel
-            float normalizedValue = (float)pixel.r / 255.0f;
-            
-            // Application du seuil avec un maximum d'opacité limité
-            float alpha;
-            if (normalizedValue < seuil) {
-                alpha = 0.0f; // Complètement transparent sous le seuil
-            } else {
-                // Calculer l'opacité mais avec un maximum de ~70% pour garder une translucidité permanente
-                // Plage de 0 à 180 (au lieu de 0 à 255)
-                alpha = 180.0f * ((normalizedValue - seuil) / (1.0f - seuil));
-                
-                // Ajouter une légère variation aléatoire pour un aspect plus naturel
-                alpha *= (0.8f + ((float)GetRandomValue(0, 40) / 100.0f));
-            }
-            
-            // Limiter l'alpha à une valeur maximum (180 est environ 70% opaque)
-            alpha = Clamp(alpha, 0.0f, 180.0f);
-            
-            // Définir la couleur du nuage avec la transparence
-            Color nuageColor = {255, 255, 255, (unsigned char)alpha};
-            ImageDrawPixel(&nuageImage, x, y, nuageColor);
-        }
-    }
-    
-    // Appliquer un filtre flou pour adoucir les bords
-    ImageBlurGaussian(&nuageImage, 2);
-    
-    // Convertir en texture
-    Texture2D nuageTexture = LoadTextureFromImage(nuageImage);
-    
-    // Libérer la mémoire de l'image
-    UnloadImage(nuageImage);
-    
-    return nuageTexture;
-}
-// Fonction pour générer un grand nuage composé d'un seul plan sans rotation
-Nuage GenererGrandNuage(Vector3 position, float longueur, float hauteur, int nombrePlans, float seuil = 0.2f, float echelle = 10.0f) {
-    Nuage nuage;
-    nuage.vitesseDefile = 0.2f;
-    nuage.largeurTotale = longueur * 2.0f;
-    
-    // Dimensions du plan
-    float largeurPlan = longueur;
-    float hauteurPlan = hauteur;
-    
-    // Générer un plan (quad)
-    Mesh planeMesh = GenMeshPlane(largeurPlan, hauteurPlan, 1, 1);
-    Model model = LoadModelFromMesh(planeMesh);
-    
-    // Créer une texture de nuage unique pour ce plan avec les paramètres spécifiés
-    int seed = GetRandomValue(0, 1000);
-    Texture2D nuageTexture = GenererTextureNuage( 512, 512, seed, seuil, echelle);
-    
-    // Appliquer la texture au plan
-    model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = nuageTexture;
-    
-    // Position du plan
-    Vector3 pos = {
-        position.x,
-        position.y,
-        position.z
-    };
-    
-    nuage.plans.push_back(model);
-    nuage.positions.push_back(pos);
-    nuage.scales.push_back(1.0f);
-    nuage.rotations.push_back(0.0f);
-    nuage.textures.push_back(nuageTexture);
-    
-    return nuage;
-}
 
 float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
 const float pI = 3.14159265359f;
@@ -293,7 +199,7 @@ int CompareSceneObjects(const void *a, const void *b) {
 }
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
-void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide){
+void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum){
     if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide" || cellule->plante.sante <= 0){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
             Plante bestPlante = vide;
@@ -326,6 +232,28 @@ void verifier_plante(GridCell *cellule, std::vector<Plante> plantes, Plante plan
             cellule->plante = bestPlante;
             cellule->plante.age = rand() % 500;
             cellule->plante.taille = bestPlante.taille;
+            // Appliquer les influences sur les cases voisines
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (dx == 0 && dz == 0) continue; // Ignorer la cellule actuelle
+
+                    int voisinX = (cellule->identifiant / GRID_SIZE) + dx;
+                    int voisinZ = (cellule->identifiant % GRID_SIZE) + dz;
+
+                    // Vérifier si les coordonnées sont valides
+                    if (voisinX >= 0 && voisinX < GRID_SIZE && voisinZ >= 0 && voisinZ < GRID_SIZE) {
+                        GridCell *voisin = &grille[voisinX][voisinZ];
+
+                        // Appliquer les influences de la plante sur la cellule voisine
+                        voisin->temperature += cellule->plante.influence_temperature;
+                        voisin->humidite += cellule->plante.influence_humidite;
+
+                        // Limiter les valeurs pour éviter les dépassements
+                        //voisin->temperature = Clamp(voisin->temperature, minTemp, maxTemp);
+                        voisin->humidite = Clamp(voisin->humidite, 0, 100); // Limiter l'humidité entre 0 et 100 parce que c'est un pourcentage
+                    }
+                }
+            }
 
             return;
         }
@@ -620,7 +548,7 @@ int main(void) {
     float pente;
     Plante plante;*/
     // Création d'une grille de cellules
-    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell({0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
+    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell(0,{0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
     //ajoute la grille du sol d'herbe type SolHerbe
     //le terrain
     Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
@@ -691,7 +619,7 @@ int main(void) {
             randomRotationX = DEG2RAD * randomRotationX;
             transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
             grille[x][z].model.transform = transform;
-
+            grille[x][z].identifiant = x*GRID_SIZE+z;
         }
     }
 
@@ -772,8 +700,8 @@ int main(void) {
     material_test.maps[MATERIAL_MAP_DIFFUSE].texture = argyleTexture;
     material_test.shader = shadowShader;
     std::vector<Nuage> grandsNuages;
-    float cloudThreshold = 0.6f;  // Seuil initial
-    float noiseScale = 7.0f;     // Échelle initiale
+    float cloudThreshold = 0.6f; // Seuil initial
+    float noiseScale = 7.0f; // Échelle initiale
 
     grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 4.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
     grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 3.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
@@ -913,7 +841,7 @@ int main(void) {
         // Mise à jour des cellules
         for (int x = 0; x < GRID_SIZE; x++) {
             for (int z = 0; z < GRID_SIZE; z++) {
-                verifier_plante(&grille[x][z], plantes, plante_morte, vide);
+                verifier_plante(grille, &grille[x][z], plantes, plante_morte, vide, minTemp, maxTemp, minHum, maxHum);
             }
         }
         

@@ -10,7 +10,7 @@ CXXFLAGS = -Wall -std=c++11 -O1  # Ajout des options pour C++
 INCLUDE = -Iinclude/
 
 SRC = main.cpp
-SRC_CPP = sol.cpp  # Ajout du fichier C++
+SRC_CPP = sol.cpp nuages.cpp # Ajout du fichier C++
 OBJ_C = $(SRC_C:.c=.o)
 OBJ_CPP = $(SRC_CPP:.cpp=.o)
 

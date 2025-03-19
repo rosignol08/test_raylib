@@ -47,6 +47,7 @@ public:
 
 class GridCell {
 public:
+    int identifiant;
     Vector3 position;
     Model model;
     bool active;
@@ -56,7 +57,7 @@ public:
     float pente;
     Plante plante;
 
-    GridCell(Vector3 pos, Model mod, bool act, bool occupee, int temp, int hum, float pen, Plante plante);
+    GridCell(int id, Vector3 pos, Model mod, bool act, bool occupee, int temp, int hum, float pen, Plante plante);
     //void update(vector<vector<GridCell>>& grille, int x, int y);
 };
 
