@@ -409,21 +409,42 @@ int main(void) {
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
+    //l'herbe
+    Shader herbe_shader = LoadShader("ressources/custom_shader/glsl330/herbe_shader.vs","ressources/custom_shader/glsl330/herbe_shader.fs");
     // Configurez les locations du shader de l'ombre
     shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
 
-    // cree la lumiere LIGHT_DIRECTIONAL ou LIGHT_POINT
-    //Light directionalLight = CreateLight(LIGHT_DIRECTIONAL, Vector3Zero(), (Vector3){ 0.0f, 10.0f, 0.0f }, WHITE, shadowShader);
-    //pour l'ombre
-    
+    //pour l'ombre    
     Vector3 lightDir = Vector3Normalize((Vector3){ 0.35f, -1.0f, -0.35f });
     Color lightColor = WHITE;
     Vector4 lightColorNormalized = ColorNormalize(lightColor);
     int lightDirLoc = GetShaderLocation(shadowShader, "lightDir");
     int lightColLoc = GetShaderLocation(shadowShader, "lightColor");
+    
+    int lightDirLoc_herbe = GetShaderLocation(herbe_shader, "lightDir");
+    int lightVPLoc_herbe = GetShaderLocation(herbe_shader, "lightVP");
+    
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
-    
+
+    //shader de l'herbe
+    SetShaderValue(herbe_shader, lightDirLoc_herbe, &lightDir, SHADER_UNIFORM_VEC3);
+    SetShaderValue(herbe_shader, lightVPLoc_herbe, &lightDir, SHADER_UNIFORM_VEC4); //remplacement de lightVPMatrix par lightDir et SHADER_UNIFORM_MAT4 par SHADER_UNIFORM_VEC4
+    Image windNoiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
+    Texture2D windNoiseTexture = LoadTextureFromImage(windNoiseImage);
+    UnloadImage(windNoiseImage);
+    int windNoiseLoc = GetShaderLocation(herbe_shader, "wind_noise");
+    SetShaderValueTexture(herbe_shader, windNoiseLoc, windNoiseTexture);
+
+    Vector2 windDirection = { 1.0f, 0.0f };
+    float windSpeed = 0.1f;
+    int windDirLoc = GetShaderLocation(herbe_shader, "wind_horizontal_direction");
+    SetShaderValue(herbe_shader, windDirLoc, &windDirection, SHADER_UNIFORM_VEC2);
+
+    int windSpeedLoc = GetShaderLocation(herbe_shader, "wind_speed");
+    SetShaderValue(herbe_shader, windSpeedLoc, &windSpeed, SHADER_UNIFORM_FLOAT);
+    //fin herbe shader .vs
+
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
     float ambient[4] = {0.1f, 0.1f, 0.1f, 1.0f};
     SetShaderValue(shadowShader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
@@ -431,7 +452,7 @@ int main(void) {
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
-
+    
     //test sol
     Image image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)    
     //image de la temperature
@@ -465,7 +486,7 @@ int main(void) {
     
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
-    model_herbe_instance.materials[0].shader = shadowShader;
+    model_herbe_instance.materials[0].shader = herbe_shader;
     Mesh herbe_mesh = GenMeshCube(16.0f, 16.0f, 16.0f);
 
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
@@ -500,10 +521,10 @@ int main(void) {
     {
         model_herbe.materials[i].shader = shadowShader;
     }
-    model_herbe_instance.materials[0].shader = shadowShader;
+    model_herbe_instance.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_herbe_instance.materialCount; i++)
     {
-        model_herbe_instance.materials[i].shader = shadowShader;
+        model_herbe_instance.materials[i].shader = herbe_shader;
     }
 
     model_sol.materials[0].shader = shadowShader;
@@ -520,7 +541,16 @@ int main(void) {
     emptyModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLANK; // Set the color to blank
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
+    //jsp si c'est le bon endroit pour :
+    //shader herbe .fs
+    Texture2D shadowMapTexture = shadowMap.depth; // Get the shadowmap texture
+    Color grassColor = GREEN;
+    int shadowMapLoc = GetShaderLocation(herbe_shader, "shadowMap");
+    SetShaderValueTexture(herbe_shader, shadowMapLoc, shadowMapTexture);
     
+    int albedoLoc = GetShaderLocation(herbe_shader, "albedo");
+    SetShaderValue(herbe_shader, albedoLoc, &grassColor, SHADER_UNIFORM_VEC4);
+
     //la light camera
     Camera3D lightCam = { 0 };
     lightCam.position = Vector3Scale(lightDir, -15.0f);
