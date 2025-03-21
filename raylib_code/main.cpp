@@ -421,13 +421,14 @@ int main(void) {
     int lightDirLoc = GetShaderLocation(shadowShader, "lightDir");
     int lightColLoc = GetShaderLocation(shadowShader, "lightColor");
     
-    int lightDirLoc_herbe = GetShaderLocation(herbe_shader, "lightDir");
-    int lightVPLoc_herbe = GetShaderLocation(herbe_shader, "lightVP");
+    //int lightDirLoc_herbe = GetShaderLocation(herbe_shader, "lightDir");
+    //int lightVPLoc_herbe = GetShaderLocation(herbe_shader, "lightVP");
     
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
 
-    //shader de l'herbe
+   
+    /*
     SetShaderValue(herbe_shader, lightDirLoc_herbe, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(herbe_shader, lightVPLoc_herbe, &lightDir, SHADER_UNIFORM_VEC4); //remplacement de lightVPMatrix par lightDir et SHADER_UNIFORM_MAT4 par SHADER_UNIFORM_VEC4
     Image windNoiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
@@ -443,6 +444,7 @@ int main(void) {
 
     int windSpeedLoc = GetShaderLocation(herbe_shader, "wind_speed");
     SetShaderValue(herbe_shader, windSpeedLoc, &windSpeed, SHADER_UNIFORM_FLOAT);
+    */
     //fin herbe shader .vs
 
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
@@ -452,6 +454,7 @@ int main(void) {
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
+    
     
     //test sol
     Image image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)    
@@ -486,8 +489,7 @@ int main(void) {
     
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
-    model_herbe_instance.materials[0].shader = herbe_shader;
-    Mesh herbe_mesh = GenMeshCube(16.0f, 16.0f, 16.0f);
+    model_herbe_instance.materials[0].shader = shadowShader;
 
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
     Texture2D texture_acacia = LoadTexture("models/acacia/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
@@ -521,10 +523,10 @@ int main(void) {
     {
         model_herbe.materials[i].shader = shadowShader;
     }
-    model_herbe_instance.materials[0].shader = herbe_shader;
+    model_herbe_instance.materials[0].shader = shadowShader;
     for (int i = 0; i < model_herbe_instance.materialCount; i++)
     {
-        model_herbe_instance.materials[i].shader = herbe_shader;
+        model_herbe_instance.materials[i].shader = shadowShader;
     }
 
     model_sol.materials[0].shader = shadowShader;
@@ -541,16 +543,7 @@ int main(void) {
     emptyModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = BLANK; // Set the color to blank
     //la shadowmap
     RenderTexture2D shadowMap = LoadShadowmapRenderTexture(SHADOWMAP_RESOLUTION, SHADOWMAP_RESOLUTION);
-    //jsp si c'est le bon endroit pour :
-    //shader herbe .fs
-    Texture2D shadowMapTexture = shadowMap.depth; // Get the shadowmap texture
-    Color grassColor = GREEN;
-    int shadowMapLoc = GetShaderLocation(herbe_shader, "shadowMap");
-    SetShaderValueTexture(herbe_shader, shadowMapLoc, shadowMapTexture);
     
-    int albedoLoc = GetShaderLocation(herbe_shader, "albedo");
-    SetShaderValue(herbe_shader, albedoLoc, &grassColor, SHADER_UNIFORM_VEC4);
-
     //la light camera
     Camera3D lightCam = { 0 };
     lightCam.position = Vector3Scale(lightDir, -15.0f);
@@ -1109,7 +1102,7 @@ int main(void) {
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
         GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
-        GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -50.0, 50.0);
+        GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
         GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
@@ -1197,8 +1190,8 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         }
     }
     // update des températures min et max
-    //minTemp = 0;
-    //maxTemp = 1;
+    minTemp = 0;
+    maxTemp = 1;
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
             if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
