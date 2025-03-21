@@ -32,7 +32,7 @@
 #define GRID_SIZE 10
 #define NBHERBE 25
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
-#define SHADOWMAP_RESOLUTION 1024 //la resolution de la shadowmap
+#define SHADOWMAP_RESOLUTION 4096 //la resolution de la shadowmap
 
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
@@ -405,7 +405,7 @@ int main(void) {
     };
 
     //Lumière directionnelle
-    // Load basic lighting shader
+    // Load basic lighting shader_
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
@@ -426,6 +426,33 @@ int main(void) {
     
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
+
+    // Après avoir chargé le shader herbe_shader
+    int timeLocation = GetShaderLocation(herbe_shader, "time");
+    int windSpeedLocation = GetShaderLocation(herbe_shader, "wind_speed");
+    int windStrengthLocation = GetShaderLocation(herbe_shader, "wind_strength");
+    int windTextureTileSizeLocation = GetShaderLocation(herbe_shader, "wind_texture_tile_size");
+    int windVerticalStrengthLocation = GetShaderLocation(herbe_shader, "wind_vertical_strength");
+    int windHorizontalDirectionLocation = GetShaderLocation(herbe_shader, "wind_horizontal_direction");
+    int windNoiseLocation = GetShaderLocation(herbe_shader, "wind_noise");
+
+    // Générer ou charger une texture de bruit de Perlin
+    Image noiseImage_vent = GenImagePerlinNoise(256, 256, 0, 0, 5.0f);
+    Texture2D windNoiseTexture = LoadTextureFromImage(noiseImage_vent);
+    UnloadImage(noiseImage_vent);
+
+    // Valeurs initiales des paramètres de vent
+    float time = 0.0f;
+    float windSpeed = 0.3f;               // Vitesse du vent - essayez 0.3 à 1.0
+    float windTextureTileSize = 10.0f;    // Taille des tuiles - essayez 5.0 à 20.0
+    float windVerticalStrength = 0.2f;    // Force verticale - essayez 0.1 à 0.4
+    Vector2 windDirection = { 1.0f, 0.0f }; // Direction du vent
+    Image windTexture_perlin = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
+    Texture2D windTexture = LoadTextureFromImage(windTexture_perlin);
+    UnloadImage(windTexture_perlin);
+
+    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+
 
    
     /*
@@ -489,7 +516,6 @@ int main(void) {
     
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
-    model_herbe_instance.materials[0].shader = shadowShader;
 
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
     Texture2D texture_acacia = LoadTexture("models/acacia/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
@@ -523,10 +549,14 @@ int main(void) {
     {
         model_herbe.materials[i].shader = shadowShader;
     }
-    model_herbe_instance.materials[0].shader = shadowShader;
+    model_herbe_instance.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_herbe_instance.materialCount; i++)
     {
-        model_herbe_instance.materials[i].shader = shadowShader;
+        model_herbe_instance.materials[i].shader = herbe_shader;
+    }
+    // Après avoir chargé le shader
+    if (herbe_shader.id == 0) {
+        printf("Erreur lors du chargement du shader d'herbe!\n");
     }
 
     model_sol.materials[0].shader = shadowShader;
@@ -537,6 +567,7 @@ int main(void) {
     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_herbe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_herbe_instance.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     // Create an empty model to represent an empty cell
     Mesh emptyMesh = GenMeshCube(0.0f, 0.0f, 0.0f); // Generate a cube with zero size
     Model emptyModel = LoadModelFromMesh(emptyMesh);
@@ -992,7 +1023,17 @@ int main(void) {
 
         SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
         SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+        
+        time += dt;  // Incrémenter le temps
 
+        
+        float windStrength = 0.7f;
+        float windSpeed = 1.0f;
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
+        // Ajoutez un facteur de luminosité pour l'herbe
+        float grassBrightness = 1.5f; // Ajustez selon vos besoins
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "grassBrightness"), &grassBrightness, SHADER_UNIFORM_FLOAT);
         // Rendu final (vue normale)
         BeginDrawing();
         //on dessine les ombres ici
@@ -1005,7 +1046,9 @@ int main(void) {
             lightView = rlGetMatrixModelview();
             lightProj = rlGetMatrixProjection();
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
-            
+            int isGrass = 1;
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
             rlEnableBackfaceCulling();
             //DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
             for (int i = 0; i < herbeCount ; i++){
@@ -1019,10 +1062,18 @@ int main(void) {
                 gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
 
                 //verifie si l'herbe peut pousser à cette temperature
-                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 100) {
+                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
+                    Shader originalShader = models_herbe_vecteur[i].materials[0].shader;
+            
+                    // Utilisez un shader de shadow mapping simple pour générer l'ombre
+                    models_herbe_vecteur[i].materials[0].shader = shadowShader; // Utilisez un shader simple pour les ombres
+                    // Restaurez le shader original
                     DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
+                    models_herbe_vecteur[i].materials[0].shader = originalShader;
                 }
             }
+            isGrass = 0;
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
             rlDisableBackfaceCulling();
             // Après avoir généré les nuages
             for (auto& nuage : grandsNuages) {
@@ -1056,9 +1107,18 @@ int main(void) {
         rlActiveTextureSlot(10);
         rlEnableTexture(shadowMap.depth.id);
         rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
-
+        //Vector3 lightPos = { 0.0f, 10.0f, 0.0f }; // Ajustez selon votre lumière
+        //Vector4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+        Vector4 ambientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "ambient"), &ambientColor, SHADER_UNIFORM_VEC4);
+        
         BeginMode3D(camera);
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+            isGrass = 1;
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
 
             for (int i = 0; i < herbeCount ; i++){
                 //active backface culling ici
@@ -1068,16 +1128,20 @@ int main(void) {
                 gridX = Clamp(gridX, 0, GRID_SIZE - 1);
                 gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
 
-                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 100) {
+                //verifie si l'herbe peut pousser à cette temperature
+                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
+    
                     DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
                 }
             }
+            isGrass = 0;
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
             rlDisableBackfaceCulling();
             
            //dessine le grand nuage
            for (auto& nuage : grandsNuages) {
             for (size_t i = 0; i < nuage.plans.size(); i++) {
-                DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, lightColor);
+                DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
             }
         }
            //DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, lightColor);
@@ -1122,6 +1186,7 @@ int main(void) {
             lastNoiseScale = noiseScale;
         }
         DrawFPS(10, 40);
+
         
 
         /*

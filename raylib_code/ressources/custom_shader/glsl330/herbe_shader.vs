@@ -10,13 +10,6 @@ in vec4 vertexColor;
 uniform mat4 mvp;
 uniform mat4 matModel;
 uniform mat4 matNormal;
-uniform float wind_speed;
-uniform float wind_strength;
-uniform float wind_texture_tile_size;
-uniform float wind_vertical_strength;
-uniform vec2 wind_horizontal_direction;
-uniform sampler2D wind_noise;
-uniform float time;
 
 // Output vertex attributes (to fragment shader)
 out vec3 fragPosition;
@@ -24,21 +17,35 @@ out vec2 fragTexCoord;
 out vec4 fragColor;
 out vec3 fragNormal;
 
+// Paramètres pour l'effet de vent
+uniform float windStrength = 0.1;      // Force du vent
+uniform float windSpeed = 1.0;         // Vitesse du vent
+uniform float time;                    // Temps (fourni par l'application)
+uniform int isGrass = 0;               // Indicateur si c'est de l'herbe (1) ou non (0)
+
 void main() {
-    vec3 world_vert = vec3(matModel * vec4(vertexPosition, 1.0));
-    vec2 normalized_wind_direction = normalize(wind_horizontal_direction);
-    vec2 world_uv = world_vert.xz / wind_texture_tile_size + normalized_wind_direction * time * wind_speed;
-    float displacement_affect = (1.0 - vertexTexCoord.y);
-    float wind_noise_intensity = (texture(wind_noise, world_uv).r - 0.5);
-    vec3 bump_wind = vec3(
-        wind_noise_intensity * normalized_wind_direction.x * wind_strength,
-        (1.0 - wind_noise_intensity) * wind_vertical_strength,
-        wind_noise_intensity * normalized_wind_direction.y * wind_strength
-    );
-    vec3 displacedPosition = vertexPosition + bump_wind * displacement_affect;
-    fragPosition = vec3(matModel * vec4(displacedPosition, 1.0));
+    // Copie de la position initiale
+    vec3 position = vertexPosition;
+    
+    // Appliquer l'effet de vent seulement à l'herbe
+    if (isGrass == 1) {
+        // Calculer l'effet de vent basé sur le temps et la position
+        // Plus la position Y (hauteur) est élevée, plus l'effet est fort
+        float windEffect = sin(time * windSpeed + position.x * 0.5) * cos(time * windSpeed * 0.7 + position.z * 0.5);
+        
+        // Appliquer l'effet principalement sur X et un peu sur Z, proportionnel à la hauteur Y
+        float heightFactor = position.y / 2.0; // Ajuster selon la hauteur de votre herbe
+        position.x += windEffect * windStrength * heightFactor;
+        position.z += windEffect * windStrength * 0.3 * heightFactor; // Effet moindre sur Z
+        
+    }
+    
+    // Envoyer les attributs de vertex au fragment shader
+    fragPosition = vec3(matModel * vec4(position, 1.0));
     fragTexCoord = vertexTexCoord;
     fragColor = vertexColor;
     fragNormal = normalize(vec3(matNormal * vec4(vertexNormal, 1.0)));
-    gl_Position = mvp * vec4(displacedPosition, 1.0);
+    
+    // Calculer la position finale du vertex
+    gl_Position = mvp * vec4(position, 1.0);
 }
