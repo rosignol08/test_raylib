@@ -429,6 +429,30 @@ int main(void) {
     //SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "ambient"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
     // Valeurs initiales des paramètres de vent
     float time = 0.0f;
+
+    //init bruit de perlin
+    Image noiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
+    Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
+    UnloadImage(noiseImage);
+    
+    // Valeurs initiales
+    float windTextureTileSize = 2.0f;
+    float windVerticalStrength = 0.3f;
+    Vector2 windHorizontalDirection = { 1.0f, 0.5f };
+    
+    // Stocker l'ID de la localisation de l'uniform noiseTexture dans le shader
+    int noiseTextureLoc = GetShaderLocation(herbe_shader, "noiseTexture");
+    int noiseScaleLoc = GetShaderLocation(herbe_shader, "noiseScale");
+
+    int timeLocation = GetShaderLocation(herbe_shader, "time");
+    int windStrengthLocation = GetShaderLocation(herbe_shader, "windStrength");
+    int windSpeedLocation = GetShaderLocation(herbe_shader, "windSpeed");
+    int isGrassLocation = GetShaderLocation(herbe_shader, "isGrass");
+    int windTextureTileSizeLocation = GetShaderLocation(herbe_shader, "windTextureTileSize");
+    int windVerticalStrengthLocation = GetShaderLocation(herbe_shader, "windVerticalStrength");
+    int windHorizontalDirectionLocation = GetShaderLocation(herbe_shader, "windHorizontalDirection");
+
+
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
     int lightVPLoc = GetShaderLocation(shadowShader, "lightVP");
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
@@ -738,15 +762,10 @@ int main(void) {
 
     // Dans la boucle principale
     float cloudDensity = 0.5f; // Ajustez entre 0.0 et 1.0
-    float cloudSharpness = 3.0f; // Plus la valeur est élevée, plus les bords sont nets
+    float cloudSharpness = 3.0f; // Plus la valeur est élevée, plus les bords sont nets TODO enlever ça
     float temperature_modifieur = 0;
     float hum_modifieur = 0;
 
-    Image noiseImage = GenImagePerlinNoise(512, 512, 0, 0, 10.0f);
-    Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
-    if (noiseTexture.id == 0) {
-        TraceLog(LOG_ERROR, "Erreur : La texture de bruit n'a pas été chargée correctement !");
-    }
 
     //couleur qui va changer en fonction de la santé je la decale ici pour pas la declarer a chaque frame
     Color couleur_sante = WHITE;
@@ -987,10 +1006,13 @@ int main(void) {
 
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
         time += dt;  // Incrémenter le temps
-
+        
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
         
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "noiseScale"), &noiseScale, SHADER_UNIFORM_FLOAT);
+        SetShaderValueTexture(herbe_shader, GetShaderLocation(herbe_shader, "noiseTexture"), noiseTexture);
         // Rendu final (vue normale)
         BeginDrawing();
         //on dessine les ombres ici
@@ -1004,8 +1026,21 @@ int main(void) {
             lightProj = rlGetMatrixProjection();
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
             int isGrass = 1;
+
+            SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, windSpeedLocation, &windSpeed, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
+            SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
+            SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
+            SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+
+            //maj des uniformes pour le shader
+            SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
+
             rlEnableBackfaceCulling();
             //DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
             for (int i = 0; i < herbeCount ; i++){
@@ -1071,8 +1106,19 @@ int main(void) {
         BeginMode3D(camera);
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
             isGrass = 1;
+            SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, windSpeedLocation, &windSpeed, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
+            SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
+            SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
+            SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+            //maj des uniformes pour le shader
+            SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
+
 
             for (int i = 0; i < herbeCount ; i++){
                 //active backface culling ici
