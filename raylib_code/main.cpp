@@ -426,19 +426,10 @@ int main(void) {
     //test TODO
     SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
-    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "ambient"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
-
-    // Générer ou charger une texture de bruit de Perlin
-    Image noiseImage_vent = GenImagePerlinNoise(256, 256, 0, 0, 5.0f);
-    Texture2D windNoiseTexture = LoadTextureFromImage(noiseImage_vent);
-    UnloadImage(noiseImage_vent);
-
+    //SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "ambient"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
     // Valeurs initiales des paramètres de vent
     float time = 0.0f;
-    float windSpeed = 0.3f;               // Vitesse du vent - essayez 0.3 à 1.0
-
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
-    //SetShaderValue(herbe_shader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
     int lightVPLoc = GetShaderLocation(shadowShader, "lightVP");
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
@@ -760,7 +751,9 @@ int main(void) {
     //couleur qui va changer en fonction de la santé je la decale ici pour pas la declarer a chaque frame
     Color couleur_sante = WHITE;
     // Boucle principale
-
+    float windStrength = 0.7f;//force du vent
+    float windSpeed = 1.0f;//vitesse du vent
+    
     while (!WindowShouldClose()) {
         // Appliquer temperature_modifieur à toutes les cases une seule fois
         static int last_temp_modif = 0; // Stocker la dernière valeur appliquée
@@ -984,17 +977,18 @@ int main(void) {
 
         lightColor = GetSunColor(timeOfDay);  // Utilisez votre fonction existante
         lightColorNormalized = ColorNormalize(lightColor);
-
+        
         SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
         SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+        
         //test temp TODO
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC4);
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
+
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
         time += dt;  // Incrémenter le temps
 
         
-        float windStrength = 0.7f;//force du vent
-        float windSpeed = 1.0f;//vitesse du vent
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
         // Rendu final (vue normale)
@@ -1132,6 +1126,9 @@ int main(void) {
         GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
         GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
         GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
+        // Sliders for wind parameters
+        GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 3.0f);
+        GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f);
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
         static float lastNoiseScale = noiseScale;
