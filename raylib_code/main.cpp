@@ -420,21 +420,13 @@ int main(void) {
     Vector4 lightColorNormalized = ColorNormalize(lightColor);
     int lightDirLoc = GetShaderLocation(shadowShader, "lightDir");
     int lightColLoc = GetShaderLocation(shadowShader, "lightColor");
-    
-    //int lightDirLoc_herbe = GetShaderLocation(herbe_shader, "lightDir");
-    //int lightVPLoc_herbe = GetShaderLocation(herbe_shader, "lightVP");
-    
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
 
-    // Après avoir chargé le shader herbe_shader
-    int timeLocation = GetShaderLocation(herbe_shader, "time");
-    int windSpeedLocation = GetShaderLocation(herbe_shader, "wind_speed");
-    int windStrengthLocation = GetShaderLocation(herbe_shader, "wind_strength");
-    int windTextureTileSizeLocation = GetShaderLocation(herbe_shader, "wind_texture_tile_size");
-    int windVerticalStrengthLocation = GetShaderLocation(herbe_shader, "wind_vertical_strength");
-    int windHorizontalDirectionLocation = GetShaderLocation(herbe_shader, "wind_horizontal_direction");
-    int windNoiseLocation = GetShaderLocation(herbe_shader, "wind_noise");
+    //test TODO
+    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
+    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
+    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "ambient"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
 
     // Générer ou charger une texture de bruit de Perlin
     Image noiseImage_vent = GenImagePerlinNoise(256, 256, 0, 0, 5.0f);
@@ -444,43 +436,14 @@ int main(void) {
     // Valeurs initiales des paramètres de vent
     float time = 0.0f;
     float windSpeed = 0.3f;               // Vitesse du vent - essayez 0.3 à 1.0
-    float windTextureTileSize = 10.0f;    // Taille des tuiles - essayez 5.0 à 20.0
-    float windVerticalStrength = 0.2f;    // Force verticale - essayez 0.1 à 0.4
-    Vector2 windDirection = { 1.0f, 0.0f }; // Direction du vent
-    Image windTexture_perlin = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
-    Texture2D windTexture = LoadTextureFromImage(windTexture_perlin);
-    UnloadImage(windTexture_perlin);
-
-    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
-
-
-   
-    /*
-    SetShaderValue(herbe_shader, lightDirLoc_herbe, &lightDir, SHADER_UNIFORM_VEC3);
-    SetShaderValue(herbe_shader, lightVPLoc_herbe, &lightDir, SHADER_UNIFORM_VEC4); //remplacement de lightVPMatrix par lightDir et SHADER_UNIFORM_MAT4 par SHADER_UNIFORM_VEC4
-    Image windNoiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
-    Texture2D windNoiseTexture = LoadTextureFromImage(windNoiseImage);
-    UnloadImage(windNoiseImage);
-    int windNoiseLoc = GetShaderLocation(herbe_shader, "wind_noise");
-    SetShaderValueTexture(herbe_shader, windNoiseLoc, windNoiseTexture);
-
-    Vector2 windDirection = { 1.0f, 0.0f };
-    float windSpeed = 0.1f;
-    int windDirLoc = GetShaderLocation(herbe_shader, "wind_horizontal_direction");
-    SetShaderValue(herbe_shader, windDirLoc, &windDirection, SHADER_UNIFORM_VEC2);
-
-    int windSpeedLoc = GetShaderLocation(herbe_shader, "wind_speed");
-    SetShaderValue(herbe_shader, windSpeedLoc, &windSpeed, SHADER_UNIFORM_FLOAT);
-    */
-    //fin herbe shader .vs
 
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
-    float ambient[4] = {0.1f, 0.1f, 0.1f, 1.0f};
-    SetShaderValue(shadowShader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
+    //SetShaderValue(herbe_shader, ambientLoc, ambient, SHADER_UNIFORM_VEC4);
     int lightVPLoc = GetShaderLocation(shadowShader, "lightVP");
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
+    SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     
     
     //test sol
@@ -869,6 +832,7 @@ int main(void) {
         // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
         Vector3 cameraPos = camera.position;
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+        SetShaderValue(herbe_shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
         //pour la temperature
         if (IsKeyPressed(KEY_T)) {
             viewMode = (viewMode == MODE_NORMAL) ? MODE_TEMPERATURE : MODE_NORMAL;
@@ -1023,17 +987,16 @@ int main(void) {
 
         SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
         SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
-        
+        //test temp TODO
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC4);
         time += dt;  // Incrémenter le temps
 
         
-        float windStrength = 0.7f;
-        float windSpeed = 1.0f;
+        float windStrength = 0.7f;//force du vent
+        float windSpeed = 1.0f;//vitesse du vent
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
-        // Ajoutez un facteur de luminosité pour l'herbe
-        float grassBrightness = 1.5f; // Ajustez selon vos besoins
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "grassBrightness"), &grassBrightness, SHADER_UNIFORM_FLOAT);
         // Rendu final (vue normale)
         BeginDrawing();
         //on dessine les ombres ici
@@ -1109,10 +1072,7 @@ int main(void) {
         rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
         //Vector3 lightPos = { 0.0f, 10.0f, 0.0f }; // Ajustez selon votre lumière
         //Vector4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-        Vector4 ambientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColor, SHADER_UNIFORM_VEC4);
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "ambient"), &ambientColor, SHADER_UNIFORM_VEC4);
+        //Vector4 ambientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
         
         BeginMode3D(camera);
             dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, model_acacia, model_sapin, model_mort, emptyModel, buisson, accacia, sapin, plante_morte, herbe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
@@ -1133,6 +1093,10 @@ int main(void) {
     
                     DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
                 }
+//                Vector3 lightPos = { 0.0f, 10.0f, 0.0f }; // Ajustez selon votre lumière
+//                    Vector4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+//                    Vector4 ambientColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+                    
             }
             isGrass = 0;
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);

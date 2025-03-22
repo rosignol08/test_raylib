@@ -42,10 +42,12 @@ void main() {
     
     // Envoyer les attributs de vertex au fragment shader
     fragPosition = vec3(matModel * vec4(position, 1.0));
+    //fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));
     fragTexCoord = vertexTexCoord;
     fragColor = vertexColor;
     fragNormal = normalize(vec3(matNormal * vec4(vertexNormal, 1.0)));
     
     // Calculer la position finale du vertex
     gl_Position = mvp * vec4(position, 1.0);
+    //gl_Position = mvp * vec4(vertexPosition, 1.0);
 }
