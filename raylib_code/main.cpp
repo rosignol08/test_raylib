@@ -431,7 +431,7 @@ int main(void) {
     float time = 0.0f;
 
     //init bruit de perlin
-    Image noiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f);
+    Image noiseImage = GenImagePerlinNoise(256, 256, 0, 0, 1.0f);
     Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
     UnloadImage(noiseImage);
     
