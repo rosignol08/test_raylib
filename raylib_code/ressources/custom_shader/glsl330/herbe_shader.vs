@@ -81,18 +81,25 @@ void main() {
     float effectiveWindStrength = windStrength * (1.0 + gust);
     
     // Mouvement combinant bruit principal et rafales
-    float xMovement = noise * windDir.x + 
-                      sin(time * 2.0 + position.z * 0.1 + variation) * 0.3;
+    float xMovement = noise * windDir.x + sin(time * 2.0 + position.z * 0.1 + variation) * 0.3;
     
-    float zMovement = noise * windDir.y + 
-                      cos(time * 1.5 + position.x * 0.1 + variation) * 0.3;
-    
+    float zMovement = noise * windDir.y + cos(time * 1.5 + position.x * 0.1 + variation) * 0.3;
+    //test
+        //// Plus la position Y (hauteur) est élevée, plus l'effet est fort
+        //float windEffect = sin(time * windSpeed + position.x * 0.5) * cos(time * windSpeed * 0.7 + position.z * 0.5);
+        //
+        //// Appliquer l'effet principalement sur X et un peu sur Z, proportionnel à la hauteur Y
+        //float heightFactor = position.y / 2.0; // Ajuster selon la hauteur de votre herbe
+        //position.x += windEffect * windStrength * heightFactor;
+        //position.z += windEffect * windStrength * 0.3 * heightFactor; // Effet moindre sur Z
+    //fin test
+        
     // Application du déplacement avec effet de la rafale
     float baseMovement = 0.15; // Mouvement minimal à la base
-    float effectiveHeight = baseMovement + height * (1.0 - baseMovement);
-    
+    float effectiveHeight =position.y / 2.0;// baseMovement + height * (1.0 - baseMovement);
+    //effectiveHeight = pow(effectiveHeight, 1.5); 
     position.x += xMovement * effectiveHeight * effectiveWindStrength;
-    position.z += zMovement * effectiveHeight * effectiveWindStrength;
+    position.z += zMovement * effectiveHeight * 0.3 * effectiveWindStrength;
     
     // Affaissement vertical accentué pendant les rafales
     float verticalDroop = 0.4 * (1.0 + gust * 0.5); // Plus d'affaissement pendant les rafales

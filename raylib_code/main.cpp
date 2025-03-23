@@ -431,7 +431,7 @@ int main(void) {
     float time = 0.0f;
 
     //init bruit de perlin
-    Image noiseImage = GenImagePerlinNoise(256, 256, 0, 0, 1.0f);
+    Image noiseImage = GenImagePerlinNoise(1024, 1024, 0, 0, 100.0f);
     Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
     UnloadImage(noiseImage);
     
@@ -754,7 +754,7 @@ int main(void) {
     material_test.shader = shadowShader;
     std::vector<Nuage> grandsNuages;
     float cloudThreshold = 0.6f; // Seuil initial
-    float noiseScale = 7.0f; // Échelle initiale
+    float noiseScale = 10.0f; // Échelle initiale
 
     grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 4.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
     grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 3.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
