@@ -42,7 +42,6 @@ int viewMode = MODE_NORMAL;
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 
-
 float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
 const float pI = 3.14159265359f;
 
@@ -388,6 +387,10 @@ int main(void) {
     // Initialisation
     const int screenWidth = 1280;//1920;
     const int screenHeight = 720;//1080;
+    // ecrant de chargement : 0 = menu, 1 = chargement , 2 = jeu
+    int currentScreen = 0;
+    int loadingStage = 0;
+    bool initializationDone = false;
     SetConfigFlags(FLAG_MSAA_4X_HINT); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
     InitWindow(screenWidth, screenHeight, "raylib - Projet tutore");
@@ -444,14 +447,14 @@ int main(void) {
     int noiseTextureLoc = GetShaderLocation(herbe_shader, "noiseTexture");
     int noiseScaleLoc = GetShaderLocation(herbe_shader, "noiseScale");
 
-    int timeLocation = GetShaderLocation(herbe_shader, "time");
-    int windStrengthLocation = GetShaderLocation(herbe_shader, "windStrength");
-    int windSpeedLocation = GetShaderLocation(herbe_shader, "windSpeed");
-    int isGrassLocation = GetShaderLocation(herbe_shader, "isGrass");
     int windTextureTileSizeLocation = GetShaderLocation(herbe_shader, "windTextureTileSize");
     int windVerticalStrengthLocation = GetShaderLocation(herbe_shader, "windVerticalStrength");
     int windHorizontalDirectionLocation = GetShaderLocation(herbe_shader, "windHorizontalDirection");
 
+    int timeLocation = GetShaderLocation(herbe_shader, "time");
+    int windStrengthLocation = GetShaderLocation(herbe_shader, "windStrength");
+    int windSpeedLocation = GetShaderLocation(herbe_shader, "windSpeed");
+    int isGrassLocation = GetShaderLocation(herbe_shader, "isGrass");
 
     int ambientLoc = GetShaderLocation(shadowShader, "ambient");
     int lightVPLoc = GetShaderLocation(shadowShader, "lightVP");
@@ -605,147 +608,14 @@ int main(void) {
     Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
     int humidite_moyenne = 0;
     int temperature_moyenne = 0;
-   // Initialisation de la grille
-    for (int x = 0; x < GRID_SIZE; x++) {
-        for (int z = 0; z < GRID_SIZE; z++) {
-            
-            float posX = x * (3.0f / GRID_SIZE) - 1.0f;  //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f 
-            float posZ = z * (3.0f / GRID_SIZE) - 1.0f;
-            // Ajouter une irrégularité aux positions X et Z
-            float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
-            float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
-
-            posX += offsetX;
-            posZ += offsetZ;
-
-            // Obtenir la hauteur du terrain pour cette cellule
-            float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
-
-            // Générer une température arbitraire pour cette cellule
-            int temperature = (int) random_flottant(0, 20); // Température aléatoire entre TEMP_MIN et TEMP_MAX
-            int humidite = (int) random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
-            humidite_moyenne += humidite;
-            temperature_moyenne += temperature;//TODO voir si c'est utile
-
-            
-
-            // Calcul des hauteurs des cellules voisines
-            float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
-            float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
-            float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
-            float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
-            
-            // Calcul des variations de hauteur
-            float deltaLeft = fabs(height - heightLeft);
-            float deltaRight = fabs(height - heightRight);
-            float deltaUp = fabs(height - heightUp);
-            float deltaDown = fabs(height - heightDown);
-            
-            // Calcul du taux de pente
-            float penteX = (deltaLeft + deltaRight) / 2.0f;
-            float penteZ = (deltaUp + deltaDown) / 2.0f;
-            float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
-            //printf("taux de pente : %f\n", tauxPente);
-            
-            // Vérifier si la cellule est sur une pente
-            //bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
-
-            // Positionner la cellule en fonction de la hauteur du terrain
-            grille[x][z].position = (Vector3){ posX, height, posZ };
-            grille[x][z].active = true;
-            grille[x][z].occupee = false;
-            grille[x][z].humidite = humidite;
-            grille[x][z].temperature = temperature;//random_flottant(0, 30);
-            grille[x][z].pente = tauxPente;
-            
-            grille[x][z].plante = vide;
-            grille[x][z].plante.age = 0;
-            float taille = grille[x][z].plante.taille;
-            
-            Matrix transform = MatrixIdentity();
-
-            // Appliquer l'échelle pour réduire ou agrandir le modèle
-            transform = MatrixMultiply(transform, MatrixScale(taille, taille, taille));
-         
-            float randomRotationX = random_flottant(0.0f, 2.0f * PI); // Rotation aléatoire autour de l'axe X
-            //convertir en radians
-            randomRotationX = DEG2RAD * randomRotationX;
-            transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
-            grille[x][z].model.transform = transform;
-            grille[x][z].identifiant = x*GRID_SIZE+z;
-        }
-    }
+   
 
     //pour stocker les trucs sur l'herbe
     std::vector<Model> models_herbe_vecteur(NBHERBE * NBHERBE, model_herbe_instance);
     std::vector<Vector3> position_herbe(NBHERBE * NBHERBE);
     
-    int herbeCount = 0;
-    for (int x = 0; x < NBHERBE; x++) {
-        for (int z = 0; z < NBHERBE; z++) {
-
-            float posX = (float) x - taille_terrain.x / 2; 
-            float posZ = (float) z - taille_terrain.z / 2;
-            
-            // Variables d'espacement pour les éléments
-            float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
-            float espacementZ = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe Z
-            // Ajuster les positions avec l'espacement
-            posX = x * espacementX - taille_terrain.x / 2;
-            posZ = z * espacementZ - taille_terrain.z / 2;
-            
-            float offsetX = random_flottant(-0.1f , 0.1f); // Décalage aléatoire pour X
-            float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
-            posX += offsetX;
-            posZ += offsetZ;
-            
-            float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
-
-            // Calcul des hauteurs des cellules voisines
-            float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
-            float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
-            float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
-            float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
-            
-            // Calcul des variations de hauteur
-            float deltaLeft = fabs(height - heightLeft);
-            float deltaRight = fabs(height - heightRight);
-            float deltaUp = fabs(height - heightUp);
-            float deltaDown = fabs(height - heightDown);
-            
-            // Calcul du taux de pente
-            float penteX = (deltaLeft + deltaRight) / 2.0f;
-            float penteZ = (deltaUp + deltaDown) / 2.0f;
-            float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
-
-            if (tauxPente > 0.2f) {
-                continue; // Skip this position if the slope is too steep
-            }else{
-                // Appliquer une rotation aléatoire autour de l'axe Y
-                float randomRotationY = random_flottant(0.0f, 2.0f * PI);
-                
-                // Créer une copie du modèle AVANT de modifier transform
-                Model modelHerbe = model_herbe_instance;
-
-                // Appliquer la transformation
-                Matrix transform = MatrixIdentity();
-                //transform = MatrixMultiply(transform, MatrixTranslate(posX, height, posZ));
-                transform = MatrixMultiply(transform, MatrixRotateY(randomRotationY));
-                
-                modelHerbe.transform = transform; // Appliquer la transformation à la copie
-
-                // Stocker dans le vecteur
-                models_herbe_vecteur[herbeCount] = modelHerbe;
-                position_herbe[herbeCount] = (Vector3){ posX, height-0.0f, posZ };
-                
-                herbeCount++;
-            }
-            
-        }
-    }
-    
     DisableCursor();// Limit cursor to relative movement inside the window
-
+    int frameCounter = 0;
     SetTargetFPS(60);
     Mesh sphere_test = GenMeshSphere(1.0f, 16, 16);
     Material material_test = LoadMaterialDefault();
@@ -756,13 +626,7 @@ int main(void) {
     float cloudThreshold = 0.6f; // Seuil initial
     float noiseScale = 10.0f; // Échelle initiale
 
-    grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 4.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
-    grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 3.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
-    grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 2.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
-
     // Dans la boucle principale
-    float cloudDensity = 0.5f; // Ajustez entre 0.0 et 1.0
-    float cloudSharpness = 3.0f; // Plus la valeur est élevée, plus les bords sont nets TODO enlever ça
     float temperature_modifieur = 0;
     float hum_modifieur = 0;
 
@@ -772,249 +636,435 @@ int main(void) {
     // Boucle principale
     float windStrength = 0.7f;//force du vent
     float windSpeed = 1.0f;//vitesse du vent
+
+    //declaration de la variable chargées
+    int herbeCount = 0;
     
     while (!WindowShouldClose()) {
-        // Appliquer temperature_modifieur à toutes les cases une seule fois
-        static int last_temp_modif = 0; // Stocker la dernière valeur appliquée
-        int temp_modif = (int)temperature_modifieur;
+        switch (currentScreen)
+        {
+            case 0:{
+                // Écran de chargement
+                if (!initializationDone) {
+                    switch (loadingStage) {
+                        case 0: {
+                            // Initialisation de la grille
+                            for (int x = 0; x < GRID_SIZE; x++) {
+                                for (int z = 0; z < GRID_SIZE; z++) {                                
+                                    float posX = x * (3.0f / GRID_SIZE) - 1.0f;  //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f 
+                                    float posZ = z * (3.0f / GRID_SIZE) - 1.0f;
+                                    // Ajouter une irrégularité aux positions X et Z
+                                    float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
+                                    float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
+                                
+                                    posX += offsetX;
+                                    posZ += offsetZ;
+                                
+                                    // Obtenir la hauteur du terrain pour cette cellule
+                                    float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
+                                
+                                    // Générer une température arbitraire pour cette cellule
+                                    int temperature = (int) random_flottant(0, 20); // Température aléatoire entre TEMP_MIN et TEMP_MAX
+                                    int humidite = (int) random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
+                                    humidite_moyenne += humidite;
+                                    temperature_moyenne += temperature;//TODO voir si c'est utile
+                                    // Calcul des hauteurs des cellules voisines
+                                    float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+                                    float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+                                    float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
+                                    float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
+                                
+                                    // Calcul des variations de hauteur
+                                    float deltaLeft = fabs(height - heightLeft);
+                                    float deltaRight = fabs(height - heightRight);
+                                    float deltaUp = fabs(height - heightUp);
+                                    float deltaDown = fabs(height - heightDown);
+                                
+                                    // Calcul du taux de pente
+                                    float penteX = (deltaLeft + deltaRight) / 2.0f;
+                                    float penteZ = (deltaUp + deltaDown) / 2.0f;
+                                    float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
+                                    //printf("taux de pente : %f\n", tauxPente);
+                                
+                                    // Vérifier si la cellule est sur une pente
+                                    //bool pente = (deltaLeft > PENTE_SEUIL || deltaRight > PENTE_SEUIL || deltaUp > PENTE_SEUIL || deltaDown > PENTE_SEUIL);
+                                
+                                    // Positionner la cellule en fonction de la hauteur du terrain
+                                    grille[x][z].position = (Vector3){ posX, height, posZ };
+                                    grille[x][z].active = true;
+                                    grille[x][z].occupee = false;
+                                    grille[x][z].humidite = humidite;
+                                    grille[x][z].temperature = temperature;//random_flottant(0, 30);
+                                    grille[x][z].pente = tauxPente;
+                                
+                                    grille[x][z].plante = vide;
+                                    grille[x][z].plante.age = 0;
+                                    float taille = grille[x][z].plante.taille;
+                                
+                                    Matrix transform = MatrixIdentity();
+                                
+                                    // Appliquer l'échelle pour réduire ou agrandir le modèle
+                                    transform = MatrixMultiply(transform, MatrixScale(taille, taille, taille));
+                                
+                                    float randomRotationX = random_flottant(0.0f, 2.0f * PI); // Rotation aléatoire autour de l'axe X
+                                    //convertir en radians
+                                    randomRotationX = DEG2RAD * randomRotationX;
+                                    transform = MatrixMultiply(transform, MatrixRotateX(randomRotationX));
+                                    grille[x][z].model.transform = transform;
+                                    grille[x][z].identifiant = x*GRID_SIZE+z;
+                                }
+                            }
+                            loadingStage++;
+                        } break;        
+                ////ecrant de chargement  Copyright (c) 2021-2025 Ramon Santamaria (@raysan5)
+                //frameCounter++;    // Count frames
+                //// Wait for 2 seconds (120 frames) before jumping to TITLE screen
+                //if (frameCounter > 300)
+                //{
+                //    currentScreen = 1;
+                //}
+                        case 1: {
+                                for (int x = 0; x < NBHERBE; x++) {
+                                    for (int z = 0; z < NBHERBE; z++) {
+                                    
+                                        float posX = (float) x - taille_terrain.x / 2; 
+                                        float posZ = (float) z - taille_terrain.z / 2;
+                                    
+                                        // Variables d'espacement pour les éléments
+                                        float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
+                                        float espacementZ = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe Z
+                                        // Ajuster les positions avec l'espacement
+                                        posX = x * espacementX - taille_terrain.x / 2;
+                                        posZ = z * espacementZ - taille_terrain.z / 2;
+                                    
+                                        float offsetX = random_flottant(-0.1f , 0.1f); // Décalage aléatoire pour X
+                                        float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
+                                        posX += offsetX;
+                                        posZ += offsetZ;
+                                    
+                                        float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
+                                        // Calcul des hauteurs des cellules voisines
+                                        float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+                                        float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
+                                        float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
+                                        float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
+                                    
+                                        // Calcul des variations de hauteur
+                                        float deltaLeft = fabs(height - heightLeft);
+                                        float deltaRight = fabs(height - heightRight);
+                                        float deltaUp = fabs(height - heightUp);
+                                        float deltaDown = fabs(height - heightDown);
+                                    
+                                        // Calcul du taux de pente
+                                        float penteX = (deltaLeft + deltaRight) / 2.0f;
+                                        float penteZ = (deltaUp + deltaDown) / 2.0f;
+                                        float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
+                                    
+                                        if (tauxPente > 0.2f) {
+                                            continue; // Skip this position if the slope is too steep
+                                        }else{
+                                            // Appliquer une rotation aléatoire autour de l'axe Y
+                                            float randomRotationY = random_flottant(0.0f, 2.0f * PI);
+                                        
+                                            // Créer une copie du modèle AVANT de modifier transform
+                                            Model modelHerbe = model_herbe_instance;
+                                        
+                                            // Appliquer la transformation
+                                            Matrix transform = MatrixIdentity();
+                                            //transform = MatrixMultiply(transform, MatrixTranslate(posX, height, posZ));
+                                            transform = MatrixMultiply(transform, MatrixRotateY(randomRotationY));
+                                        
+                                            modelHerbe.transform = transform; // Appliquer la transformation à la copie
+                                        
+                                            // Stocker dans le vecteur
+                                            models_herbe_vecteur[herbeCount] = modelHerbe;
+                                            position_herbe[herbeCount] = (Vector3){ posX, height-0.0f, posZ };
+                                        
+                                            herbeCount++;
+                                        }
+                                    
+                                    }
+                                }
+                            loadingStage++;
+                        } break;
+                        case 2:{
+                            grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 4.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
+                            grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 3.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
+                            grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 2.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));                        
+                            loadingStage++;
+                            initializationDone = true;
+                        }break;
+                    }
+                }
+                frameCounter++;
+    
+                // Afficher les messages de chargement avec le pourcentage
+                int loadingPercentage = (loadingStage * 100) / 4; // 4 étapes au total
+                        
+                BeginDrawing();
+                ClearBackground(RAYWHITE);
+                DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
+                DrawText(TextFormat("%d%%", loadingPercentage), GetScreenWidth() / 2 - MeasureText("100%", 20) / 2, GetScreenHeight() / 2, 20, RAYWHITE);
+                DrawText(TextFormat("Étape %d/4", loadingStage + 1), GetScreenWidth() / 2 - MeasureText("Étape 4/4", 20) / 2, GetScreenHeight() / 2 + 30, 20, DARKGRAY);
+                EndDrawing();
+                        
+                // Passage à l'écran principal uniquement quand tout est initialisé
+                if (initializationDone && frameCounter > 120) {
+                    currentScreen = 1;
+                }
+            } break;
+            case 1:{
+            // Appliquer temperature_modifieur à toutes les cases une seule fois
+            static int last_temp_modif = 0; // Stocker la dernière valeur appliquée
+            int temp_modif = (int)temperature_modifieur;
 
-        if (temp_modif != last_temp_modif) { // Vérifier si la valeur a changé
-            int delta = temp_modif - last_temp_modif; // Calculer la différence
-            for (int x = 0; x < GRID_SIZE; x++) {
-            for (int z = 0; z < GRID_SIZE; z++) {
-                grille[x][z].temperature += delta; // Modifier la température de chaque case
-                if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
-                if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+            if (temp_modif != last_temp_modif) { // Vérifier si la valeur a changé
+                int delta = temp_modif - last_temp_modif; // Calculer la différence
+                for (int x = 0; x < GRID_SIZE; x++) {
+                for (int z = 0; z < GRID_SIZE; z++) {
+                    grille[x][z].temperature += delta; // Modifier la température de chaque case
+                    if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
+                    if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+                }
+                }
+                last_temp_modif = temp_modif; // Mettre à jour la dernière valeur appliquée
             }
+
+            static int last_hum_modif = 0; // Stocker la dernière valeur appliquée
+            int hum_modif = (int)hum_modifieur;
+
+            if (hum_modif != last_hum_modif) { // Vérifier si la valeur a changé
+                int delta = hum_modif - last_hum_modif; // Calculer la différence
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        grille[x][z].humidite += delta; // Modifier l'humidite de chaque case
+
+                        //comme ça l'humidité reste dans la plage 0-100
+                        grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
+                    
+                        if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
+                        if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+                    }
+                }
+                last_hum_modif = hum_modif; // Mettre à jour la dernière valeur appliquée
             }
-            last_temp_modif = temp_modif; // Mettre à jour la dernière valeur appliquée
-        }
 
-        static int last_hum_modif = 0; // Stocker la dernière valeur appliquée
-        int hum_modif = (int)hum_modifieur;
+            float dt = GetFrameTime();
 
-        if (hum_modif != last_hum_modif) { // Vérifier si la valeur a changé
-            int delta = hum_modif - last_hum_modif; // Calculer la différence
+            static float accumulatedTime = 0.0f;
+            accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
+            float timeValue = accumulatedTime;
+
+            const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
+
+            // Faire dériver les nuages horizontalement
+            for (auto& nuage : grandsNuages) {
+                // Distance parcourue depuis la position initiale
+                static float distanceParcourue = 0.0f;
+                float distanceDeReset = taille_terrain.x * 3.0f; // La largeur du nuage
+
+                // Déplacer le nuage
+                for (size_t i = 0; i < nuage.positions.size(); i++) {
+                    nuage.positions[i].x += dt * nuage.vitesseDefile;
+                }
+
+                // Mettre à jour la distance parcourue
+                distanceParcourue += dt * nuage.vitesseDefile;
+
+                // Vérifier si le nuage a parcouru sa propre largeur
+                if (distanceParcourue >= distanceDeReset) {
+                    // Réinitialiser la position du nuage
+                    for (size_t i = 0; i < nuage.positions.size(); i++) {
+                        nuage.positions[i].x = -taille_terrain.x; // Position initiale
+                    }
+                    // Réinitialiser le compteur de distance
+                    distanceParcourue = 0.0f;
+                }
+            }
+            // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
+            Vector3 cameraPos = camera.position;
+            SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+            SetShaderValue(herbe_shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
+            //pour la temperature
+            if (IsKeyPressed(KEY_T)) {
+                viewMode = (viewMode == MODE_NORMAL) ? MODE_TEMPERATURE : MODE_NORMAL;
+
+                // Changer la texture du sol en fonction du mode
+                if (viewMode == MODE_TEMPERATURE) {
+                    // Mode température : mettre à jour la texture de température
+                    Image tempImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+                    for (int x = 0; x < GRID_SIZE; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
+                            ImageDrawPixel(&tempImage, x, z, tempColor);
+                        }
+                    }
+                    UpdateTexture(temperatureTexture, tempImage.data);
+                    UnloadImage(tempImage);
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+                } else {
+                    // Mode normal : remettre la texture normale
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+                }
+            }
+            if (IsKeyPressed(KEY_Y)) {
+                viewMode = (viewMode == MODE_NORMAL) ? MODE_HUMIDITE : MODE_NORMAL;
+
+                // Changer la texture du sol en fonction du mode
+                if (viewMode == MODE_HUMIDITE) {
+                    // Mode humidité : mettre à jour la texture d'humidité
+                    Image humImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+                    for (int x = 0; x < GRID_SIZE; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
+                            ImageDrawPixel(&humImage, x, z, humColor);
+                        }
+                    }
+                    UpdateTexture(temperatureTexture, humImage.data);
+                    UnloadImage(humImage);
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+                } else {
+                    // Mode normal : remettre la texture normale
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+                }
+            }
+            // Activer/désactiver la rotation avec le clic droit
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) isRotating = true;
+            if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) isRotating = false;
+
+            // Capture des mouvements de la souris
+            if (isRotating) {
+                Vector2 mouseDelta = GetMouseDelta();
+                angleX -= mouseDelta.y * 0.2f; // Sensibilité verticale
+                angleY -= mouseDelta.x * 0.2f; // Sensibilité horizontale
+            }
+            // Gestion du zoom avec la molette de la souris
+            distance_cam -= GetMouseWheelMove() * 0.5f; // Ajustez le facteur (0.5f) pour contrôler la sensibilité du zoom
+            if (distance_cam < 2.0f) distance_cam = 2.0f;   // Distance minimale
+            if (distance_cam > 200.0f) distance_cam = 200.0f; // Distance maximale
+
+
+            // Limiter les angles X pour éviter une rotation complète
+            if (angleX > 89.0f) angleX = 89.0f;
+            if (angleX < -89.0f) angleX = -89.0f;
+
+            // Calcul de la position de la caméra en coordonnées sphériques
+            float radAngleX = DEG2RAD * angleX;
+            float radAngleY = DEG2RAD * angleY;
+
+            camera.position.x = distance_cam * cos(radAngleX) * sin(radAngleY);
+            camera.position.y = distance_cam * sin(radAngleX);
+            camera.position.z = distance_cam * cos(radAngleX) * cos(radAngleY);
+
+            //DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
+            ShowCursor();//pour voir le curseur
+
+            // Mise à jour des cellules
             for (int x = 0; x < GRID_SIZE; x++) {
                 for (int z = 0; z < GRID_SIZE; z++) {
-                    grille[x][z].humidite += delta; // Modifier l'humidite de chaque case
-                    
-                    //comme ça l'humidité reste dans la plage 0-100
-                    grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
-            
-                    if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
-                    if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+                    verifier_plante(grille, &grille[x][z], plantes, plante_morte, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante);
                 }
             }
-            last_hum_modif = hum_modif; // Mettre à jour la dernière valeur appliquée
-        }
 
-        float dt = GetFrameTime();
-
-        static float accumulatedTime = 0.0f;
-        accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
-        float timeValue = accumulatedTime;
-
-        const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
-
-        // Faire dériver les nuages horizontalement
-        for (auto& nuage : grandsNuages) {
-            // Distance parcourue depuis la position initiale
-            static float distanceParcourue = 0.0f;
-            float distanceDeReset = taille_terrain.x * 3.0f; // La largeur du nuage
-            
-            // Déplacer le nuage
-            for (size_t i = 0; i < nuage.positions.size(); i++) {
-                nuage.positions[i].x += dt * nuage.vitesseDefile;
-            }
-            
-            // Mettre à jour la distance parcourue
-            distanceParcourue += dt * nuage.vitesseDefile;
-            
-            // Vérifier si le nuage a parcouru sa propre largeur
-            if (distanceParcourue >= distanceDeReset) {
-                // Réinitialiser la position du nuage
-                for (size_t i = 0; i < nuage.positions.size(); i++) {
-                    nuage.positions[i].x = -taille_terrain.x; // Position initiale
-                }
-                // Réinitialiser le compteur de distance
-                distanceParcourue = 0.0f;
-            }
-        }
-        // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
-        Vector3 cameraPos = camera.position;
-        SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
-        SetShaderValue(herbe_shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
-        //pour la temperature
-        if (IsKeyPressed(KEY_T)) {
-            viewMode = (viewMode == MODE_NORMAL) ? MODE_TEMPERATURE : MODE_NORMAL;
-            
-            // Changer la texture du sol en fonction du mode
             if (viewMode == MODE_TEMPERATURE) {
-                // Mode température : mettre à jour la texture de température
                 Image tempImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+
+                //l'image avec les couleurs de température
                 for (int x = 0; x < GRID_SIZE; x++) {
                     for (int z = 0; z < GRID_SIZE; z++) {
                         Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
                         ImageDrawPixel(&tempImage, x, z, tempColor);
                     }
                 }
+
+                //maj de la texture
                 UpdateTexture(temperatureTexture, tempImage.data);
                 UnloadImage(tempImage);
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
-            } else {
-                // Mode normal : remettre la texture normale
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+
+                //applique la texture de température au sol
+                if (viewMode == MODE_TEMPERATURE) {
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+                } else {
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+                }
             }
-        }
-        if (IsKeyPressed(KEY_Y)) {
-            viewMode = (viewMode == MODE_NORMAL) ? MODE_HUMIDITE : MODE_NORMAL;
-            
-            // Changer la texture du sol en fonction du mode
+            //petite actualisation de l'humidite
             if (viewMode == MODE_HUMIDITE) {
-                // Mode humidité : mettre à jour la texture d'humidité
                 Image humImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+
+                //maj l'image avec les couleurs d'humidité
                 for (int x = 0; x < GRID_SIZE; x++) {
                     for (int z = 0; z < GRID_SIZE; z++) {
                         Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
                         ImageDrawPixel(&humImage, x, z, humColor);
                     }
                 }
+
+                //maj la texture
                 UpdateTexture(temperatureTexture, humImage.data);
                 UnloadImage(humImage);
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
-            } else {
-                // Mode normal : remettre la texture normale
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
-            }
-        }
-        // Activer/désactiver la rotation avec le clic droit
-        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) isRotating = true;
-        if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) isRotating = false;
 
-        // Capture des mouvements de la souris
-        if (isRotating) {
-            Vector2 mouseDelta = GetMouseDelta();
-            angleX -= mouseDelta.y * 0.2f; // Sensibilité verticale
-            angleY -= mouseDelta.x * 0.2f; // Sensibilité horizontale
-        }
-        // Gestion du zoom avec la molette de la souris
-        distance_cam -= GetMouseWheelMove() * 0.5f; // Ajustez le facteur (0.5f) pour contrôler la sensibilité du zoom
-        if (distance_cam < 2.0f) distance_cam = 2.0f;   // Distance minimale
-        if (distance_cam > 200.0f) distance_cam = 200.0f; // Distance maximale
-
-
-        // Limiter les angles X pour éviter une rotation complète
-        if (angleX > 89.0f) angleX = 89.0f;
-        if (angleX < -89.0f) angleX = -89.0f;
-
-        // Calcul de la position de la caméra en coordonnées sphériques
-        float radAngleX = DEG2RAD * angleX;
-        float radAngleY = DEG2RAD * angleY;
-
-        camera.position.x = distance_cam * cos(radAngleX) * sin(radAngleY);
-        camera.position.y = distance_cam * sin(radAngleX);
-        camera.position.z = distance_cam * cos(radAngleX) * cos(radAngleY);
-
-        //DisableCursor();//pour pas avoir le curseur qui sort de l'ecran
-        ShowCursor();//pour voir le curseur
-        
-        // Mise à jour des cellules
-        for (int x = 0; x < GRID_SIZE; x++) {
-            for (int z = 0; z < GRID_SIZE; z++) {
-                verifier_plante(grille, &grille[x][z], plantes, plante_morte, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante);
-            }
-        }
-        
-        if (viewMode == MODE_TEMPERATURE) {
-            Image tempImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
-            
-            //l'image avec les couleurs de température
-            for (int x = 0; x < GRID_SIZE; x++) {
-                for (int z = 0; z < GRID_SIZE; z++) {
-                    Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
-                    ImageDrawPixel(&tempImage, x, z, tempColor);
+                //applique la texture d'humidité au sol
+                if (viewMode == MODE_HUMIDITE) {
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+                } else {
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
                 }
             }
-            
-            //maj de la texture
-            UpdateTexture(temperatureTexture, tempImage.data);
-            UnloadImage(tempImage);
-            
-            //applique la texture de température au sol
-            if (viewMode == MODE_TEMPERATURE) {
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
-            } else {
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+
+            float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
+
+            //calcul de la direction de la lumière (normalisée)
+            Vector3 lightDir = {
+                cosf(sunAngle),           // X: Est-Ouest
+                -sinf(sunAngle),          // Y: Hauteur du soleil
+                0.0f                      // Z: Nord-Sud
+            };
+            lightDir = Vector3Normalize(lightDir);
+
+            //on bouge aussi la camera de lumière
+            lightCam.position = Vector3Scale(lightDir, -15.0f);
+            lightCam.target = Vector3Zero();
+
+            // l'intensité de la lumière en fonction de l'heure
+            float lightIntensity = 1.0f;
+            if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
+                lightIntensity = 0.0f; // Nuit
+            } else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
+                lightIntensity = 0.6f; // Lever/Coucher du soleil
             }
+
+            lightColor = GetSunColor(timeOfDay);  // Utilisez votre fonction existante
+            lightColorNormalized = ColorNormalize(lightColor);
+
+            SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
+            SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+
+            //test temp TODO
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
+
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
+            time += dt;  // Incrémenter le temps
+
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "noiseScale"), &noiseScale, SHADER_UNIFORM_FLOAT);
+            SetShaderValueTexture(herbe_shader, GetShaderLocation(herbe_shader, "noiseTexture"), noiseTexture);
+            } break;
+            default: break;
         }
-        //petite actualisation de l'humidite
-        if (viewMode == MODE_HUMIDITE) {
-            Image humImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
-            
-            //maj l'image avec les couleurs d'humidité
-            for (int x = 0; x < GRID_SIZE; x++) {
-                for (int z = 0; z < GRID_SIZE; z++) {
-                    Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
-                    ImageDrawPixel(&humImage, x, z, humColor);
-                }
-            }
-            
-            //maj la texture
-            UpdateTexture(temperatureTexture, humImage.data);
-            UnloadImage(humImage);
-            
-            //applique la texture d'humidité au sol
-            if (viewMode == MODE_HUMIDITE) {
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
-            } else {
-                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
-            }
-        }
-
-        float sunAngle = ((timeOfDay - 6.0f) / 12.0f) * PI; // -PI/2 à PI/2 (6h à 18h)
-
-        //calcul de la direction de la lumière (normalisée)
-        Vector3 lightDir = {
-            cosf(sunAngle),           // X: Est-Ouest
-            -sinf(sunAngle),          // Y: Hauteur du soleil
-            0.0f                      // Z: Nord-Sud
-        };
-        lightDir = Vector3Normalize(lightDir);
-        
-        //on bouge aussi la camera de lumière
-        lightCam.position = Vector3Scale(lightDir, -15.0f);
-        lightCam.target = Vector3Zero();
-        
-        // l'intensité de la lumière en fonction de l'heure
-        float lightIntensity = 1.0f;
-        if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
-            lightIntensity = 0.0f; // Nuit
-        } else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
-            lightIntensity = 0.6f; // Lever/Coucher du soleil
-        }
-
-        lightColor = GetSunColor(timeOfDay);  // Utilisez votre fonction existante
-        lightColorNormalized = ColorNormalize(lightColor);
-        
-        SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
-        SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
-        
-        //test temp TODO
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
-
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
-        time += dt;  // Incrémenter le temps
-        
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
-        
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "noiseScale"), &noiseScale, SHADER_UNIFORM_FLOAT);
-        SetShaderValueTexture(herbe_shader, GetShaderLocation(herbe_shader, "noiseTexture"), noiseTexture);
         // Rendu final (vue normale)
         BeginDrawing();
+        switch(currentScreen)
+            {
+                case 0:
+                {
+                }break;
+                case 1:
+                {
         //on dessine les ombres ici
         Matrix lightView;
         Matrix lightProj;
@@ -1204,6 +1254,9 @@ int main(void) {
 
         // Affichage de l'heure
         DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
+            } break;
+        default: break;
+        }
         EndDrawing();
     }
 
