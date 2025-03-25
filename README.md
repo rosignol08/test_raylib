@@ -2,11 +2,11 @@
 
 ## Table des matières
 1. [Introduction](#introduction)
-2. [Présentation de Raylib](#présentation-de-raylib)
-3. [Installation](#installation)
-4. [Compilation](#compilation)
-5. [Test d'un code Raylib](Test-d'un-code-Raylib)
-6. [Développement du projet](#développement-du-projet)
+2. [Développement du projet](#développement-du-projet)
+3. [Présentation de Raylib](#présentation-de-raylib)
+4. [Installation](#installation)
+5. [Compilation](#compilation)
+6. [Test d'un code Raylib](Test-d'un-code-Raylib)
 7. [Conclusion](#conclusion)
 8. [Références](#références)
 
@@ -17,6 +17,9 @@ d'un sous-bois et répartition des espèces végétales ; développement de bois
 différentes espèces ; etc.)
 - Créer un outil de génération d'un exemplaire du système choisi, avec des options ajustables
 par l'utilisateur
+
+## Développement du projet
+[Voir l'avancement du projet](./PROGRESS.md)
 
 ## Présentation de Raylib
 [Raylib](https://github.com/raysan5/raylib) est une bibliothèque de développement de jeux vidéo et d'applications multimédias, créée par Ramon Santamaria. C'est une bibliothèque open-source, écrite en C pur, qui se distingue par sa simplicité et sa facilité d'utilisation tout en offrant des fonctionnalités puissantes.
@@ -139,9 +142,6 @@ int main(void)
 }
 ```
 Si vous pouvez compiler et lancer ce code, tout est bon. Vous pouvez lancer notre projet.
-
-## Développement du projet
-[Voir l'avancement du projet](./PROGRESS.md)
 
 ## Conclusion
 À compléter 
