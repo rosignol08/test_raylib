@@ -473,7 +473,7 @@ int main(void) {
 
     Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
     Model model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
-    Image image_texture_sol = LoadImage("ressources/rocky_terrain_02_diff_1k.jpg"); //rocky_terrain_02_diff_1k.jpg
+    Image image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
     Texture2D texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
     Shader shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
     int uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
