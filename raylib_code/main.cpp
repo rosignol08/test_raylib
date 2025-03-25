@@ -29,10 +29,10 @@
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
-#define GRID_SIZE 10
+#define GRID_SIZE 25
 #define NBHERBE 25
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
-#define SHADOWMAP_RESOLUTION 4096 //la resolution de la shadowmap
+#define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
@@ -400,7 +400,7 @@ int main(void) {
 
     // Caméra pour visualiser la scène
     Camera camera = { 
-    .position = (Vector3){ 0.0f, 0.0f, 0.0f },
+    .position = (Vector3){ -5.0f, 0.0f, -5.0f },
     .target = (Vector3){ 0.0f, 0.0f, 0.0f },
     .up = (Vector3){ 0.0f, 1.0f, 0.0f },
     .fovy = 85.0f,
@@ -651,8 +651,8 @@ int main(void) {
                             // Initialisation de la grille
                             for (int x = 0; x < GRID_SIZE; x++) {
                                 for (int z = 0; z < GRID_SIZE; z++) {                                
-                                    float posX = x * (3.0f / GRID_SIZE) - 1.0f;  //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f 
-                                    float posZ = z * (3.0f / GRID_SIZE) - 1.0f;
+                                    float posX = x * (taille_terrain.x / GRID_SIZE) - (taille_terrain.x / 2.0f);//(3.0f / GRID_SIZE) - 1.0f;  //espace entre les plantes pour 10 = 0.3f - 1.0f, pour 100 = 0.03f - 1.0f 
+                                    float posZ = z * (taille_terrain.z / GRID_SIZE) - (taille_terrain.z / 2.0f);//(3.0f / GRID_SIZE) - 1.0f;
                                     // Ajouter une irrégularité aux positions X et Z
                                     float offsetX = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour X
                                     float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
@@ -698,7 +698,7 @@ int main(void) {
                                     grille[x][z].pente = tauxPente;
                                 
                                     grille[x][z].plante = vide;
-                                    grille[x][z].plante.age = 0;
+                                    grille[x][z].plante.age = rand() % vide.age_max;//opti pour pas que toutes les plantes soient calculées en meme temps
                                     float taille = grille[x][z].plante.taille;
                                 
                                     Matrix transform = MatrixIdentity();
