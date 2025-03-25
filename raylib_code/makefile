@@ -5,8 +5,8 @@ CXX = g++
 OS := $(shell uname -s 2>/dev/null || echo Windows_NT)
 
 # Options communes
-CFLAGS = -Wall -std=c99 -Wno-missing-braces -O1
-CXXFLAGS = -Wall -std=c++11 -O1  # Ajout des options pour C++
+CFLAGS = -Wall -std=c99 -Wno-missing-braces -O2
+CXXFLAGS = -Wall -std=c++11 -O2  # Ajout des options pour C++
 INCLUDE = -Iinclude/
 
 SRC = main.cpp
