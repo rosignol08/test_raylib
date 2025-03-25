@@ -141,7 +141,7 @@ int main(void)
 Si vous pouvez compiler et lancer ce code, tout est bon. Vous pouvez lancer notre projet.
 
 ## Développement du projet
-À compléter 
+[Voir l'avancement du projet](./PROGRESS.md)
 
 ## Conclusion
 À compléter 
