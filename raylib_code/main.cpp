@@ -482,7 +482,16 @@ int main(void) {
     SetShaderValue(shader_taille, uvScaleLoc, &uvScale, SHADER_UNIFORM_VEC2);
 
     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol; // Set map diffuse texture
-    model_sol.materials[0].shader = shader_taille; // Assignez le shader au modèle
+    // Generate a texture with Perlin noise
+    Image perlinNoiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f); // Generate Perlin noise image
+    Texture2D perlinNoiseTexture = LoadTextureFromImage(perlinNoiseImage); // Load texture from image
+    UnloadImage(perlinNoiseImage); // Unload image from RAM
+    //TODO voir pourquoi on peut pas l'appliquer sur le sol
+    model_sol.materials[0].maps[MATERIAL_MAP_METALNESS].texture = perlinNoiseTexture; // Set map metalness texture
+    model_sol.materials[0].maps[MATERIAL_MAP_NORMAL].texture = perlinNoiseTexture; // Set map normal texture
+    model_sol.materials[0].maps[MATERIAL_MAP_ROUGHNESS].texture = perlinNoiseTexture; // Set map roughness texture
+    model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
+    model_sol.materials[0].shader = shader_taille; // Assign the shader to the model
 
     Vector3 mapPosition = { -2.0f, 0.0f, -2.0f };// Define model position
     //fin test sol
