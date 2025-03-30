@@ -17,6 +17,7 @@
 
 #include "sol.h"
 #include "nuages.h"
+#include "meteo.h"
 #define RLIGHTS_IMPLEMENTATION
 #if defined(_WIN32) || defined(_WIN64)
 #include "include/shaders/rlights.h"
@@ -563,9 +564,6 @@ int main(void) {
     lightCam.projection = CAMERA_ORTHOGRAPHIC;
     lightCam.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     lightCam.fovy = 20.0f;
-
-    //shader pour le billboard
-    
     // Création d'une plante
     /*
     string nom;
@@ -592,6 +590,12 @@ int main(void) {
     Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin, couleur);
     Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
     std::vector<Plante> plantes = {buisson, accacia, sapin};
+    //ajout des différentes météo
+    Meteo meteo_soleil("Soleil", 20, 0, Color{255, 0, 0, 255}, 1.1f, true);//on doit en metre au moin une sur true
+    Meteo meteo_pluie("Pluie", 10, 0, Color{0, 0, 255, 255}, 0.4f, false);
+    Meteo meteo_neige("Neige", -10, 0, Color{255, 255, 255, 255}, 0.01f, false);
+    //Meteo meteo_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
+    std::vector<Meteo> les_meteo = {meteo_soleil, meteo_pluie, meteo_neige};
     // Initialisation de la grille
     /*Vector3 position;
     Model model;
@@ -848,7 +852,11 @@ int main(void) {
                 }
                 last_hum_modif = hum_modif; // Mettre à jour la dernière valeur appliquée
             }
+            //la meteo est gérée ici
 
+            temperature_modifieur = get_meteo_temperature(cherche_la_meteo_actuelle(les_meteo));
+            hum_modifieur = get_meteo_humidite(cherche_la_meteo_actuelle(les_meteo));
+            cloudThreshold = get_meteo_densite_nuage(cherche_la_meteo_actuelle(les_meteo));
             float dt = GetFrameTime();
 
             static float accumulatedTime = 0.0f;
@@ -1034,7 +1042,14 @@ int main(void) {
                 lightIntensity = 0.6f; // Lever/Coucher du soleil
             }
 
-            lightColor = GetSunColor(timeOfDay);  // Utilisez votre fonction existante
+            //lightColor = GetSunColor(timeOfDay);  //couleur en fonction du temps
+            //on ajoute la couleur de la météo
+            lightColor = (Color){
+                GetSunColor(timeOfDay).r + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).r,
+                GetSunColor(timeOfDay).g + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).g,
+                GetSunColor(timeOfDay).b + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).b,
+                GetSunColor(timeOfDay).a + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).a
+            };
             lightColorNormalized = ColorNormalize(lightColor);
 
             SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
@@ -1218,10 +1233,27 @@ int main(void) {
         }
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
-        GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
-        GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
-        GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
-        GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
+        if (GuiButton((Rectangle){ 100, 370, 200, 30 }, "Soleil")) {
+            for (auto& meteo : les_meteo) {
+                meteo.meteo_actuelle = (meteo.nom == "Soleil");
+            }
+        }
+
+        if (GuiButton((Rectangle){ 100, 410, 200, 30 }, "Pluie")) {
+            for (auto& meteo : les_meteo) {
+                meteo.meteo_actuelle = (meteo.nom == "Pluie");
+            }
+        }
+
+        if (GuiButton((Rectangle){ 100, 450, 200, 30 }, "Neige")) {
+            for (auto& meteo : les_meteo) {
+                meteo.meteo_actuelle = (meteo.nom == "Neige");
+            }
+        }
+        //GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
+        //GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
+        //GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
+        //GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         // Sliders for wind parameters
         GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 3.0f);
         GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f);
