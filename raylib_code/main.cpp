@@ -591,8 +591,8 @@ int main(void) {
     Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
     std::vector<Plante> plantes = {buisson, accacia, sapin};
     //ajout des différentes météo
-    Meteo meteo_soleil("Soleil", 20, 0, Color{255, 0, 0, 255}, 1.1f, true);//on doit en metre au moin une sur true
-    Meteo meteo_pluie("Pluie", 10, 0, Color{0, 0, 255, 255}, 0.4f, false);
+    Meteo meteo_soleil("Soleil", 20, 0, Color{255, 141, 34, 255}, 1.1f, true);//on doit en metre au moin une sur true
+    Meteo meteo_pluie("Pluie", 10, 0, Color{0, 161, 231, 255}, 0.4f, false);
     Meteo meteo_neige("Neige", -10, 0, Color{255, 255, 255, 255}, 0.01f, false);
     //Meteo meteo_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
     std::vector<Meteo> les_meteo = {meteo_soleil, meteo_pluie, meteo_neige};
