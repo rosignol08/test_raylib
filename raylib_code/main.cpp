@@ -485,7 +485,6 @@ int main(void) {
     model_sol.materials[0].shader = shader_taille; // Assignez le shader au modèle
 
     Vector3 mapPosition = { -2.0f, 0.0f, -2.0f };// Define model position
-
     //fin test sol
     // Charger le modèle et la texture test commentaire
     Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
