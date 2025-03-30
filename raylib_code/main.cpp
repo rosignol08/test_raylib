@@ -1044,13 +1044,17 @@ int main(void) {
 
             //lightColor = GetSunColor(timeOfDay);  //couleur en fonction du temps
             //on ajoute la couleur de la météo
+            Color couleur_meteo = get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo));
+            
             lightColor = (Color){
-                GetSunColor(timeOfDay).r + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).r,
-                GetSunColor(timeOfDay).g + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).g,
-                GetSunColor(timeOfDay).b + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).b,
-                GetSunColor(timeOfDay).a + get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo)).a
+                GetSunColor(timeOfDay).r/2 + couleur_meteo.r/2,
+                GetSunColor(timeOfDay).g/2 + couleur_meteo.g/2,
+                GetSunColor(timeOfDay).b/2 + couleur_meteo.b/2,
+                GetSunColor(timeOfDay).a/2 + couleur_meteo.a/2
             };
+            
             lightColorNormalized = ColorNormalize(lightColor);
+            
 
             SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
             SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
