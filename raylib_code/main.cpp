@@ -328,7 +328,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                     
                     // Augmenter la taille de la plante
                     if (cellule->plante.taille < cellule->plante.taille_max) {
-                        cellule->plante.taille *= 1.005f;
+                        cellule->plante.taille *= 1.01f;
                     }
                     return;
                 }
@@ -409,7 +409,7 @@ int main(void) {
     };
 
     //Lumière directionnelle
-    // Load basic lighting shader_
+    // Load basic lighting shader
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
@@ -464,35 +464,22 @@ int main(void) {
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     
-    
-    //test sol
-    Image image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)    
+    //le sol
+    bool choisis = false;
+    Image image_sol; // Load heightmap image (RAM)    
     //image de la temperature
-    Image temperatureMap = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
-    Texture2D temperatureTexture = LoadTextureFromImage(temperatureMap);
-    UnloadImage(temperatureMap);
-
-    Mesh mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
-    Model model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
-    Image image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
-    Texture2D texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
-    Shader shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
-    int uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
-    Vector2 uvScale = {10.0f, 10.0f}; // Plus grand = texture plus petite et répétée
-    SetShaderValue(shader_taille, uvScaleLoc, &uvScale, SHADER_UNIFORM_VEC2);
-
-    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol; // Set map diffuse texture
+    Image temperatureMap;
+    Texture2D temperatureTexture;
+    Mesh mesh_sol; // Generate heightmap mesh (RAM and VRAM)
+    Model model_sol; // Load model from generated mesh
+    Image image_texture_sol; //rocky_terrain_02_diff_1k.jpg
+    Texture2D texture_sol; // Load map texture
+    Shader shader_taille;
+    int uvScaleLoc;
+    Vector2 uvScale; // Plus grand = texture plus petite et répétée
     // Generate a texture with Perlin noise
-    Image perlinNoiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f); // Generate Perlin noise image
-    Texture2D perlinNoiseTexture = LoadTextureFromImage(perlinNoiseImage); // Load texture from image
-    UnloadImage(perlinNoiseImage); // Unload image from RAM
-    //TODO voir pourquoi on peut pas l'appliquer sur le sol
-    model_sol.materials[0].maps[MATERIAL_MAP_METALNESS].texture = perlinNoiseTexture; // Set map metalness texture
-    model_sol.materials[0].maps[MATERIAL_MAP_NORMAL].texture = perlinNoiseTexture; // Set map normal texture
-    model_sol.materials[0].maps[MATERIAL_MAP_ROUGHNESS].texture = perlinNoiseTexture; // Set map roughness texture
-    model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
-    model_sol.materials[0].shader = shader_taille; // Assign the shader to the model
-
+    Image perlinNoiseImage; // Generate Perlin noise image
+    Texture2D perlinNoiseTexture; // Load texture from image
     Vector3 mapPosition = { -2.0f, 0.0f, -2.0f };// Define model position
     //fin test sol
     // Charger le modèle et la texture test commentaire
@@ -501,16 +488,14 @@ int main(void) {
     Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
-
-    Model model_herbe = LoadModel("models/herbe/untitled.glb");
+    //Model model_herbe = LoadModel("models/herbe/untitled.glb");
     
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
 
     Model model_acacia = LoadModel("models/acacia/scene.gltf");
-    Texture2D texture_acacia = LoadTexture("models/acacia/textures/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
-    
     //on applique la lumière sur toutes les plantes
     model_sapin.materials[0].shader = shadowShader;
     for (int i = 0; i < model_sapin.materialCount; i++)
@@ -534,11 +519,11 @@ int main(void) {
         model_mort.materials[i].shader = shadowShader;
     }
     
-    model_herbe.materials[0].shader = shadowShader;
-    for (int i = 0; i < model_herbe.materialCount; i++)
-    {
-        model_herbe.materials[i].shader = shadowShader;
-    }
+    //model_herbe.materials[0].shader = shadowShader;
+    //for (int i = 0; i < model_herbe.materialCount; i++)
+    //{
+    //    model_herbe.materials[i].shader = shadowShader;
+    //}
     model_herbe_instance.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_herbe_instance.materialCount; i++)
     {
@@ -548,15 +533,13 @@ int main(void) {
     if (herbe_shader.id == 0) {
         printf("Erreur lors du chargement du shader d'herbe!\n");
     }
-
-    model_sol.materials[0].shader = shadowShader;
     
     model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    //model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    model_herbe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    
     model_herbe_instance.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     // Create an empty model to represent an empty cell
     Mesh emptyMesh = GenMeshCube(0.0f, 0.0f, 0.0f); // Generate a cube with zero size
@@ -626,7 +609,7 @@ int main(void) {
     std::vector<Model> models_herbe_vecteur(NBHERBE * NBHERBE, model_herbe_instance);
     std::vector<Vector3> position_herbe(NBHERBE * NBHERBE);
     
-    DisableCursor();// Limit cursor to relative movement inside the window
+    //DisableCursor();// Limit cursor to relative movement inside the window
     int frameCounter = 0;
     SetTargetFPS(60);
     Mesh sphere_test = GenMeshSphere(1.0f, 16, 16);
@@ -657,9 +640,70 @@ int main(void) {
         {
             case 0:{
                 // Écran de chargement
+                //EnableCursor();
                 if (!initializationDone) {
                     switch (loadingStage) {
                         case 0: {
+                                BeginDrawing();
+                                    //choix du terrain qu'on veut
+                                    ClearBackground(RAYWHITE);
+                                    DrawText("Choix du terrain", GetScreenWidth() / 2 - MeasureText("Choix du terrain", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
+                                    if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2 - 100, 200, 30 }, "Terrain 1")) {
+                                        image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
+                                        printf("heightmap.png\n");
+                                        choisis = true;
+                                    }
+                    
+                                    if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2 - 50, 200, 30 }, "Terrain 2")) {
+                                        image_sol = LoadImage("ressources/plaine_hm.png");     // Load heightmap image (RAM)
+                                        printf("plaine_hm.png\n");
+                                        choisis = true;
+                                    }
+                    
+                                    if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2, 200, 30 }, "Terrain 3")) {
+                                        image_sol = LoadImage("ressources/paris_hm.png");     // Load heightmap image (RAM)
+                                        printf("paris_hm.png\n");
+                                        choisis = true;
+                                    }
+                    
+                                    if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2 + 50, 200, 30 }, "Terrain 4")) {
+                                        image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)
+                                        printf("test.png\n");
+                                        choisis = true;
+                                    }
+                                EndDrawing();
+                                if (choisis){
+                                //image de la temperature
+                                temperatureMap = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+                                temperatureTexture = LoadTextureFromImage(temperatureMap);
+                                UnloadImage(temperatureMap);
+                                        
+                                mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
+                                model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
+                                image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
+                                texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
+                                shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
+                                uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
+                                uvScale = {10.0f, 10.0f}; // Plus grand = texture plus petite et répétée
+                                SetShaderValue(shader_taille, uvScaleLoc, &uvScale, SHADER_UNIFORM_VEC2);
+                                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+                                model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol; // Set map diffuse texture
+                                // Generate a texture with Perlin noise
+                                perlinNoiseImage = GenImagePerlinNoise(256, 256, 0, 0, 10.0f); // Generate Perlin noise image
+                                perlinNoiseTexture = LoadTextureFromImage(perlinNoiseImage); // Load texture from image
+                                UnloadImage(perlinNoiseImage); // Unload image from RAM
+                                //TODO voir pourquoi on peut pas l'appliquer sur le sol
+                                model_sol.materials[0].maps[MATERIAL_MAP_METALNESS].texture = perlinNoiseTexture; // Set map metalness texture
+                                model_sol.materials[0].maps[MATERIAL_MAP_NORMAL].texture = perlinNoiseTexture; // Set map normal texture
+                                model_sol.materials[0].maps[MATERIAL_MAP_ROUGHNESS].texture = perlinNoiseTexture; // Set map roughness texture
+                                model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
+                                model_sol.materials[0].shader = shader_taille; // Assign the shader to the model
+                                // Set the shader for the model
+                                model_sol.materials[0].shader = shadowShader;
+                                loadingStage++;
+                            }
+                        }break;
+                        case 1: {
                             // Initialisation de la grille
                             for (int x = 0; x < GRID_SIZE; x++) {
                                 for (int z = 0; z < GRID_SIZE; z++) {                                
@@ -727,7 +771,7 @@ int main(void) {
                                 }
                             }
                             loadingStage++;
-                        } break;        
+                        }break;        
                 ////ecrant de chargement  Copyright (c) 2021-2025 Ramon Santamaria (@raysan5)
                 //frameCounter++;    // Count frames
                 //// Wait for 2 seconds (120 frames) before jumping to TITLE screen
@@ -735,7 +779,7 @@ int main(void) {
                 //{
                 //    currentScreen = 1;
                 //}
-                        case 1: {
+                        case 2: {
                                 for (int x = 0; x < NBHERBE; x++) {
                                     for (int z = 0; z < NBHERBE; z++) {
                                     
@@ -799,7 +843,7 @@ int main(void) {
                                 }
                             loadingStage++;
                         } break;
-                        case 2:{
+                        case 3:{
                             grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 4.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
                             grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 3.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
                             grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 2.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));                        
@@ -811,18 +855,19 @@ int main(void) {
                 frameCounter++;
     
                 // Afficher les messages de chargement avec le pourcentage
-                int loadingPercentage = (loadingStage * 100) / 4; // 4 étapes au total
-                        
-                BeginDrawing();
-                ClearBackground(RAYWHITE);
-                DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
-                DrawText(TextFormat("%d%%", loadingPercentage), GetScreenWidth() / 2 - MeasureText("100%", 20) / 2, GetScreenHeight() / 2, 20, RAYWHITE);
-                DrawText(TextFormat("Étape %d/4", loadingStage + 1), GetScreenWidth() / 2 - MeasureText("Étape 4/4", 20) / 2, GetScreenHeight() / 2 + 30, 20, DARKGRAY);
-                EndDrawing();
-                        
-                // Passage à l'écran principal uniquement quand tout est initialisé
-                if (initializationDone && frameCounter > 120) {
-                    currentScreen = 1;
+                int loadingPercentage = (loadingStage * 100) / 5; // 5 étapes au total
+                if (loadingStage > 1){
+                    BeginDrawing();
+                    ClearBackground(RAYWHITE);
+                    DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
+                    DrawText(TextFormat("%d%%", loadingPercentage), GetScreenWidth() / 2 - MeasureText("100%", 20) / 2, GetScreenHeight() / 2, 20, RAYWHITE);
+                    DrawText(TextFormat("Étape %d/5", loadingStage + 1), GetScreenWidth() / 2 - MeasureText("Étape 5/5", 20) / 2, GetScreenHeight() / 2 + 30, 20, DARKGRAY);
+                    EndDrawing();
+
+                    // Passage à l'écran principal uniquement quand tout est initialisé
+                    if (initializationDone && frameCounter > 120) {
+                        currentScreen = 1;
+                    }
                 }
             } break;
             case 1:{
@@ -1294,10 +1339,10 @@ int main(void) {
         l'ui pour controler les paramètres
         */
         // Pour changer la direction de la lumière
-        GuiSliderBar((Rectangle){ 100, 100, 200, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
+        GuiSliderBar((Rectangle){ 100, 100, 300, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
 
         // Affichage de l'heure
-        DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 10, 20, DARKGRAY);
+        DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 20, 20, DARKGRAY);
             } break;
         default: break;
         }
