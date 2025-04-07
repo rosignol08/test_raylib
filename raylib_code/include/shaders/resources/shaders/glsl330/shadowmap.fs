@@ -1,3 +1,4 @@
+//fragment shader
 #version 330
 
 // This shader is based on the basic lighting shader
@@ -98,13 +99,7 @@ void main()
         testeur2 = 0.0;
         gl_FragDepth = gl_FragCoord.z;
     }
-    //finalColor = mix(finalColor, vec4(0, 0, 0, 1), float(shadowCounter) / float(numSamples));
-    //if (isnuage == 0) {
-    //    testeur = 0.5;
-    //}else if (isnuage == 1) {
-    //    testeur = 1.0;
-    //}
-        finalColor = mix(finalColor, vec4(0, 0, 0, 1), (shadowIntensity)*(float(shadowCounter) / float(numSamples)));
+    finalColor = mix(finalColor, vec4(0, 0, 0, 1), (shadowIntensity)*(float(shadowCounter) / float(numSamples)));
     
     // Add ambient lighting whether in shadow or not
     finalColor += texelColor*(ambient/10.0)*colDiffuse;

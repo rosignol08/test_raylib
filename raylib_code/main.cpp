@@ -413,6 +413,8 @@ int main(void) {
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
+    //le test du shader pbr avec l'ombre
+    Shader pbr_ombre_shader = LoadShader("ressources/custom_shader/glsl330/ombre_pbr.vs","ressources/custom_shader/glsl330/ombre_pbr.fs");
     //l'herbe
     Shader herbe_shader = LoadShader("ressources/custom_shader/glsl330/herbe_shader.vs","ressources/custom_shader/glsl330/herbe_shader.fs");
     // Configurez les locations du shader de l'ombre
@@ -697,9 +699,9 @@ int main(void) {
                                 model_sol.materials[0].maps[MATERIAL_MAP_NORMAL].texture = perlinNoiseTexture; // Set map normal texture
                                 model_sol.materials[0].maps[MATERIAL_MAP_ROUGHNESS].texture = perlinNoiseTexture; // Set map roughness texture
                                 model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
-                                model_sol.materials[0].shader = shader_taille; // Assign the shader to the model
+                                //model_sol.materials[0].shader = shader_taille; // Assign the shader to the model ça sert à rien
                                 // Set the shader for the model
-                                model_sol.materials[0].shader = shadowShader;
+                                model_sol.materials[0].shader = pbr_ombre_shader; //shadowShader;
                                 loadingStage++;
                             }
                         }break;
