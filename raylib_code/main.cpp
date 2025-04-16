@@ -701,7 +701,7 @@ int main(void) {
                                 model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
                                 //model_sol.materials[0].shader = shader_taille; // Assign the shader to the model ça sert à rien
                                 // Set the shader for the model
-                                model_sol.materials[0].shader = pbr_ombre_shader; //shadowShader;
+                                model_sol.materials[0].shader = shadowShader;//pbr_ombre_shader; //shadowShader;
                                 loadingStage++;
                             }
                         }break;

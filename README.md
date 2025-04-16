@@ -141,7 +141,7 @@ int main(void)
     return 0;
 }
 ```
-Si vous pouvez compiler et lancer ce code, tout est bon. Vous pouvez lancer notre projet.
+Si vous pouvez compiler et lancer ce code, tout est bon. Vous pouvez lancer notre projet avec la commande "make"
 
 ## Conclusion
 À compléter 
