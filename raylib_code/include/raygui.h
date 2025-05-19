@@ -1469,7 +1469,7 @@ static bool CheckCollisionPointRec(Vector2 point, Rectangle rec);   // Check if 
 static const char *TextFormat(const char *text, ...);               // Formatting of text with variables to 'embed'
 static const char **TextSplit(const char *text, char delimiter, int *count);    // Split text into multiple strings
 static int TextToInteger(const char *text);         // Get integer value from text
-static float TextToFloat(const char *text);         // Get float value from text
+static float GuiTextToFloat(const char *text);         // Get float value from text
 
 static int GetCodepointNext(const char *text, int *codepointSize);  // Get next codepoint in a UTF-8 encoded text
 static const char *CodepointToUTF8(int codepoint, int *byteSize);   // Encode codepoint into UTF-8 text (char array size returned as parameter)
@@ -3007,6 +3007,36 @@ int GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, in
     return result;
 }
 
+// Get float value from text
+// NOTE: This function replaces atof() [stdlib.h]
+// WARNING: Only '.' character is understood as decimal point
+static float GuiTextToFloat(const char *text)
+{
+    float value = 0.0f;
+    float sign = 1.0f;
+
+    if ((text[0] == '+') || (text[0] == '-'))
+    {
+        if (text[0] == '-') sign = -1.0f;
+        text++;
+    }
+
+    int i = 0;
+    for (; ((text[i] >= '0') && (text[i] <= '9')); i++) value = value*10.0f + (float)(text[i] - '0');
+
+    if (text[i++] != '.') value *= sign;
+    else
+    {
+        float divisor = 10.0f;
+        for (; ((text[i] >= '0') && (text[i] <= '9')); i++)
+        {
+            value += ((float)(text[i] - '0'))/divisor;
+            divisor = divisor*10.0f;
+        }
+    }
+
+    return value;
+}
 // Floating point Value Box control, updates input val_str with numbers
 // NOTE: Requires static variables: frameCounter
 int GuiValueBoxFloat(Rectangle bounds, const char *text, char *textValue, float *value, bool editMode)
@@ -3075,7 +3105,7 @@ int GuiValueBoxFloat(Rectangle bounds, const char *text, char *textValue, float 
                 }
             }
 
-            if (valueHasChanged) *value = TextToFloat(textValue);
+            if (valueHasChanged) *value = GuiTextToFloat(textValue);
 
             if ((IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) || (!CheckCollisionPointRec(mousePoint, bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))) result = 1;
         }
@@ -5641,36 +5671,6 @@ static int TextToInteger(const char *text)
     return value*sign;
 }
 
-// Get float value from text
-// NOTE: This function replaces atof() [stdlib.h]
-// WARNING: Only '.' character is understood as decimal point
-static float TextToFloat(const char *text)
-{
-    float value = 0.0f;
-    float sign = 1.0f;
-
-    if ((text[0] == '+') || (text[0] == '-'))
-    {
-        if (text[0] == '-') sign = -1.0f;
-        text++;
-    }
-
-    int i = 0;
-    for (; ((text[i] >= '0') && (text[i] <= '9')); i++) value = value*10.0f + (float)(text[i] - '0');
-
-    if (text[i++] != '.') value *= sign;
-    else
-    {
-        float divisor = 10.0f;
-        for (; ((text[i] >= '0') && (text[i] <= '9')); i++)
-        {
-            value += ((float)(text[i] - '0'))/divisor;
-            divisor = divisor*10.0f;
-        }
-    }
-
-    return value;
-}
 
 // Encode codepoint into UTF-8 text (char array size returned as parameter)
 static const char *CodepointToUTF8(int codepoint, int *byteSize)
