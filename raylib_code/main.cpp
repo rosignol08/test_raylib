@@ -495,11 +495,12 @@ int main(void) {
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
 
-    Model model_acacia = LoadModel("models/acacia/scene.gltf");
+    //Model model_acacia = LoadModel("models/acacia/scene.gltf");
+    Model model_acacia = LoadModel("models/structure_oak/oaks_feuilles.glb");
     Model model_chene = LoadModel("models/structure_oak/oaks_feuilles.glb");
     //Model feuillage_acacia = LoadModel("models/structure_oak/oaks_struct.glb");
-    Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    //Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
     //on applique la lumière sur toutes les plantes
     model_sapin.materials[0].shader = shadowShader;
     for (int i = 0; i < model_sapin.materialCount; i++)
@@ -1376,7 +1377,7 @@ int main(void) {
     UnloadModel(model_buisson_europe);
     UnloadTexture(texture_buisson_europe);
     UnloadModel(model_acacia);
-    UnloadTexture(texture_acacia);
+    //UnloadTexture(texture_acacia);
     UnloadModel(model_chene);
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
