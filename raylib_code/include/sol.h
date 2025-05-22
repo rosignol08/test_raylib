@@ -33,11 +33,12 @@ public:
     bool morte;
     int age_max;
     Model model;
+    Model feuillage;
     Color couleur;
 
     //Plante cree_plante(string n, int h_min, int t_min, int inf_h, int inf_temp, float taille, float pen, int age, Model mod);
     // Constructeur
-    Plante(string n,int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float taille, float taille_max, float pente_min, float pente_max, int age, bool morte, int age_max, Model mod, Color couleur);
+    Plante(string n,int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float taille, float taille_max, float pente_min, float pente_max, int age, bool morte, int age_max, Model mod, Model feui, Color couleur);
 
     void influencerVoisins(vector<vector<class GridCell>>& grille, int x, int y);
     //void vieux();
@@ -96,27 +97,3 @@ public:
 
 #endif
 
-
-
-
-// monobjet.h
-/*
-#ifndef MONOBJET_H
-#define MONOBJET_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct MonObjet MonObjet;
-
-MonObjet* MonObjet_nouveau(int x);
-void MonObjet_afficher(MonObjet* obj);
-void MonObjet_supprimer(MonObjet* obj);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // MONOBJET_H
-*/
