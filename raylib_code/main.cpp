@@ -495,11 +495,11 @@ int main(void) {
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
 
-    //Model model_acacia = LoadModel("models/acacia/scene.gltf");
-    Model model_acacia = LoadModel("models/structure_oak/oaks_struct.glb");
-    Model feuillage_acacia = LoadModel("models/structure_oak/oaks_feuilles.glb");
-    //Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    Model model_acacia = LoadModel("models/acacia/scene.gltf");
+    Model model_chene = LoadModel("models/structure_oak/oaks_feuilles.glb");
+    //Model feuillage_acacia = LoadModel("models/structure_oak/oaks_struct.glb");
+    Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
     //on applique la lumière sur toutes les plantes
     model_sapin.materials[0].shader = shadowShader;
     for (int i = 0; i < model_sapin.materialCount; i++)
@@ -517,11 +517,7 @@ int main(void) {
     {
         model_acacia.materials[i].shader = shadowShader;
     }
-    feuillage_acacia.materials[0].shader = shadowShader;
-    for (int i = 0; i < feuillage_acacia.materialCount; i++)
-    {
-        feuillage_acacia.materials[i].shader = shadowShader;
-    }
+
     model_mort.materials[0].shader = shadowShader;
     for (int i = 0; i < model_mort.materialCount; i++)
     {
@@ -538,10 +534,15 @@ int main(void) {
     {
         model_herbe_instance.materials[i].shader = herbe_shader;
     }
-    feuillage_acacia.materials[0].shader = herbe_shader;
-    for (int i = 0; i < feuillage_acacia.materialCount; i++)
+    model_acacia.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_acacia.materialCount; i++)
     {
-        feuillage_acacia.materials[i].shader = herbe_shader;
+        model_acacia.materials[i].shader = herbe_shader;
+    }
+    model_chene.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_chene.materialCount; i++)
+    {
+        model_chene.materials[i].shader = herbe_shader;
     }
     // Après avoir chargé le shader
     if (herbe_shader.id == 0) {
@@ -551,7 +552,7 @@ int main(void) {
     model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    feuillage_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    model_chene.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     //model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     
@@ -590,11 +591,12 @@ int main(void) {
     */
     Color couleur = WHITE;
     //Plante herbe("Herbe", 100, 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 1000, model_herbe, couleur);
-    Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f, 0.1f, 0.01f, 0.5f, 0, false, 1000, model_buisson_europe,model_buisson_europe, couleur);
-    Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia,feuillage_acacia, couleur);
-    Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50, model_mort,model_mort, couleur);
-    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin,model_sapin, couleur);
-    Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel,emptyModel, couleur);
+    Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f, 0.1f, 0.01f, 0.5f, 0, false, 1000,model_buisson_europe, couleur);
+    Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia, couleur);
+    Plante chene("Chene", 100, 0, 20, -10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_chene, couleur);
+    Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50,model_mort, couleur);
+    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin, couleur);
+    Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100,emptyModel, couleur);
     std::vector<Plante> plantes = {buisson, accacia, sapin};
     //ajout des différentes météo
     Meteo meteo_soleil("Soleil", 20, 0, Color{255, 141, 34, 255}, 1.1f, true);//on doit en metre au moin une sur true
@@ -1374,7 +1376,8 @@ int main(void) {
     UnloadModel(model_buisson_europe);
     UnloadTexture(texture_buisson_europe);
     UnloadModel(model_acacia);
-    //UnloadTexture(texture_acacia);
+    UnloadTexture(texture_acacia);
+    UnloadModel(model_chene);
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
