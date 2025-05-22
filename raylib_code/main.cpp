@@ -646,7 +646,7 @@ int main(void) {
                 if (!initializationDone) {
                     switch (loadingStage) {
                         case 0: {
-                                BeginDrawing();
+                                //BeginDrawing();
                                     //choix du terrain qu'on veut
                                     ClearBackground(RAYWHITE);
                                     DrawText("Choix du terrain", GetScreenWidth() / 2 - MeasureText("Choix du terrain", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
@@ -673,7 +673,7 @@ int main(void) {
                                         printf("test.png\n");
                                         choisis = true;
                                     }
-                                EndDrawing();
+                                //EndDrawing();
                                 if (choisis){
                                 //image de la temperature
                                 temperatureMap = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
@@ -859,12 +859,12 @@ int main(void) {
                 // Afficher les messages de chargement avec le pourcentage
                 int loadingPercentage = (loadingStage * 100) / 5; // 5 étapes au total
                 if (loadingStage > 1){
-                    BeginDrawing();
+                    //BeginDrawing();
                     ClearBackground(RAYWHITE);
                     DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
                     DrawText(TextFormat("%d%%", loadingPercentage), GetScreenWidth() / 2 - MeasureText("100%", 20) / 2, GetScreenHeight() / 2, 20, RAYWHITE);
                     DrawText(TextFormat("Étape %d/5", loadingStage + 1), GetScreenWidth() / 2 - MeasureText("Étape 5/5", 20) / 2, GetScreenHeight() / 2 + 30, 20, DARKGRAY);
-                    EndDrawing();
+                    //EndDrawing();
 
                     // Passage à l'écran principal uniquement quand tout est initialisé
                     if (initializationDone && frameCounter > 120) {

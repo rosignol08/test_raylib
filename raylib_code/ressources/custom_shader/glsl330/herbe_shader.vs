@@ -84,16 +84,7 @@ void main() {
     float xMovement = noise * windDir.x + sin(time * 2.0 + position.z * 0.1 + variation) * 0.3;
     
     float zMovement = noise * windDir.y + cos(time * 1.5 + position.x * 0.1 + variation) * 0.3;
-    //test
-        //// Plus la position Y (hauteur) est élevée, plus l'effet est fort
-        //float windEffect = sin(time * windSpeed + position.x * 0.5) * cos(time * windSpeed * 0.7 + position.z * 0.5);
-        //
-        //// Appliquer l'effet principalement sur X et un peu sur Z, proportionnel à la hauteur Y
-        //float heightFactor = position.y / 2.0; // Ajuster selon la hauteur de votre herbe
-        //position.x += windEffect * windStrength * heightFactor;
-        //position.z += windEffect * windStrength * 0.3 * heightFactor; // Effet moindre sur Z
-    //fin test
-        
+
     // Application du déplacement avec effet de la rafale
     float baseMovement = 0.15; // Mouvement minimal à la base
     float effectiveHeight =position.y / 2.0;// baseMovement + height * (1.0 - baseMovement);
@@ -111,73 +102,6 @@ void main() {
         position.z += cos(time * 17.0 + position.y * 10.0) * gust * 0.02 * height;
     }
 }
-    //shader avec bruit de Perlin avancé
-    //float height = vertexTexCoord.y;
-    //
-    //// Coordonnées de bruit avec variabilité
-    //vec2 noiseCoord = vec2(
-    //    (position.x + position.z) * 0.05 + time * windSpeed, 
-    //    (position.z - position.x) * 0.05 + time * windSpeed * 0.7
-    //);
-    //
-    //// Échantillonnage du bruit
-    //float noise = texture(noiseTexture, noiseCoord).r - 0.5;
-    //
-    //// Variation unique pour chaque brin d'herbe
-    //float variation = sin(position.x * 12.3 + position.z * 15.7) * 0.5 + 0.5;
-    //
-    //// Direction du vent
-    //vec2 windDir = normalize(windHorizontalDirection);
-    //
-    //// Combinaison de bruit et de mouvement sinusoïdal
-    //float xMovement = noise * windDir.x * noiseInfluence + 
-    //                   sin(time * 2.0 + position.z * 0.1 + variation) * sineInfluence;
-    //
-    //float zMovement = noise * windDir.y * noiseInfluence + 
-    //                   cos(time * 1.5 + position.x * 0.1 + variation) * sineInfluence;
-    //// Mouvement réduit à la base (pas complètement figé)
-    //float baseMovement = 0.15; // 0.0 = base figée, 1.0 = même mouvement que le sommet
-    //float effectiveHeight = baseMovement + height * (1.0 - baseMovement);
-//
-    //// Application du déplacement proportionnel à la hauteur
-    //position.x += xMovement * effectiveHeight * windStrength;
-    //position.z += zMovement * height * windStrength;
-    //
-    //// Affaissement vertical réaliste
-    //position.y -= (abs(xMovement) + abs(zMovement)) * height * verticalDroop * windStrength;
-
-    //mouvement avec bruit de Perlin primitif
-    //float height = vertexTexCoord.y;  // 0 à la base, 1 au sommet
-    //
-    //// Coordonnées UV simples pour la texture de bruit
-    //vec2 noiseCoord = vec2((position.x + position.z) * 0.1 + time * windSpeed, 
-    //                       (position.z - position.x) * 0.1 + time * windSpeed * 0.7);
-    //
-    //// Échantillonnage du bruit (oscillant entre -0.5 et 0.5)
-    //float noise = texture(noiseTexture, noiseCoord).r - 0.5;
-    //
-    //// Direction du vent avec influence du bruit
-    //vec2 windDir = normalize(windHorizontalDirection);
-    //
-    //// Application du déplacement
-    //position.x += (noise * windDir.x + sin(time * 2.0)) * height * windStrength;
-    //position.z += (noise * windDir.y + cos(time * 1.5)) * height * windStrength;
-    //
-    //// Léger affaissement vertical pour effet réaliste
-    //position.y -= abs(noise) * height * windStrength * 0.3;
-
-    //le shader originel
-        //// Calculer l'effet de vent basé sur le temps et la position
-        //// Plus la position Y (hauteur) est élevée, plus l'effet est fort
-        //float windEffect = sin(time * windSpeed + position.x * 0.5) * cos(time * windSpeed * 0.7 + position.z * 0.5);
-        //
-        //// Appliquer l'effet principalement sur X et un peu sur Z, proportionnel à la hauteur Y
-        //float heightFactor = position.y / 2.0; // Ajuster selon la hauteur de votre herbe
-        //position.x += windEffect * windStrength * heightFactor;
-        //position.z += windEffect * windStrength * 0.3 * heightFactor; // Effet moindre sur Z
-        
-    
-    
     // Envoyer les attributs de vertex au fragment shader
     fragPosition = vec3(matModel * vec4(position, 1.0));
     //fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));
