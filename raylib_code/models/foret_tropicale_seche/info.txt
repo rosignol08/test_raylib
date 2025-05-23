@@ -8,7 +8,7 @@ Précipitations annuelles:
 1 000 à 2 000 mm
 
 Arbres dominants:
-- **Baobab**
-- **Acacia**
-- **Teck**
-- **Tamarin**
+Baobab
+Acacia
+Teck
+Tamarin

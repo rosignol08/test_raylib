@@ -200,7 +200,7 @@ int CompareSceneObjects(const void *a, const void *b) {
 }
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
-void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, Plante plante_morte, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante){
+void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, std::vector<Plante> plantes_mortes, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante){
     if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide"){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
             Plante bestPlante = vide;
@@ -268,22 +268,29 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
         if (cellule->plante.age >= cellule->plante.age_max) {
             cellule->plante.age = 0;
             float taille_actuelle = cellule->plante.taille;
-            Plante planteMorteActuelle = plante_morte;
-            planteMorteActuelle.taille = taille_actuelle;
-            cellule->plante = planteMorteActuelle;
+            
+            //on cherche la plante morte correspondante avec le meme id en gros
+            for (int i = 0; i < plantes_mortes.size(); i++) {
+                if (cellule->plante.id == plantes_mortes[i].id) {
+                    Plante planteMorteActuelle = plantes_mortes[i];
+                    planteMorteActuelle.taille = taille_actuelle;
+                    cellule->plante = planteMorteActuelle;
+                    break;
+                }
+            }
             return;
         }
         else{
-            if(cellule->plante.nom != plante_morte.nom) {
-                if (cellule->plante.sante <= 1){
-                    cellule->plante.sante = 0;
-                    cellule->plante.age = 0;
-                    float taille_actuelle = cellule->plante.taille;
-                    Plante planteMorteActuelle = plante_morte;
-                    planteMorteActuelle.taille = taille_actuelle;
-                    cellule->plante = planteMorteActuelle;
-                    return;
-                }
+            if(cellule->plante.sante >= 1 || cellule->plante.age >= cellule->plante.age_max){
+                //if (cellule->plante.sante <= 1){
+                //    cellule->plante.sante = 0;
+                //    cellule->plante.age = 0;
+                //    float taille_actuelle = cellule->plante.taille;
+                //    Plante planteMorteActuelle = plante_morte;
+                //    planteMorteActuelle.taille = taille_actuelle;
+                //    cellule->plante = planteMorteActuelle;
+                //    return;
+                //}
             //modifer pout ajouter un système de santée
                 if (cellule->pente >= cellule->plante.pente_min &&
                     cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
@@ -484,8 +491,9 @@ int main(void) {
     Texture2D perlinNoiseTexture; // Load texture from image
     Vector3 mapPosition = { -2.0f, 0.0f, -2.0f };// Define model position
     //fin test sol
-    // Charger le modèle et la texture test commentaire
-    Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
+
+    //chargement du modèle et la texture test commentaire
+    //Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
     Model model_sapin = LoadModel("models/pine_tree/scene.glb");
     Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
@@ -495,13 +503,27 @@ int main(void) {
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
 
-    //Model model_acacia = LoadModel("models/acacia/scene.gltf");
-    Model model_acacia = LoadModel("models/structure_oak/oaks_feuilles.glb");
+    Model model_acacia = LoadModel("models/acacia/scene.gltf");
     Model model_chene = LoadModel("models/structure_oak/oaks_feuilles.glb");
     //Model feuillage_acacia = LoadModel("models/structure_oak/oaks_struct.glb");
-    //Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
+    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    
     //on applique la lumière sur toutes les plantes
+    model_acacia.materials[0].shader = shadowShader;
+    for (int i = 0; i < model_acacia.materialCount; i++)
+    {
+        model_acacia.materials[i].shader = shadowShader;
+    }
+    
+    model_acacia.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_acacia.materialCount; i++)
+    {
+        model_acacia.materials[i].shader = herbe_shader;
+    }
+
+    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    
     model_sapin.materials[0].shader = shadowShader;
     for (int i = 0; i < model_sapin.materialCount; i++)
     {
@@ -513,17 +535,13 @@ int main(void) {
         model_buisson_europe.materials[i].shader = shadowShader;
     }
     
-    model_acacia.materials[0].shader = shadowShader;
-    for (int i = 0; i < model_acacia.materialCount; i++)
-    {
-        model_acacia.materials[i].shader = shadowShader;
-    }
+    
 
-    model_mort.materials[0].shader = shadowShader;
-    for (int i = 0; i < model_mort.materialCount; i++)
-    {
-        model_mort.materials[i].shader = shadowShader;
-    }
+    //model_mort.materials[0].shader = shadowShader;
+    //for (int i = 0; i < model_mort.materialCount; i++)
+    //{
+    //    model_mort.materials[i].shader = shadowShader;
+    //}
     
     //model_herbe.materials[0].shader = shadowShader;
     //for (int i = 0; i < model_herbe.materialCount; i++)
@@ -535,11 +553,7 @@ int main(void) {
     {
         model_herbe_instance.materials[i].shader = herbe_shader;
     }
-    model_acacia.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_acacia.materialCount; i++)
-    {
-        model_acacia.materials[i].shader = herbe_shader;
-    }
+    
     model_chene.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_chene.materialCount; i++)
     {
@@ -552,10 +566,10 @@ int main(void) {
     
     model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    
     model_chene.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     //model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    //model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     
     model_herbe_instance.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     // Create an empty model to represent an empty cell
@@ -590,15 +604,34 @@ int main(void) {
     int age_max;
     Model model;
     */
+    /*
+    Liste des plantes
+    forets temperee 5°C à 25°C 60 à 80 % 500 à 1 500 mm
+    1 bouleau bouleau_feuilles1
+    2 bouleau bouleau_feuilles2
+    3 erable erable_feuilles
+    4 hetre hetre_feuilles
+    5 chene oaks_feuilles
+
+    foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
+    6 jungle1 jungle_feuillage
+    7 jungle2 jungle_feuillage2
+    8 jungle3 jungle_feuillage3
+
+    forets tropicale seche 25°C à 35°C 40 à 70 % 1 000 à 2 000 mm
+    
+        */
     Color couleur = WHITE;
     //Plante herbe("Herbe", 100, 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 1000, model_herbe, couleur);
-    Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f, 0.1f, 0.01f, 0.5f, 0, false, 1000,model_buisson_europe, couleur);
+    //Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f, 0.1f, 0.01f, 0.5f, 0, false, 1000,model_buisson_europe, couleur);
     Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia, couleur);
-    Plante chene("Chene", 100, 0, 20, -10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_chene, couleur);
-    Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50,model_mort, couleur);
+    Plante chene("Chene", 100, 0, 20, -10, 30, 2, 1, 0.005f, 0.01f, 0.0f, 0.5f, 0, false, 1000, model_chene, couleur);
+    //Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50,model_mort, couleur);
     Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin, couleur);
     Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100,emptyModel, couleur);
-    std::vector<Plante> plantes = {buisson, accacia, sapin};
+
+    std::vector<Plante> plantes = {accacia, sapin};//pour les plantes vivantes
+    std::vector<Plante> plantes_mortes = {};//pour les plantes mortes
     //ajout des différentes météo
     Meteo meteo_soleil("Soleil", 20, 0, Color{255, 141, 34, 255}, 1.1f, true);//on doit en metre au moin une sur true
     Meteo meteo_pluie("Pluie", 10, 0, Color{0, 161, 231, 255}, 0.4f, false);
@@ -1041,7 +1074,7 @@ int main(void) {
             // Mise à jour des cellules
             for (int x = 0; x < GRID_SIZE; x++) {
                 for (int z = 0; z < GRID_SIZE; z++) {
-                    verifier_plante(grille, &grille[x][z], plantes, plante_morte, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante);
+                    verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante);
                 }
             }
 
@@ -1371,7 +1404,7 @@ int main(void) {
     UnloadShader(shadowShader);
     UnloadShader(shader_taille);
     // Désallocation des ressources
-    UnloadModel(model_mort);
+    //UnloadModel(model_mort);
     UnloadModel(model_sapin);
     //UnloadTexture(texture_sapin);
     UnloadModel(model_buisson_europe);

@@ -1,5 +1,5 @@
 Température moyenne:
-15°C à 20°C
+20°C à 40°C
 
 Humidité:
 60 à 80 %
@@ -8,7 +8,7 @@ Précipitations annuelles:
 300 à 800 mm
 
 Arbres dominants:
-- **Chêne vert**
-- **Olivier**
-- **Pin maritime**
-- **Cyprès**
+Chêne vert
+Olivier
+Pin maritime
+Cyprès
