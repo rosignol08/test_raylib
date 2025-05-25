@@ -8,7 +8,7 @@ Précipitations annuelles:
 200 à 600 mm
 
 Arbres dominants:
-- **Épinette** (épinette noire, épinette blanche)
-- **Pin** (pin sylvestre, pin tordu)
-- **Mélèze** (mélèze laricin, mélèze de Sibérie)
-- **Sapin baumier**
+Épinette (épinette noire, épinette blanche)
+Pin (pin sylvestre, pin tordu)
+Mélèze (mélèze laricin, mélèze de Sibérie)
+Sapin baumier

@@ -2,10 +2,9 @@
 Model model_mort;
 //Plante plante_morte("Morte", 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0, true, Model{});
 // Constructeur
-Plante::Plante(string n, int id, int sante, int h_min, int h_max, int t_min, int t_max, int inf_h, int inf_temp, float t, float ta_max, float pente_min, float pente_max, int a,bool morte, int age_max, Model mod, Color col)
-    : nom(n), id(id), sante(sante), humidite_min(h_min), humidite_max(h_max), temperature_min(t_min), temperature_max(t_max), influence_humidite(inf_h), influence_temperature(inf_temp),
+Plante::Plante(string n, int id, int sante, int h_min, int h_max, int t_min, int t_max, int pluvi_min, int pluvi_max, int inf_h, int inf_temp, float t, float ta_max, float pente_min, float pente_max, float a,bool morte, int age_max, Model mod, Color col)
+    : nom(n), id(id), sante(sante), humidite_min(h_min), humidite_max(h_max), temperature_min(t_min), temperature_max(t_max), pluviometrie_min(pluvi_min), pluviometrie_max(pluvi_max), influence_humidite(inf_h), influence_temperature(inf_temp),
       taille(t), taille_max(ta_max),pente_min(pente_min), pente_max(pente_max), age(a), morte(morte), age_max(age_max), model(mod), couleur(col) {
-    // Initialisation des attributs via la liste d'initialisation
 }
 
 
@@ -24,20 +23,7 @@ void Plante::influencerVoisins(std::vector<std::vector<GridCell>>& grille, int x
 }
 
 // Constructeur de GridCell
-GridCell::GridCell(int id, Vector3 pos, Model mod, bool act, bool occ, int temp, int hum, float pen, Plante plante)
-    : identifiant(id), position(pos), model(mod), active(act),occupee(occ), temperature(temp), humidite(hum), pente(pen), plante(plante) {
-    // On initialise plante avec le constructeur par défaut
-}
-
-//constructeur billboard
-//billboard(Vector3 pos, Texture2D mod, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size);
-billboard::billboard(Vector3 pos, Texture2D tex, Shader shad, bool act, bool occupee, int temp, int hum, float pen, Rectangle source, Vector3 billUp, Vector2 size)
-    : position(pos), texture(tex), shader(shad), active(act), occupee(occupee), temperature(temp), humidite(hum), pente(pen), source(source), billUp(billUp), size(size){
-    // On initialise plante avec le constructeur par défaut
-}
-
-// Constructeur de SolHerbe
-SolHerbe::SolHerbe(Vector3 pos, billboard mod, bool act, bool occ, int temp, int hum, float pen)
-    : position(pos), model(mod), active(act), occupee(occ), temperature(temp), humidite(hum), pente(pen) {
+GridCell::GridCell(int id, Vector3 pos, Model mod, bool act, bool occ, int temp, int hum, int plu, float pen, Plante plante)
+    : identifiant(id), position(pos), model(mod), active(act),occupee(occ), temperature(temp), humidite(hum),pluviometrie(plu), pente(pen), plante(plante) {
     // On initialise plante avec le constructeur par défaut
 }

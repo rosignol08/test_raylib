@@ -17,7 +17,7 @@
 
 #include "sol.h"
 #include "nuages.h"
-#include "meteo.h"
+#include "biome.h"
 #define RLIGHTS_IMPLEMENTATION
 #if defined(_WIN32) || defined(_WIN64)
 #include "include/shaders/rlights.h"
@@ -199,9 +199,18 @@ int CompareSceneObjects(const void *a, const void *b) {
     return (objA->depth < objB->depth) - (objA->depth > objB->depth); // Tri décroissant
 }
 
+bool is_plant_morte(const std::string& nom, const std::vector<Plante>& plantes_mortes) {
+    for (const Plante& plante : plantes_mortes) {
+        if (plante.nom == nom) {
+            return true;
+        }
+    }
+    return false;
+}
+
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
 void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, std::vector<Plante> plantes_mortes, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante){
-    if(cellule->plante.nom == "Morte" || cellule->plante.nom == "Vide"){//si la plante est morte
+    if(is_plant_morte(cellule->plante.nom, plantes_mortes) || cellule->plante.nom == "Vide"){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
             Plante bestPlante = vide;
             float bestScore = 0;
@@ -211,7 +220,9 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             float score = 0;
             for (Plante plante : plantes) {
                 if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
+                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
+                    cellule->pluviometrie >= plante.pluviometrie_min && cellule->pluviometrie <= plante.pluviometrie_max &&
+                    cellule->pente >= plante.pente_min &&
                     cellule->pente <= plante.pente_max) {
                     nb_plantes_qui_peuvent_survivre++;
                 }
@@ -391,6 +402,24 @@ Color GetHumidityColor(int humidity, int minHum, int maxHum) {
     return (Color){r, g, b, 255};
 }
 
+int minPluv = 0;
+int maxPluv = 10;
+//pour la pluviometrie
+Color GetRainfallColor(int rainfall, int minPluv, int maxPluv) {
+    float normalizedPluv = (float)(rainfall - minPluv) / (maxPluv - minPluv);
+    normalizedPluv = Clamp(normalizedPluv, 0.0f, 1.0f);
+    
+    // Interpolation entre blanc (sec) et bleu (humide)
+    Color dryColor = WHITE;
+    Color wetColor = BLUE;
+    
+    unsigned char r = (unsigned char)(dryColor.r + (wetColor.r - dryColor.r) * normalizedPluv);
+    unsigned char g = (unsigned char)(dryColor.g + (wetColor.g - dryColor.g) * normalizedPluv);
+    unsigned char b = (unsigned char)(dryColor.b + (wetColor.b - dryColor.b) * normalizedPluv);
+    
+    return (Color){r, g, b, 255};
+}
+
 int main(void) {
     // Initialisation
     const int screenWidth = 1280;//1920;
@@ -420,22 +449,28 @@ int main(void) {
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
-    //le test du shader pbr avec l'ombre
-    Shader pbr_ombre_shader = LoadShader("ressources/custom_shader/glsl330/ombre_pbr.vs","ressources/custom_shader/glsl330/ombre_pbr.fs");
+    //shader pour les arbres
+    //Shader arbres_shader = LoadShader("raylib_code/ressources/custom_shader/glsl330/arbre_shader.vs","raylib_code/ressources/custom_shader/glsl330/arbre_shader.fs");
+    
     //l'herbe
     Shader herbe_shader = LoadShader("ressources/custom_shader/glsl330/herbe_shader.vs","ressources/custom_shader/glsl330/herbe_shader.fs");
-    // Configurez les locations du shader de l'ombre
+    // Configurez les locations du shader de l'ombre et des arbres
     shadowShader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shadowShader, "viewPos");
-
+    //arbres_shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(arbres_shader, "viewPos");
     //pour l'ombre    
     Vector3 lightDir = Vector3Normalize((Vector3){ 0.35f, -1.0f, -0.35f });
     Color lightColor = WHITE;
     Vector4 lightColorNormalized = ColorNormalize(lightColor);
     int lightDirLoc = GetShaderLocation(shadowShader, "lightDir");
     int lightColLoc = GetShaderLocation(shadowShader, "lightColor");
+    //int lightDirArbresLoc = GetShaderLocation(arbres_shader, "lightDir");
+    //int lightColArbresLoc = GetShaderLocation(arbres_shader, "lightColor");
     SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
 
+    //SetShaderValue(arbres_shader,lightDirArbresLoc, &lightDir, SHADER_UNIFORM_VEC3);
+    //SetShaderValue(arbres_shader,lightColArbresLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
+    
     //test TODO
     SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
     SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
@@ -472,7 +507,10 @@ int main(void) {
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
     SetShaderValue(shadowShader, GetShaderLocation(shadowShader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
-    
+    //int ambientLocArbres = GetShaderLocation(arbres_shader, "ambient");
+    //int lightVPArbresLoc = GetShaderLocation(arbres_shader, "lightVP");
+    //int shadowMapArbresLoc = GetShaderLocation(arbres_shader, "shadowMap");
+    //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "shadowMapResolution"), &shadowMapResolution, SHADER_UNIFORM_INT);
     //le sol
     bool choisis = false;
     Image image_sol; // Load heightmap image (RAM)    
@@ -502,39 +540,75 @@ int main(void) {
     
     //pour l'herbe du sol
     Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
+    //forets temperee
+    //0 bouleau bouleau_feuilles1
+    Model model_bouleau1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles1.glb");
+    Model model_mort_bouleau1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_mort1.glb");
+    //1 bouleau bouleau_feuilles2
+    Model model_bouleau2 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles2.glb");
+    Model model_mort_bouleau2 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_mort2.glb");
+    //2 erable erable_feuilles
+    Model model_erable = LoadModel("models/foret_tempere/arb_erable/erable_feuilles.glb");
+    Model model_mort_erable = LoadModel("models/foret_tempere/arb_erable/erable_mort.glb");
+    //3 hetre hetre_feuilles
+    Model model_hetre = LoadModel("models/foret_tempere/arb_hetre/hetre_feuilles.glb");
+    Model model_mort_hetre = LoadModel("models/foret_tempere/arb_hetre/hetre_mort.glb");
+    //4 chene oaks_feuilles
+    Model model_chene = LoadModel("models/foret_tempere/arb_oak/oaks_feuilles.glb");
+    Model model_mort_chene = LoadModel("models/foret_tempere/arb_oak/oaks_mort.glb");
 
-    Model model_acacia = LoadModel("models/acacia/scene.gltf");
-    Model model_chene = LoadModel("models/structure_oak/oaks_feuilles.glb");
-    //Model feuillage_acacia = LoadModel("models/structure_oak/oaks_struct.glb");
-    Texture2D texture_acacia = LoadTexture("models/acacia/Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Color-Acacia_Dry_Green__Mature__Acacia_Leaves_1_baked_Opacity.png");
-    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_acacia;
+    //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
+    //5 jungle1 jungle_feuillage
+    //6 jungle2 jungle_feuillage2
+    //7 jungle3 jungle_feuillage3
     
     //on applique la lumière sur toutes les plantes
-    model_acacia.materials[0].shader = shadowShader;
-    for (int i = 0; i < model_acacia.materialCount; i++)
+    model_bouleau1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_bouleau1.materialCount; i++)
     {
-        model_acacia.materials[i].shader = shadowShader;
+        model_bouleau1.materials[i].shader = herbe_shader;
     }
-    
-    model_acacia.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_acacia.materialCount; i++)
+    model_mort_bouleau1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_bouleau1.materialCount; i++)
     {
-        model_acacia.materials[i].shader = herbe_shader;
+        model_mort_bouleau1.materials[i].shader = herbe_shader;
     }
 
-    model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    
-    model_sapin.materials[0].shader = shadowShader;
-    for (int i = 0; i < model_sapin.materialCount; i++)
+    model_bouleau2.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_bouleau2.materialCount; i++)
     {
-        model_sapin.materials[i].shader = shadowShader;
+        model_bouleau2.materials[i].shader = herbe_shader;
     }
-    model_buisson_europe.materials[0].shader = shadowShader;
-    for (int i = 0; i < model_buisson_europe.materialCount; i++)
+    model_mort_bouleau2.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_bouleau2.materialCount; i++)
     {
-        model_buisson_europe.materials[i].shader = shadowShader;
+        model_mort_bouleau2.materials[i].shader = herbe_shader;
     }
-    
+    //model_acacia.materials[0].shader = shadowShader;
+    //for (int i = 0; i < model_acacia.materialCount; i++)
+    //{
+    //    model_acacia.materials[i].shader = shadowShader;
+    //}
+    //
+    //model_acacia.materials[0].shader = herbe_shader;
+    //for (int i = 0; i < model_acacia.materialCount; i++)
+    //{
+    //    model_acacia.materials[i].shader = herbe_shader;
+    //}
+//
+    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    //
+    //model_sapin.materials[0].shader = shadowShader;
+    //for (int i = 0; i < model_sapin.materialCount; i++)
+    //{
+    //    model_sapin.materials[i].shader = shadowShader;
+    //}
+    //model_buisson_europe.materials[0].shader = shadowShader;
+    //for (int i = 0; i < model_buisson_europe.materialCount; i++)
+    //{
+    //    model_buisson_europe.materials[i].shader = shadowShader;
+    //}
+    //
     
 
     //model_mort.materials[0].shader = shadowShader;
@@ -589,55 +663,74 @@ int main(void) {
     // Création d'une plante
     /*
     string nom;
+    int id;
+    int sante;
     int humidite_min;
     int humidite_max;
     int temperature_min;
     int temperature_max;
+    int pluviometrie_min;
+    int pluviometrie_max;
     int influence_humidite;
     int influence_temperature;
     float taille;
     float taille_max;
     float pente_min;
     float pente_max;
-    int age;
+    float age;
     bool morte;
     int age_max;
     Model model;
+    Color couleur;
     */
+
     /*
     Liste des plantes
     forets temperee 5°C à 25°C 60 à 80 % 500 à 1 500 mm
-    1 bouleau bouleau_feuilles1
-    2 bouleau bouleau_feuilles2
-    3 erable erable_feuilles
-    4 hetre hetre_feuilles
-    5 chene oaks_feuilles
+    0 bouleau bouleau_feuilles1
+    1 bouleau bouleau_feuilles2
+    2 erable erable_feuilles
+    3 hetre hetre_feuilles
+    4 chene oaks_feuilles
 
     foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
-    6 jungle1 jungle_feuillage
-    7 jungle2 jungle_feuillage2
-    8 jungle3 jungle_feuillage3
+    5 jungle1 jungle_feuillage
+    6 jungle2 jungle_feuillage2
+    7 jungle3 jungle_feuillage3
 
     forets tropicale seche 25°C à 35°C 40 à 70 % 1 000 à 2 000 mm
-    
+    faut regler les soucis d'accacia
         */
     Color couleur = WHITE;
-    //Plante herbe("Herbe", 100, 0, 100, -10, 40, 2, 1, 0.05f, 0.15f, 0.0f, 0.010f, 0, false, 1000, model_herbe, couleur);
-    //Plante buisson("Buisson", 100, 15, 30, 10 , 30, 3, 1, 0.05f, 0.1f, 0.01f, 0.5f, 0, false, 1000,model_buisson_europe, couleur);
-    Plante accacia("Acacia", 100, 10, 20, 10, 30, 2, 1, 0.005f, 0.1f, 0.0f, 0.5f, 0, false, 1000, model_acacia, couleur);
-    Plante chene("Chene", 100, 0, 20, -10, 30, 2, 1, 0.005f, 0.01f, 0.0f, 0.5f, 0, false, 1000, model_chene, couleur);
-    //Plante plante_morte("Morte", 100, 0, 100, -50, 200, 0, 0, 0.000250f, 0.000250f, 0.0f, 1.0f, 0, true, 50,model_mort, couleur);
-    Plante sapin("Sapin", 100, 0, 30, -30, 20, 1, 1, 0.005f, 0.1f, 0.0f , 0.3f, 0, false, 1000, model_sapin, couleur);
-    Plante vide("Vide", 100, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100,emptyModel, couleur);
+    Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 250, model_bouleau1, couleur);
+    Plante bouleau_mort1("Bouleau_mort1", 0, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau1, couleur);
+    Plante bouleau2("Bouleau2", 1, 100, 70, 80, 5, 10, 500, 1000, 0, 0, 0.05f, 0.1f, 0.01f, 0.2f, 0, false, 250, model_bouleau2, couleur);
+    Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
+    Plante vide("Vide", 10, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
-    std::vector<Plante> plantes = {accacia, sapin};//pour les plantes vivantes
-    std::vector<Plante> plantes_mortes = {};//pour les plantes mortes
+    std::vector<Plante> plantes = {bouleau1, bouleau2};//pour les plantes vivantes
+    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2};//pour les plantes mortes
     //ajout des différentes météo
-    Meteo meteo_soleil("Soleil", 20, 0, Color{255, 141, 34, 255}, 1.1f, true);//on doit en metre au moin une sur true
-    Meteo meteo_pluie("Pluie", 10, 0, Color{0, 161, 231, 255}, 0.4f, false);
-    Meteo meteo_neige("Neige", -10, 0, Color{255, 255, 255, 255}, 0.01f, false);
-    //Meteo meteo_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
-    std::vector<Meteo> les_meteo = {meteo_soleil, meteo_pluie, meteo_neige};
+    /*
+    temperature_min: température minimale du biome (en degrés)
+    temperature_max: température maximale du biome (en degrés)
+    humidite_min: humidité minimale du biome (en pourcentage)
+    humidite_max: humidité maximale du biome (en pourcentage)
+    pluviometrie_min: pluviométrie minimale du biome (en mm)
+    pluviometrie_max: pluviométrie maximale du biome (en mm)
+    */
+    
+    //forets temperee 5°C à 25°C 60 à 80 % 500 à 1 500 mm
+    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 141, 34, 255}, 1.0f, true);//on doit en metre au moin une sur true
+    
+    //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
+    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{0, 161, 231, 255}, 1.0f, false);
+    
+    //forets tropicale seche 25°C à 35°C 40 à 70 % 1 000 à 2 000 mm
+    Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{255, 255, 255, 255}, 1.01f, false);
+
+    //biome biome_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
+    std::vector<Biome> les_biome = {biome_tempere, biome_tropic_humide, biome_tropic_sec};
     // Initialisation de la grille
     /*Vector3 position;
     Model model;
@@ -648,7 +741,7 @@ int main(void) {
     float pente;
     Plante plante;*/
     // Création d'une grille de cellules
-    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell(0,{0,0,0}, vide.model, true, false, 20, 50, 0.0f, vide)));
+    std::vector<std::vector<GridCell>> grille(GRID_SIZE, std::vector<GridCell>(GRID_SIZE, GridCell(0,{0,0,0}, vide.model, true, false, 20, 50, 500, 0.0f, vide)));
     //ajoute la grille du sol d'herbe type SolHerbe
     //le terrain
     Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
@@ -675,6 +768,7 @@ int main(void) {
     // Dans la boucle principale
     float temperature_modifieur = 0;
     float hum_modifieur = 0;
+    float pluviometrie_modifieur = 0;
 
 
     //couleur qui va changer en fonction de la santé je la decale ici pour pas la declarer a chaque frame
@@ -750,7 +844,7 @@ int main(void) {
                                 model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
                                 //model_sol.materials[0].shader = shader_taille; // Assign the shader to the model ça sert à rien
                                 // Set the shader for the model
-                                model_sol.materials[0].shader = shadowShader;//pbr_ombre_shader; //shadowShader;
+                                model_sol.materials[0].shader = shadowShader;
                                 loadingStage++;
                             }
                         }break;
@@ -922,7 +1016,7 @@ int main(void) {
                 }
             } break;
             case 1:{
-            // Appliquer temperature_modifieur à toutes les cases une seule fois
+            //faut appliquer la modification de température à toutes les cases une seule fois
             static int last_temp_modif = 0; // Stocker la dernière valeur appliquée
             int temp_modif = (int)temperature_modifieur;
 
@@ -956,18 +1050,97 @@ int main(void) {
                 }
                 last_hum_modif = hum_modif; // Mettre à jour la dernière valeur appliquée
             }
-            //la meteo est gérée ici
 
-            temperature_modifieur = get_meteo_temperature(cherche_la_meteo_actuelle(les_meteo));
-            hum_modifieur = get_meteo_humidite(cherche_la_meteo_actuelle(les_meteo));
-            cloudThreshold = get_meteo_densite_nuage(cherche_la_meteo_actuelle(les_meteo));
+            static int last_pluv_modif = 0; // Stocker la dernière valeur appliquée
+            int pluv_modif = (int)pluviometrie_modifieur;
+
+            if (pluv_modif != last_pluv_modif) { // Vérifier si la valeur a changé
+                int delta = pluv_modif - last_pluv_modif; // Calculer la différence
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        grille[x][z].pluviometrie += delta; // Modifier la pluviometrie de chaque case
+
+                        //comme ça la pluviometrie reste dans la plage 0-100
+                        grille[x][z].pluviometrie = Clamp(grille[x][z].pluviometrie, 0, 100);
+                    
+                        if (grille[x][z].pluviometrie < minPluv) minPluv = grille[x][z].pluviometrie;
+                        if (grille[x][z].pluviometrie > maxPluv) maxPluv = grille[x][z].pluviometrie;
+                    }
+                }
+                last_pluv_modif = pluv_modif; // Mettre à jour la dernière valeur appliquée
+            }
+
+            //le biome : on redéfini les valeurs de température etc
+            int temperature_modifieur_min = get_biome_temperature_min(cherche_le_biome_actuelle(les_biome));//get_biome_temperature(cherche_le_biome_actuelle(les_biome));
+            int temperature_modifieur_max = get_biome_temperature_max(cherche_le_biome_actuelle(les_biome));
+
+            int humidite_modifieur_min = get_biome_humidite_min(cherche_le_biome_actuelle(les_biome));
+            int humidite_modifieur_max = get_biome_humidite_max(cherche_le_biome_actuelle(les_biome));
+
+            int pluviometrie_modifieur_min = get_biome_pluviometrie_min(cherche_le_biome_actuelle(les_biome));
+            int pluviometrie_modifieur_max = get_biome_pluviometrie_max(cherche_le_biome_actuelle(les_biome));
+
+            //bloc pour changer toutes les températures et humidités des cases de la grille avec les modifieurs
+            //on verifie si les valeurs ont changé pour éviter de recalculer
+            static int prev_temp_min = temperature_modifieur_min;
+            static int prev_temp_max = temperature_modifieur_max;
+            static int prev_hum_min = humidite_modifieur_min;
+            static int prev_hum_max = humidite_modifieur_max;
+            static int prev_pluv_min = pluviometrie_modifieur_min;
+            static int prev_pluv_max = pluviometrie_modifieur_max;
+
+            //check si ça a changé
+            if (prev_temp_min != temperature_modifieur_min || 
+                prev_temp_max != temperature_modifieur_max || 
+                prev_hum_min != humidite_modifieur_min || 
+                prev_hum_max != humidite_modifieur_max ||
+                prev_pluv_min != pluviometrie_modifieur_min ||
+                prev_pluv_max != pluviometrie_modifieur_max) {
+                
+                //update les cellules avec les nouvelles valeurs
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        //on genere des valeurs random dans une fourchette
+                        grille[x][z].temperature = GetRandomValue(temperature_modifieur_min, temperature_modifieur_max);
+                        
+                        //la meme pour l'humidité
+                        grille[x][z].humidite = GetRandomValue(humidite_modifieur_min, humidite_modifieur_max);
+
+                        //et la pluviometrie
+                        grille[x][z].pluviometrie = GetRandomValue(pluviometrie_modifieur_min, pluviometrie_modifieur_max);
+                        
+                        // Update min/max tracking variables for display
+                        if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
+                        if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+                        if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
+                        if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+                        if (grille[x][z].pluviometrie < minPluv) minPluv = grille[x][z].pluviometrie;
+                        if (grille[x][z].pluviometrie > maxPluv) maxPluv = grille[x][z].pluviometrie;
+                    }
+                }
+                
+                // Update previous values to current
+                prev_temp_min = temperature_modifieur_min;
+                prev_temp_max = temperature_modifieur_max;
+                prev_hum_min = humidite_modifieur_min;
+                prev_hum_max = humidite_modifieur_max;
+                prev_pluv_min = pluviometrie_modifieur_min;
+                prev_pluv_max = pluviometrie_modifieur_max;
+                
+                printf("Biome changed: Temp range [%d, %d], Humidity range [%d, %d]\n", 
+                       temperature_modifieur_min, temperature_modifieur_max,
+                       humidite_modifieur_min, humidite_modifieur_max);
+            }
+            //hum_modifieur = get_biome_humidite(cherche_la_biome_actuelle(les_biome));
+            cloudThreshold = get_biome_densite_nuage(cherche_le_biome_actuelle(les_biome));
+
             float dt = GetFrameTime();
 
             static float accumulatedTime = 0.0f;
             accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
             float timeValue = accumulatedTime;
 
-            const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
+            //const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
 
             // Faire dériver les nuages horizontalement
             for (auto& nuage : grandsNuages) {
@@ -1148,13 +1321,13 @@ int main(void) {
 
             //lightColor = GetSunColor(timeOfDay);  //couleur en fonction du temps
             //on ajoute la couleur de la météo
-            Color couleur_meteo = get_meteo_couleur(cherche_la_meteo_actuelle(les_meteo));
+            Color couleur_biome = get_biome_couleur(cherche_le_biome_actuelle(les_biome));
             
             lightColor = (Color){
-                GetSunColor(timeOfDay).r/2 + couleur_meteo.r/2,
-                GetSunColor(timeOfDay).g/2 + couleur_meteo.g/2,
-                GetSunColor(timeOfDay).b/2 + couleur_meteo.b/2,
-                GetSunColor(timeOfDay).a/2 + couleur_meteo.a/2
+                GetSunColor(timeOfDay).r/2 + couleur_biome.r/2,
+                GetSunColor(timeOfDay).g/2 + couleur_biome.g/2,
+                GetSunColor(timeOfDay).b/2 + couleur_biome.b/2,
+                GetSunColor(timeOfDay).a/2 + couleur_biome.a/2
             };
             
             lightColorNormalized = ColorNormalize(lightColor);
@@ -1162,6 +1335,15 @@ int main(void) {
 
             SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
             SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
+
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
+            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "noiseScale"), &noiseScale, SHADER_UNIFORM_FLOAT);
+            //SetShaderValueTexture(arbres_shader, GetShaderLocation(arbres_shader, "noiseTexture"), noiseTexture);
 
             //test temp TODO
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
@@ -1265,7 +1447,7 @@ int main(void) {
         ClearBackground(SKYBLUE);
 
         SetShaderValueMatrix(shadowShader, lightVPLoc, lightViewProj);
-
+        
         rlEnableShader(shadowShader.id);
 
         int slot = 10;
@@ -1341,21 +1523,21 @@ int main(void) {
         }
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
-        if (GuiButton((Rectangle){ 100, 370, 200, 30 }, "Soleil")) {
-            for (auto& meteo : les_meteo) {
-                meteo.meteo_actuelle = (meteo.nom == "Soleil");
+        if (GuiButton((Rectangle){ 100, 370, 200, 30 }, "Tempere")) {
+            for (auto& biome : les_biome) {
+                biome.biome_actuelle = (biome.nom == "Tempere");
             }
         }
 
-        if (GuiButton((Rectangle){ 100, 410, 200, 30 }, "Pluie")) {
-            for (auto& meteo : les_meteo) {
-                meteo.meteo_actuelle = (meteo.nom == "Pluie");
+        if (GuiButton((Rectangle){ 100, 410, 200, 30 }, "Tropic humide")) {
+            for (auto& biome : les_biome) {
+                biome.biome_actuelle = (biome.nom == "Tropic humide");
             }
         }
 
-        if (GuiButton((Rectangle){ 100, 450, 200, 30 }, "Neige")) {
-            for (auto& meteo : les_meteo) {
-                meteo.meteo_actuelle = (meteo.nom == "Neige");
+        if (GuiButton((Rectangle){ 100, 450, 200, 30 }, "Tropic sec")) {
+            for (auto& biome : les_biome) {
+                biome.biome_actuelle = (biome.nom == "Tropic sec");
             }
         }
         //GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
@@ -1403,14 +1585,18 @@ int main(void) {
     UnloadShader(shader);
     UnloadShader(shadowShader);
     UnloadShader(shader_taille);
+    UnloadShader(herbe_shader);
     // Désallocation des ressources
+    UnloadModel(model_herbe_instance);
+    UnloadModel(model_bouleau1);
+    UnloadModel(model_bouleau2);
+    UnloadModel(model_mort_bouleau1);
+    UnloadModel(model_mort_bouleau2);
     //UnloadModel(model_mort);
     UnloadModel(model_sapin);
     //UnloadTexture(texture_sapin);
     UnloadModel(model_buisson_europe);
     UnloadTexture(texture_buisson_europe);
-    UnloadModel(model_acacia);
-    //UnloadTexture(texture_acacia);
     UnloadModel(model_chene);
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);

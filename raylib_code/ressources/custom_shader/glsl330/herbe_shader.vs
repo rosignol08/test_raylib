@@ -23,6 +23,7 @@ uniform float windSpeed = 1.0;         // Vitesse du vent
 uniform float time;                    // Temps (fourni par l'application)
 uniform int isGrass = 0;               // Indicateur si c'est de l'herbe (1) ou non (0)
 
+
 // Paramètres de bruit adaptés du shader Godot
 uniform sampler2D noiseTexture;        // Texture de bruit
 uniform float windTextureTileSize = 20.0;
