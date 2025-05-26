@@ -1459,6 +1459,8 @@ int main(void) {
         //Vector4 ambientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
         
         BeginMode3D(camera);
+        isGrass = 2;
+        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
         dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
             isGrass = 1;
             SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
@@ -1545,7 +1547,7 @@ int main(void) {
         //GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
         //GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         // Sliders for wind parameters
-        GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 3.0f);
+        GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 7.0f);
         GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f);
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
