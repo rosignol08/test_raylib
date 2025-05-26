@@ -38,6 +38,7 @@
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
 #define MODE_HUMIDITE 2
+#define MODE_PLUVIOMETRIE 3
 int viewMode = MODE_NORMAL;
 
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
@@ -217,6 +218,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             int nb_plantes_qui_peuvent_survivre = 0;
             float scoreTemperature = 0;
             float scoreHumidite = 0;
+            float scorePluviometrie = 0;
             float score = 0;
             for (Plante plante : plantes) {
                 if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
@@ -231,9 +233,10 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                 if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
                     cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
                     cellule->pente <= plante.pente_max) {
-                    scoreTemperature = fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
-                    scoreHumidite = fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
-                    score = scoreTemperature + scoreHumidite;
+                    scoreTemperature = fabs(cellule->temperature - ((plante.temperature_max + plante.temperature_min) / 2.0f)); //fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
+                    scoreHumidite = fabs(cellule->humidite - ((plante.humidite_max + plante.humidite_min) / 2.0f));//fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
+                    scorePluviometrie = fabs(cellule->pluviometrie - ((plante.pluviometrie_max + plante.pluviometrie_min) / 2.0f));//fabs(cellule->pluviometrie - (plante.pluviometrie_max + plante.pluviometrie_min)); //plus c'est proche de 0 mieux c'est TODO changer 
+                    score = scoreTemperature + scoreHumidite + scorePluviometrie;
                     if (score < bestScore || bestScore == 0) {
                         bestScore = score;
                         bestPlante = plante;
@@ -242,7 +245,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             }
             //cout << "la meilleure plante est : " << bestPlante.nom << endl;
             cellule->plante = bestPlante;
-            cellule->plante.age = rand() % 500;
+            cellule->plante.age = rand() % (int)(bestPlante.age_max * 0.2f);
             cellule->plante.taille = bestPlante.taille;
             // Appliquer les influences sur les cases voisines
             for (int dx = -1; dx <= 1; dx++) {
@@ -313,15 +316,26 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                     float scoreHumidite = 0;
                     float score = 0;
                     for (Plante plante : plantes) {
-                        if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                            cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
+                        if (cellule->temperature >= plante.temperature_min &&
+                            cellule->temperature <= plante.temperature_max &&
+                            cellule->humidite >= plante.humidite_min &&
+                            cellule->humidite <= plante.humidite_max && 
+                            cellule->pluviometrie >= plante.pluviometrie_min &&
+                            cellule->pluviometrie <= plante.pluviometrie_max &&
+                            cellule->pente >= plante.pente_min &&
                             cellule->pente <= plante.pente_max) {
+                                //printf("plante %s peut survivre\n", plante.nom.c_str());
                             nb_plantes_qui_peuvent_survivre++;
                         }
                     }
                     for (Plante plante : plantes) {
-                        if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                            cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
+                        if (cellule->temperature >= plante.temperature_min && 
+                            cellule->temperature <= plante.temperature_max &&
+                            cellule->humidite >= plante.humidite_min && 
+                            cellule->humidite <= plante.humidite_max && 
+                            cellule->pluviometrie >= plante.pluviometrie_min &&
+                            cellule->pluviometrie <= plante.pluviometrie_max &&
+                            cellule->pente >= plante.pente_min &&
                             cellule->pente <= plante.pente_max) {
                             scoreTemperature = fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
                             scoreHumidite = fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
@@ -405,7 +419,7 @@ Color GetHumidityColor(int humidity, int minHum, int maxHum) {
 int minPluv = 0;
 int maxPluv = 10;
 //pour la pluviometrie
-Color GetRainfallColor(int rainfall, int minPluv, int maxPluv) {
+Color GetPluviometrieColor(int rainfall, int minPluv, int maxPluv) {
     float normalizedPluv = (float)(rainfall - minPluv) / (maxPluv - minPluv);
     normalizedPluv = Clamp(normalizedPluv, 0.0f, 1.0f);
     
@@ -584,6 +598,39 @@ int main(void) {
     {
         model_mort_bouleau2.materials[i].shader = herbe_shader;
     }
+
+    model_erable.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_erable.materialCount; i++)
+    {
+        model_erable.materials[i].shader = herbe_shader;
+    }
+    model_mort_erable.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_erable.materialCount; i++)
+    {
+        model_mort_erable.materials[i].shader = herbe_shader;
+    }
+    
+    model_hetre.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_hetre.materialCount; i++)
+    {
+        model_hetre.materials[i].shader = herbe_shader;
+    }
+    model_mort_hetre.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_hetre.materialCount; i++)
+    {
+        model_mort_hetre.materials[i].shader = herbe_shader;
+    }
+    
+    model_chene.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_chene.materialCount; i++)
+    {
+        model_chene.materials[i].shader = herbe_shader;
+    }
+    model_mort_chene.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_chene.materialCount; i++)
+    {
+        model_mort_chene.materials[i].shader = herbe_shader;
+    }
     //model_acacia.materials[0].shader = shadowShader;
     //for (int i = 0; i < model_acacia.materialCount; i++)
     //{
@@ -628,20 +675,12 @@ int main(void) {
         model_herbe_instance.materials[i].shader = herbe_shader;
     }
     
-    model_chene.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_chene.materialCount; i++)
-    {
-        model_chene.materials[i].shader = herbe_shader;
-    }
+    
     // Après avoir chargé le shader
     if (herbe_shader.id == 0) {
         printf("Erreur lors du chargement du shader d'herbe!\n");
     }
     
-    model_sapin.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    
-    model_chene.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     //model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     //model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     
@@ -703,13 +742,17 @@ int main(void) {
         */
     Color couleur = WHITE;
     Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 250, model_bouleau1, couleur);
+    Plante bouleau2("Bouleau2", 1, 100, 60, 80, 5, 10, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 250, model_bouleau2, couleur);
+    Plante erable("Erable", 2, 100, 70, 80, 10, 25, 500, 1500, 0, 0, 0.01f, 0.04f, 0.0f, 01.f, 0, false, 350, model_erable, couleur);
+    //Plante chene("Chene", 3, 100, 70, 80, 10, 15, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
     Plante bouleau_mort1("Bouleau_mort1", 0, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau1, couleur);
-    Plante bouleau2("Bouleau2", 1, 100, 70, 80, 5, 10, 500, 1000, 0, 0, 0.05f, 0.1f, 0.01f, 0.2f, 0, false, 250, model_bouleau2, couleur);
     Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
+    Plante erable_mort("Erable_mort", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable, couleur);
+    //Plante chene_mort("chene_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_chene, couleur);
     Plante vide("Vide", 10, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
-    std::vector<Plante> plantes = {bouleau1, bouleau2};//pour les plantes vivantes
-    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2};//pour les plantes mortes
+    std::vector<Plante> plantes = {bouleau1, bouleau2, erable};//pour les plantes vivantes
+    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort};//pour les plantes mortes
     //ajout des différentes météo
     /*
     temperature_min: température minimale du biome (en degrés)
@@ -867,8 +910,10 @@ int main(void) {
                                     // Générer une température arbitraire pour cette cellule
                                     int temperature = (int) random_flottant(0, 20); // Température aléatoire entre TEMP_MIN et TEMP_MAX
                                     int humidite = (int) random_flottant(0, 30); // Humidité aléatoire entre HUM_MIN et HUM_MAX
+                                    int pluviometrie = (int) random_flottant(0, 100); // Pluviométrie aléatoire entre PLUVI_MIN et PLUVI_MAX
                                     humidite_moyenne += humidite;
                                     temperature_moyenne += temperature;//TODO voir si c'est utile
+
                                     // Calcul des hauteurs des cellules voisines
                                     float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
                                     float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
@@ -962,7 +1007,7 @@ int main(void) {
                                         float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
                                     
                                         if (tauxPente > 0.2f) {
-                                            continue; // Skip this position if the slope is too steep
+                                            continue; // Skip c'est trop pentu
                                         }else{
                                             // Appliquer une rotation aléatoire autour de l'axe Y
                                             float randomRotationY = random_flottant(0.0f, 2.0f * PI);
@@ -1096,7 +1141,14 @@ int main(void) {
                 prev_hum_max != humidite_modifieur_max ||
                 prev_pluv_min != pluviometrie_modifieur_min ||
                 prev_pluv_max != pluviometrie_modifieur_max) {
-                
+
+                minTemp = temperature_modifieur_min;
+                maxTemp = temperature_modifieur_max;
+                minHum = humidite_modifieur_min;
+                maxHum = humidite_modifieur_max;
+                minPluv = pluviometrie_modifieur_min;
+                maxPluv = pluviometrie_modifieur_max;
+
                 //update les cellules avec les nouvelles valeurs
                 for (int x = 0; x < GRID_SIZE; x++) {
                     for (int z = 0; z < GRID_SIZE; z++) {
@@ -1213,6 +1265,27 @@ int main(void) {
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
                 }
             }
+            if (IsKeyPressed(KEY_P)) {
+                viewMode = (viewMode == MODE_NORMAL) ? MODE_PLUVIOMETRIE : MODE_NORMAL;
+
+                // Changer la texture du sol en fonction du mode
+                if (viewMode == MODE_PLUVIOMETRIE) {
+                    // Mode pluviométrie : mettre à jour la texture de pluviométrie
+                    Image pluvImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+                    for (int x = 0; x < GRID_SIZE; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            Color pluvColor = GetPluviometrieColor(grille[x][z].pluviometrie, minPluv, maxPluv);
+                            ImageDrawPixel(&pluvImage, x, z, pluvColor);
+                        }
+                    }
+                    UpdateTexture(temperatureTexture, pluvImage.data);
+                    UnloadImage(pluvImage);
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+                } else {
+                    // Mode normal : remettre la texture normale
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+                }
+            }
             // Activer/désactiver la rotation avec le clic droit
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) isRotating = true;
             if (IsMouseButtonReleased(MOUSE_RIGHT_BUTTON)) isRotating = false;
@@ -1291,6 +1364,28 @@ int main(void) {
 
                 //applique la texture d'humidité au sol
                 if (viewMode == MODE_HUMIDITE) {
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
+                } else {
+                    model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
+                }
+            }
+            if (viewMode == MODE_PLUVIOMETRIE) {
+                Image pluvImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
+
+                //maj l'image avec les couleurs de pluviometrie
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        Color pluvColor = GetPluviometrieColor(grille[x][z].pluviometrie, minPluv, maxPluv);
+                        ImageDrawPixel(&pluvImage, x, z, pluvColor);
+                    }
+                }
+
+                //maj la texture
+                UpdateTexture(temperatureTexture, pluvImage.data);
+                UnloadImage(pluvImage);
+
+                //applique la texture de pluviometrie au sol
+                if (viewMode == MODE_PLUVIOMETRIE) {
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
                 } else {
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
@@ -1523,6 +1618,12 @@ int main(void) {
             DrawText(TextFormat("Min: %d", minHum), 10, 80, 20, BLUE);
             DrawText(TextFormat("Max: %d", maxHum), 10, 100, 20, RED);
         }
+        if (viewMode == MODE_PLUVIOMETRIE) {
+            DrawText("Mode pluviometrie - Appuyez sur P pour revenir", 10, 60, 20, BLACK);
+            // Optionnel : afficher une échelle de température
+            DrawText(TextFormat("Min: %d", minPluv), 10, 80, 20, BLUE);
+            DrawText(TextFormat("Max: %d", maxPluv), 10, 100, 20, RED);
+        }
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
         if (GuiButton((Rectangle){ 100, 370, 200, 30 }, "Tempere")) {
@@ -1594,12 +1695,16 @@ int main(void) {
     UnloadModel(model_bouleau2);
     UnloadModel(model_mort_bouleau1);
     UnloadModel(model_mort_bouleau2);
-    //UnloadModel(model_mort);
-    UnloadModel(model_sapin);
-    //UnloadTexture(texture_sapin);
-    UnloadModel(model_buisson_europe);
-    UnloadTexture(texture_buisson_europe);
+    UnloadModel(model_hetre);
+    UnloadModel(model_mort_hetre);
     UnloadModel(model_chene);
+    UnloadModel(model_mort_chene);
+    //UnloadModel(model_mort);
+    //UnloadModel(model_sapin);
+    //UnloadTexture(texture_sapin);
+    //UnloadModel(model_buisson_europe);
+    //UnloadTexture(texture_buisson_europe);
+    //UnloadModel(model_chene);
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
@@ -1696,6 +1801,23 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                         if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
                             Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
                             DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, humColor);
+                            break;
+                        }
+                    }
+                }
+            }
+        } else if(viewMode == MODE_PLUVIOMETRIE){
+            if (sceneObjects[i].model == &model_sol) {
+                // Le sol utilise déjà la texture de pluviometrie
+                //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
+            } else {
+                // Pour les autres objets, utilisez la couleur de la pluviometrie
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                            Color pluvColor = GetPluviometrieColor(grille[x][z].pluviometrie, minPluv, maxPluv);
+                            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, pluvColor);
                             break;
                         }
                     }
