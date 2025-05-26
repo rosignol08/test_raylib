@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import Rectangle
 
 # Data for each biome
 biomes = {
@@ -15,6 +16,10 @@ biomes = {
 fig = plt.figure(figsize=(12, 10))
 ax = fig.add_subplot(111, projection='3d')
 
+# Create empty list for legend handles and labels
+legend_handles = []
+legend_labels = []
+
 # Plot each biome as a semi-transparent plane
 colors = ['r', 'g', 'b', 'c', 'm']
 for idx, (biome, data) in enumerate(biomes.items()):
@@ -28,8 +33,8 @@ for idx, (biome, data) in enumerate(biomes.items()):
     X, Y = np.meshgrid(x, y)
     Z = np.ones_like(X) * rainfall[0]
     
-    # Plot the bottom face
-    ax.plot_surface(X, Y, Z, color=colors[idx], alpha=0.3, label=biome)
+    # Plot the bottom face (without label)
+    ax.plot_surface(X, Y, Z, color=colors[idx], alpha=0.3)
     
     # Plot the top face
     Z = np.ones_like(X) * rainfall[1]
@@ -39,6 +44,10 @@ for idx, (biome, data) in enumerate(biomes.items()):
     for x_val in [temp[0], temp[1]]:
         for y_val in [humidity[0], humidity[1]]:
             ax.plot([x_val, x_val], [y_val, y_val], [rainfall[0], rainfall[1]], color=colors[idx], alpha=0.5)
+    
+    # Create a proxy artist for the legend
+    legend_handles.append(Rectangle((0, 0), 1, 1, color=colors[idx]))
+    legend_labels.append(biome)
 
 # Set labels and title
 ax.set_xlabel('Température moyenne (°C)')
@@ -46,8 +55,8 @@ ax.set_ylabel('Humidité (%)')
 ax.set_zlabel('Précipitations annuelles (mm)')
 ax.set_title('Visualisation 3D des Biomes avec Zones Remplies')
 
-# Show legend
-ax.legend()
+# Show legend with the proxy artists
+ax.legend(legend_handles, legend_labels, loc='upper left')
 
 # Show plot
 plt.show()
