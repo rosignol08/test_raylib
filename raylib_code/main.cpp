@@ -31,7 +31,7 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 #define GRID_SIZE 30
-#define NBHERBE 25
+#define NBHERBE 150
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
@@ -436,8 +436,8 @@ Color GetPluviometrieColor(int rainfall, int minPluv, int maxPluv) {
 
 int main(void) {
     // Initialisation
-    const int screenWidth = 1280;//1920;
-    const int screenHeight = 720;//1080;
+    const int screenWidth = 1920;//1280;//1920;
+    const int screenHeight = 1080;//720;//1080;
     // ecrant de chargement : 0 = menu, 1 = chargement , 2 = jeu
     int currentScreen = 0;
     int loadingStage = 0;
@@ -553,7 +553,7 @@ int main(void) {
     //Model model_herbe = LoadModel("models/herbe/untitled.glb");
     
     //pour l'herbe du sol
-    Model model_herbe_instance = LoadModel("models/herbe/lpherbe.glb");
+    Model model_herbe_instance = LoadModel("models/herbe/untitled2.glb");
     //forets temperee
     //0 bouleau bouleau_feuilles1
     Model model_bouleau1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles1.glb");
@@ -1510,7 +1510,7 @@ int main(void) {
                     // Utilisez un shader de shadow mapping simple pour générer l'ombre
                     models_herbe_vecteur[i].materials[0].shader = shadowShader; // Utilisez un shader simple pour les ombres
                     // Restaurez le shader original
-                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
+                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
                     models_herbe_vecteur[i].materials[0].shader = originalShader;
                 }
             }
@@ -1583,7 +1583,7 @@ int main(void) {
                 //verifie si l'herbe peut pousser à cette temperature
                 if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
     
-                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.05f, WHITE);
+                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
                 }
 //                Vector3 lightPos = { 0.0f, 10.0f, 0.0f }; // Ajustez selon votre lumière
 //                    Vector4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };

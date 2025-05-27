@@ -45,6 +45,8 @@ void main() {
     vec3 position = vertexPosition;
     
     if (isGrass == 1) {
+        vec3 modifiedNormal = normalize(vec3(matNormal * vec4(vertexNormal, 1.0)));
+
     float height = vertexTexCoord.y;
     
     // Obtenir les coordonnées en espace monde pour ce vertex
@@ -112,6 +114,16 @@ void main() {
         position.x += sin(tremblePhase) * gust * 0.02 * height;
         position.z += cos(tremblePhase + 1.3) * gust * 0.02 * height;
     }
+    // Envoyer les attributs de vertex au fragment shader
+    fragPosition = vec3(matModel * vec4(position, 1.0));
+    //fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));
+    fragTexCoord = vertexTexCoord;
+    fragColor = vertexColor;
+    fragNormal = modifiedNormal;
+    
+    
+    // Calculer la position finale du vertex
+    gl_Position = mvp * vec4(position, 1.0);
 }else if (isGrass == 2) {
     // Pour les arbres, on applique un mouvement sinusoïdal plus subtil et sur les extrémitées
     // Hauteur relative du vertex (pour les arbres, les branches supérieures bougeront plus)
@@ -170,7 +182,7 @@ void main() {
         position.y += cos(time * 4.0 + position.x * 10.0) * 0.01 * leafFactor * treeGust;
     }
 
-}
+
 
     // Envoyer les attributs de vertex au fragment shader
     fragPosition = vec3(matModel * vec4(position, 1.0));
@@ -182,4 +194,5 @@ void main() {
     // Calculer la position finale du vertex
     gl_Position = mvp * vec4(position, 1.0);
     //gl_Position = mvp * vec4(vertexPosition, 1.0);
+}
 }

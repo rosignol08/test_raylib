@@ -36,6 +36,8 @@
 
 "Realistic Jungletree" (https://skfb.ly/psNMB) by Garecra is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
+"Stylized grass" (https://skfb.ly/osKKX) by Nicosama is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 shader_type spatial;
 render_mode cull_disabled;
 
