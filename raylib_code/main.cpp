@@ -30,15 +30,16 @@
 #else   // PLATFORM_ANDROID, PLATFORM_WEB
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
+
 #define GRID_SIZE 30
-#define NBHERBE 150
-#define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
+//eau
+#define GOUTE_PLUIE 1000 //nombre de gouttes de pluie
+
 //particules d'herbe
-
-#define MAX_GRASS 100000
-
+#define MAX_GRASS 10000
+#define PENTE_SEUIL 0.20f //valeur de la pente max pour l'herbe
 
 typedef struct GrassQuad {
     Vector3 position;
@@ -84,15 +85,32 @@ void InitGrassParticles(Vector3 taille_terrain, Image image_sol) {
         float offsetZ = random_flottant(-0.1f, 0.1f);
         posX += offsetX;
         posZ += offsetZ;
-        
-        // Get the correct height from the terrain
+        //printf("herbe%d: (%f, %f)\n", i, posX, posZ);
+        //recup la hauteur du terrain
         float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
-        
+        float seuil_verification_pente = 0.2f; //seuil pour vérifier la pente
+// --- Calcul de la pente --- //
+float heightLeft  = GetHeightFromTerrain((Vector3){ posX - seuil_verification_pente, 0.0f, posZ }, image_sol, taille_terrain);
+float heightRight = GetHeightFromTerrain((Vector3){ posX + seuil_verification_pente, 0.0f, posZ }, image_sol, taille_terrain);
+float heightUp    = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - seuil_verification_pente }, image_sol, taille_terrain);
+float heightDown  = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + seuil_verification_pente }, image_sol, taille_terrain);
+
+float deltaX = fabsf(heightLeft - heightRight);
+float deltaZ = fabsf(heightUp - heightDown);
+float slope = sqrtf((deltaX * deltaX + deltaZ * deltaZ) / 2.0f);
+
+// Si la pente dépasse un seuil, on saute ce quad
+const float SLOPE_THRESHOLD = PENTE_SEUIL; // Ajuste selon la tolérance voulue
+if (slope > SLOPE_THRESHOLD) {
+    i--; // Refaire ce quad
+    continue;
+}
+
         // Set the grass position with the calculated height
-        grass[i].position = (Vector3){ posX, height+0.15f, posZ };
+        grass[i].size = (Vector2){0.01f + frand() * 0.02f, 0.04f + frand() * 0.03f};
+        grass[i].position = (Vector3){ posX, height+grass[i].size.y, posZ };
         grass[i].rotationY = frand() * PI * 2.0f;
         grass[i].rotationX = random_flottant(-0.2f, 0.2f);
-        grass[i].size = (Vector2){0.01f + frand() * 0.02f, 0.04f + frand() * 0.03f};
         //grass[i].color = GREEN;
         float teinte = random_flottant(0.8f, 1.0f);
         grass[i].color = (Color){
@@ -159,7 +177,8 @@ Color GetGrassColorFromTime(float timeOfDay) {
 float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
 
 // Dessine un quad à partir d’une position centrale, taille, et rotation X
-void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image terrainImage) {
+void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image terrainImage, Vector3 taille_terrain) {
+    
     float w = g.size.x * 0.5f;
     float h = g.size.y;
 
@@ -188,16 +207,20 @@ void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image ter
     bottomLeft  = Vector3Add(bottomLeft, g.position);
     Color finalColor = g.color;
 
-    if (useTerrainColor) {
-        int ix = (int)roundf(g.position.x);
-        int iz = (int)roundf(g.position.z);
+    if (useTerrainColorForGrass) {
+    // Convertir les coordonnées du monde en coordonnées d'image
+    // Pour une grille de GRID_SIZE x GRID_SIZE
+    int ix = (int)((g.position.x + taille_terrain.x/2) * terrainImage.width / taille_terrain.x);
+    int iz = (int)((g.position.z + taille_terrain.z/2) * terrainImage.height / taille_terrain.z);
 
-        // Clamp pour rester dans les limites
-        if (ix >= 0 && ix < terrainImage.width && iz >= 0 && iz < terrainImage.height) {
-            finalColor = GetImageColor(terrainImage, ix, iz);
-        }
-    }
-
+    // Clamp pour rester dans les limites
+    ix = Clamp(ix, 0, terrainImage.width - 1);
+    iz = Clamp(iz, 0, terrainImage.height - 1);
+    
+    finalColor = GetImageColor(terrainImage, ix, iz);
+}
+    float light = 1.0f; 
+    
     // Dessine manuellement
     rlBegin(RL_QUADS);
         // Couleur de base pour l'herbe (vert)
@@ -207,7 +230,7 @@ void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image ter
         // Sinon, on mélange avec baseColor
         //Color blendColor = useTerrainColor ? finalColor : baseColor;
         // Calcul de la lumière (ex: entre 0.2 et 1.0 selon l’heure)
-        float light;
+        
         if (timeOfDay < 6.0f || timeOfDay >= 20.0f) {
             light = 0.2f; // Nuit - lumière faible
         } else if (timeOfDay < 7.0f) {
@@ -261,7 +284,7 @@ void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image ter
 int viewMode = MODE_NORMAL;
 
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
-const float PENTE_SEUIL = 0.20f; //valeur de la pente max
+
 
 
 
@@ -946,9 +969,18 @@ int main(void) {
     faut regler les soucis d'accacia
         */
     Color couleur = WHITE;
-    Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 250, model_bouleau1, couleur);
-    Plante bouleau2("Bouleau2", 1, 100, 60, 80, 5, 10, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 250, model_bouleau2, couleur);
+    int influence_temperature = GetRandomValue(-5, 5);
+    int influence_humidite = GetRandomValue(-5, 5);
+
+    Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau1, couleur);
+    influence_temperature = GetRandomValue(-5, 5);
+    influence_humidite = GetRandomValue(-5, 5);
+    Plante bouleau2("Bouleau2", 1, 100, 75, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau2, couleur);
+    influence_temperature = GetRandomValue(-5, 5);
+    influence_humidite = GetRandomValue(-5, 5);
     Plante erable("Erable", 2, 100, 70, 80, 10, 25, 500, 1500, 0, 0, 0.01f, 0.04f, 0.0f, 01.f, 0, false, 350, model_erable, couleur);
+    influence_temperature = GetRandomValue(-5, 5);
+    influence_humidite = GetRandomValue(-5, 5);
     //Plante chene("Chene", 3, 100, 70, 80, 10, 15, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
     Plante bouleau_mort1("Bouleau_mort1", 0, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau1, couleur);
     Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
@@ -996,11 +1028,6 @@ int main(void) {
     int humidite_moyenne = 0;
     int temperature_moyenne = 0;
     int pluviometrie_moyenne = 0;
-   
-
-    //pour stocker les trucs sur l'herbe
-    std::vector<Model> models_herbe_vecteur(NBHERBE * NBHERBE, model_herbe_instance);
-    std::vector<Vector3> position_herbe(NBHERBE * NBHERBE);
     
     //DisableCursor();// Limit cursor to relative movement inside the window
     int frameCounter = 0;
@@ -1024,18 +1051,8 @@ int main(void) {
     Color couleur_sante = WHITE;
     // Boucle principale
     float windStrength = 0.7f;//force du vent
-    float windSpeed = 1.0f;//vitesse du vent
-
-    //declaration de la variable chargées
-    int herbeCount = 0;
-
-    //test particules d'herbe
+    float windSpeed = 1.0f;//vitesse du vent  
     
-    InitGrassParticles( taille_terrain, image_sol);
-    
-    int grassCount = 0;
-    
-
     while (!WindowShouldClose()) {
         switch (currentScreen)
         {
@@ -1074,14 +1091,16 @@ int main(void) {
                                     }
                                 //EndDrawing();
                                 if (choisis){
+                                printf("ont est ici");
                                 //image de la temperature
                                 temperatureMap = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
                                 temperatureTexture = LoadTextureFromImage(temperatureMap);
                                 UnloadImage(temperatureMap);
-                                        
+                                printf("ont a fini ici");   
                                 mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
                                 model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
                                 image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
+                                printf("fin chargement image texture sol\n");
                                 texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
                                 shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
                                 uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
@@ -1101,6 +1120,7 @@ int main(void) {
                                 //model_sol.materials[0].shader = shader_taille; // Assign the shader to the model ça sert à rien
                                 // Set the shader for the model
                                 model_sol.materials[0].shader = shadowShader;
+                                printf("ont est ici");
                                 loadingStage++;
                             }
                         }break;
@@ -1183,68 +1203,10 @@ int main(void) {
                 //    currentScreen = 1;
                 //}
                         case 2: {
-                                for (int x = 0; x < NBHERBE; x++) {
-                                    for (int z = 0; z < NBHERBE; z++) {
-                                    
-                                        float posX = (float) x - taille_terrain.x / 2; 
-                                        float posZ = (float) z - taille_terrain.z / 2;
-                                    
-                                        // Variables d'espacement pour les éléments
-                                        float espacementX = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe X
-                                        float espacementZ = 4.0f / NBHERBE; // Espacement entre les éléments sur l'axe Z
-                                        // Ajuster les positions avec l'espacement
-                                        posX = x * espacementX - taille_terrain.x / 2;
-                                        posZ = z * espacementZ - taille_terrain.z / 2;
-                                    
-                                        float offsetX = random_flottant(-0.1f , 0.1f); // Décalage aléatoire pour X
-                                        float offsetZ = random_flottant(-0.1f, 0.1f); // Décalage aléatoire pour Z
-                                        posX += offsetX;
-                                        posZ += offsetZ;
-                                    
-                                        float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
-                                        // Calcul des hauteurs des cellules voisines
-                                        float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
-                                        float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
-                                        float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
-                                        float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
-                                    
-                                        // Calcul des variations de hauteur
-                                        float deltaLeft = fabs(height - heightLeft);
-                                        float deltaRight = fabs(height - heightRight);
-                                        float deltaUp = fabs(height - heightUp);
-                                        float deltaDown = fabs(height - heightDown);
-                                    
-                                        // Calcul du taux de pente
-                                        float penteX = (deltaLeft + deltaRight) / 2.0f;
-                                        float penteZ = (deltaUp + deltaDown) / 2.0f;
-                                        float tauxPente = sqrt(penteX * penteX + penteZ * penteZ);
-                                    
-                                        if (tauxPente > 0.2f) {
-                                            continue; // Skip c'est trop pentu
-                                        }else{
-                                            // Appliquer une rotation aléatoire autour de l'axe Y
-                                            float randomRotationY = random_flottant(0.0f, 2.0f * PI);
-                                        
-                                            // Créer une copie du modèle AVANT de modifier transform
-                                            Model modelHerbe = model_herbe_instance;
-                                        
-                                            // Appliquer la transformation
-                                            Matrix transform = MatrixIdentity();
-                                            //transform = MatrixMultiply(transform, MatrixTranslate(posX, height, posZ));
-                                            transform = MatrixMultiply(transform, MatrixRotateY(randomRotationY));
-                                        
-                                            modelHerbe.transform = transform; // Appliquer la transformation à la copie
-                                        
-                                            // Stocker dans le vecteur
-                                            models_herbe_vecteur[herbeCount] = modelHerbe;
-                                            position_herbe[herbeCount] = (Vector3){ posX, height-0.0f, posZ };
-                                        
-                                            herbeCount++;
-                                        }
-                                    
-                                    }
-                                }
-                            loadingStage++;
+                            InitGrassParticles( taille_terrain, image_sol);
+    
+                            
+                                loadingStage++;
                         } break;
                         case 3:{
                             grandsNuages.push_back(GenererGrandNuage({-taille_terrain.x, 4.0f, 0.0f}, taille_terrain.x * 3.0f, taille_terrain.x * 3.0f, 1, cloudThreshold, noiseScale));
@@ -1782,7 +1744,7 @@ int main(void) {
 
         Color grassColor = GetGrassColorFromTime(timeOfDay); // timeOfDay = 0.0f → 24.0f
         for (int i = 0; i < MAX_GRASS; i++) {
-            DrawGrassQuad(grass[i], grassColor, useTerrainColorForGrass, terrainColorImage);
+            DrawGrassQuad(grass[i], grassColor, useTerrainColorForGrass, terrainColorImage, taille_terrain);
         }
         isGrass = 2;
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
@@ -1937,11 +1899,8 @@ int main(void) {
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
-    models_herbe_vecteur.clear();
-    position_herbe.clear();
 
     // Clear the memory of other resources
-    UnloadModel(model_herbe_instance);
     printf("model herbe unload\n");
     UnloadImage(image_sol);
     printf("image sol unload\n");
