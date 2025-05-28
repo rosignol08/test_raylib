@@ -1,235 +1,54 @@
-# CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
+project(ProjetTutore)
 
-# Configuration du projet
-project(EcosystemSimulator 
-    VERSION 1.0.0
-    DESCRIPTION "Simulateur d'écosystème avec Raylib"
-    LANGUAGES CXX C
-)
-
-# Standard C++
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Configuration des chemins de sortie
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+# Collecter tous les fichiers .cpp dans src/ récursivement
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-# Options de compilation
-option(BUILD_EXAMPLES "Build examples" OFF)
+# Créer l'exécutable
+add_executable(main ${SOURCES})
 
-# Configuration spécifique par plateforme pour la liaison
+# Dossiers d'inclusion
+target_include_directories(main PRIVATE 
+    src
+    include
+)
+
+# Configuration par plateforme (comme votre makefile)
 if(WIN32)
-    # Windows : Utiliser les bibliothèques locales (statique)
-    set(USE_LOCAL_RAYLIB ON)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-else()
-    # Linux : Dynamique système uniquement
-    set(USE_LOCAL_RAYLIB OFF)
-endif()
-
-# Configuration du type de build
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# Drapeaux de compilation par configuration
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-
-# Recherche de Raylib selon la plateforme
-if(WIN32 AND USE_LOCAL_RAYLIB)
-    # Windows : Utiliser les bibliothèques locales du projet
-    message(STATUS "Windows: Utilisation de Raylib local (statique)")
-    
-    # Chercher dans les dossiers locaux
-    find_library(RAYLIB_LIBRARY
-        NAMES raylib libraylib
-        PATHS ${CMAKE_SOURCE_DIR}/lib
-        NO_DEFAULT_PATH
-        REQUIRED
-    )
-    
-    # Headers locaux
-    set(RAYLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
-    
-    if(NOT EXISTS ${RAYLIB_INCLUDE_DIR}/raylib.h)
-        message(FATAL_ERROR "raylib.h non trouvé dans ${RAYLIB_INCLUDE_DIR}")
-    endif()
-    
-    if(NOT RAYLIB_LIBRARY)
-        message(FATAL_ERROR "Bibliothèque raylib non trouvée dans ${CMAKE_SOURCE_DIR}/lib")
-    endif()
-    
-    # Créer la target raylib
-    add_library(raylib STATIC IMPORTED)
-    set_target_properties(raylib PROPERTIES
-        IMPORTED_LOCATION ${RAYLIB_LIBRARY}
-        INTERFACE_INCLUDE_DIRECTORIES ${RAYLIB_INCLUDE_DIR}
-    )
-    
-    set(raylib_FOUND TRUE)
-    
-else()
-    # Linux : Recherche système obligatoire
-    message(STATUS "Linux: Recherche de Raylib système (dynamique)")
-    find_package(raylib REQUIRED)
-    
-    if(NOT raylib_FOUND)
-        message(FATAL_ERROR "Raylib non trouvé sur le système. Installez raylib avec votre gestionnaire de paquets :
-    Ubuntu/Debian: sudo apt install libraylib-dev
-    Fedora: sudo dnf install raylib-devel
-    Arch: sudo pacman -S raylib")
-    endif()
-endif()
-
-# Collecte automatique des fichiers source
-file(GLOB_RECURSE SOURCES 
-    "src/*.cpp"
-    "src/*.c"
-)
-
-file(GLOB_RECURSE HEADERS 
-    "src/*.h"
-    "src/*.hpp"
-    "include/*.h"
-    "include/*.hpp"
-)
-
-# Création de l'exécutable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
-
-# Répertoires d'inclusion
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-# Liaison avec Raylib
-target_link_libraries(${PROJECT_NAME} raylib)
-
-# Configuration spécifique par plateforme
-if(WIN32)
-    # Windows - Liaison statique avec bibliothèques locales
-    target_link_libraries(${PROJECT_NAME} 
-        raylib
+    # Windows - liaison statique
+    target_link_libraries(main 
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a
         winmm
         gdi32
         opengl32
     )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
+    target_compile_definitions(main PRIVATE PLATFORM_DESKTOP)
     
-    # Pour Windows, on force la liaison statique du runtime C++
-    if(MSVC)
-        set_property(TARGET ${PROJECT_NAME} PROPERTY
-            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    endif()
-    
-elseif(APPLE)
-    # macOS - Liaison dynamique
-    find_library(COCOA_LIBRARY Cocoa)
-    find_library(OPENGL_LIBRARY OpenGL)
-    find_library(IOKIT_LIBRARY IOKit)
-    find_library(COREVIDEO_LIBRARY CoreVideo)
-    
-    target_link_libraries(${PROJECT_NAME}
-        raylib
-        ${COCOA_LIBRARY}
-        ${OPENGL_LIBRARY} 
-        ${IOKIT_LIBRARY}
-        ${COREVIDEO_LIBRARY}
-    )
-    
-else()
-    # Linux - Liaison dynamique uniquement
+elseif(UNIX)
+    # Linux - liaison dynamique avec raylib système
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LINUX_DEPS REQUIRED
-        gl
-        x11
-        xrandr
-        xinerama
-        xi
-        xxf86vm
-        xcursor
-    )
+    pkg_check_modules(RAYLIB REQUIRED raylib)
     
-    target_link_libraries(${PROJECT_NAME}
-        raylib
-        ${LINUX_DEPS_LIBRARIES}
-        pthread
+    target_link_libraries(main 
+        ${RAYLIB_LIBRARIES}
+        GL
         m
+        pthread
         dl
+        rt
+        X11
     )
-    
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        ${LINUX_DEPS_INCLUDE_DIRS}
-    )
+    target_include_directories(main PRIVATE ${RAYLIB_INCLUDE_DIRS})
+    target_compile_definitions(main PRIVATE PLATFORM_DESKTOP)
 endif()
 
-# Configuration des drapeaux de compilation
-if(MSVC)
-    # Visual Studio
-    target_compile_options(${PROJECT_NAME} PRIVATE 
-        /W4
-        $<$<CONFIG:Release>:/O2>
-        $<$<CONFIG:Debug>:/Od>
-    )
-else()
-    # GCC/Clang
-    target_compile_options(${PROJECT_NAME} PRIVATE 
-        -Wall 
-        -Wextra 
-        -Wpedantic
-        $<$<CONFIG:Release>:-O3>
-        $<$<CONFIG:Debug>:-g>
-    )
-endif()
+# Copier les ressources dans le build (optionnel - commentez si pas voulu)
+# file(COPY assets models DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-# Installation (optionnel)
-install(TARGETS ${PROJECT_NAME}
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
+# Alternative: définir le répertoire de travail pour certains IDEs
+set_target_properties(main PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-# Copie des assets
-install(DIRECTORY assets/
-    DESTINATION bin/assets
-    FILES_MATCHING 
-    PATTERN "*.png"
-    PATTERN "*.jpg"
-    PATTERN "*.glb"
-    PATTERN "*.gltf"
-    PATTERN "*.obj"
-)
-
-install(DIRECTORY shaders/
-    DESTINATION bin/shaders
-    FILES_MATCHING
-    PATTERN "*.vs"
-    PATTERN "*.fs"
-    PATTERN "*.glsl"
-)
-
-# Affichage des informations de configuration
-message(STATUS "Configuration Summary:")
-message(STATUS "  Project: ${PROJECT_NAME}")
-message(STATUS "  Version: ${PROJECT_VERSION}")
-message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "  Compiler: ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS "  Platform: ${CMAKE_SYSTEM_NAME}")
-
-if(WIN32)
-    message(STATUS "  Windows: Raylib statique local (${CMAKE_SOURCE_DIR}/lib)")
-    if(RAYLIB_LIBRARY)
-        message(STATUS "  Raylib trouvé: ${RAYLIB_LIBRARY}")
-    endif()
-else()
-    message(STATUS "  Linux: Raylib dynamique système")
-    if(raylib_FOUND)
-        get_target_property(RAYLIB_TYPE raylib TYPE)
-        message(STATUS "  Type Raylib: ${RAYLIB_TYPE}")
-    endif()
-endif()
