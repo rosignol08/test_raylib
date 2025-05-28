@@ -35,6 +35,225 @@
 #define MAX_LIGHTS 4 // Max dynamic lights supported by shader
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
+//particules d'herbe
+
+#define MAX_GRASS 100000
+
+
+typedef struct GrassQuad {
+    Vector3 position;
+    float rotationX;      // Rotation autour de l'axe X (en radians)
+    float rotationY;      // Rotation autour de l'axe Y (en radians)
+    Vector2 size;         // Largeur / Hauteur du quad
+    Color color;
+} GrassQuad;
+
+GrassQuad grass[MAX_GRASS];
+
+// Génère un float aléatoire entre 0.0 et 1.0
+float frand() {
+    return (float)GetRandomValue(0, 10000) / 10000.0f;
+}
+
+float random_flottant(float min, float max) {
+    return min + (rand() / (float)RAND_MAX) * (max - min);
+}
+
+//terrain avec hauteur
+float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSize) {
+    int mapX = (int)((position.x + terrainSize.x / 2.0f) * heightmap.width / terrainSize.x);
+    int mapZ = (int)((position.z + terrainSize.z / 2.0f) * heightmap.height / terrainSize.z);
+
+    mapX = Clamp(mapX, 0, heightmap.width - 1);
+    mapZ = Clamp(mapZ, 0, heightmap.height - 1);
+
+    Color pixel = GetImageColor(heightmap, mapX, mapZ);
+    return (pixel.r / 255.0f) * terrainSize.y;
+}
+
+
+// Génère les particules
+void InitGrassParticles(Vector3 taille_terrain, Image image_sol) {
+    for (int i = 0; i < MAX_GRASS; i++) {
+        // Distributes grass evenly across the terrain
+        float posX = frand() * taille_terrain.x - taille_terrain.x / 2;
+        float posZ = frand() * taille_terrain.z - taille_terrain.z / 2;
+        
+        // Add small random offset for natural distribution
+        float offsetX = random_flottant(-0.1f, 0.1f);
+        float offsetZ = random_flottant(-0.1f, 0.1f);
+        posX += offsetX;
+        posZ += offsetZ;
+        
+        // Get the correct height from the terrain
+        float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
+        
+        // Set the grass position with the calculated height
+        grass[i].position = (Vector3){ posX, height+0.15f, posZ };
+        grass[i].rotationY = frand() * PI * 2.0f;
+        grass[i].rotationX = random_flottant(-0.2f, 0.2f);
+        grass[i].size = (Vector2){0.01f + frand() * 0.02f, 0.04f + frand() * 0.03f};
+        //grass[i].color = GREEN;
+        float teinte = random_flottant(0.8f, 1.0f);
+        grass[i].color = (Color){
+            (unsigned char)(34 * teinte),
+            (unsigned char)(139 * teinte),
+            (unsigned char)(34 * teinte),
+            255
+        };
+    }
+}
+
+
+
+bool useTerrainColorForGrass = false;
+Image terrainColorImage; //pour choper les couleur du terrain
+
+Color GetGrassColorFromTime(float timeOfDay) {
+    if (timeOfDay < 6.0f || timeOfDay >= 20.0f) {
+        return (Color){ 10, 10, 30, 255 }; // Nuit
+    } else if (timeOfDay < 7.0f) {
+        float t = timeOfDay - 6.0f;
+        return (Color){
+            (unsigned char)(255 * t),
+            (unsigned char)(165 * t),
+            (unsigned char)(10 * t),
+            255
+        };
+    } else if (timeOfDay < 8.0f) {
+        float t = timeOfDay - 7.0f;
+        return (Color){
+            255,
+            (unsigned char)(200 + t * 55),
+            (unsigned char)(100 - t * 50),
+            255
+        };
+    } else if (timeOfDay < 17.0f) {
+        return (Color){ 255, 255, 255, 255 }; // Jour
+    } else if (timeOfDay < 18.0f) {
+        float t = timeOfDay - 17.0f;
+        return (Color){
+            (unsigned char)(255 - t * 5),
+            (unsigned char)(255 - t * 55),
+            (unsigned char)(100 + t * 50),
+            255
+        };
+    } else if (timeOfDay < 19.0f) {
+        float t = timeOfDay - 18.0f;
+        return (Color){
+            (unsigned char)(255 - t * 155),
+            (unsigned char)(150 - t * 100),
+            (unsigned char)(100 + t * 50),
+            255
+        };
+    } else {
+        float t = timeOfDay - 19.0f;
+        return (Color){
+            (unsigned char)(100 - t * 90),
+            (unsigned char)(50 - t * 40),
+            (unsigned char)(150 + t * 10),
+            255
+        };
+    }
+}
+float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
+
+// Dessine un quad à partir d’une position centrale, taille, et rotation X
+void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image terrainImage) {
+    float w = g.size.x * 0.5f;
+    float h = g.size.y;
+
+    // Vecteurs du quad avant rotation
+    Vector3 topLeft     = (Vector3){ -w, 0.0f, 0.0f };
+    Vector3 topRight    = (Vector3){  w, 0.0f, 0.0f };
+    Vector3 bottomRight = (Vector3){  w, -h, 0.0f };
+    Vector3 bottomLeft  = (Vector3){ -w, -h, 0.0f };
+
+    Matrix rot = MatrixRotateY(g.rotationY);
+    topLeft     = Vector3Transform(topLeft, rot);
+    topRight    = Vector3Transform(topRight, rot);
+    bottomRight = Vector3Transform(bottomRight, rot);
+    bottomLeft  = Vector3Transform(bottomLeft, rot);
+
+    rot = MatrixRotateX(g.rotationX);
+    topLeft     = Vector3Transform(topLeft, rot);
+    topRight    = Vector3Transform(topRight, rot);
+    bottomRight = Vector3Transform(bottomRight, rot);
+    bottomLeft  = Vector3Transform(bottomLeft, rot);
+
+    // Applique la position
+    topLeft     = Vector3Add(topLeft, g.position);
+    topRight    = Vector3Add(topRight, g.position);
+    bottomRight = Vector3Add(bottomRight, g.position);
+    bottomLeft  = Vector3Add(bottomLeft, g.position);
+    Color finalColor = g.color;
+
+    if (useTerrainColor) {
+        int ix = (int)roundf(g.position.x);
+        int iz = (int)roundf(g.position.z);
+
+        // Clamp pour rester dans les limites
+        if (ix >= 0 && ix < terrainImage.width && iz >= 0 && iz < terrainImage.height) {
+            finalColor = GetImageColor(terrainImage, ix, iz);
+        }
+    }
+
+    // Dessine manuellement
+    rlBegin(RL_QUADS);
+        // Couleur de base pour l'herbe (vert)
+        Color grassBaseColor = g.color; // Vert forêt
+        
+        // Si on utilise la couleur du terrain, on mélange avec finalColor
+        // Sinon, on mélange avec baseColor
+        //Color blendColor = useTerrainColor ? finalColor : baseColor;
+        // Calcul de la lumière (ex: entre 0.2 et 1.0 selon l’heure)
+        float light;
+        if (timeOfDay < 6.0f || timeOfDay >= 20.0f) {
+            light = 0.2f; // Nuit - lumière faible
+        } else if (timeOfDay < 7.0f) {
+            // Transition entre nuit et aube (6h-7h)
+            float t = timeOfDay - 6.0f;
+            light = 0.2f + t * 0.3f; // De 0.2 à 0.5
+        } else if (timeOfDay < 8.0f) {
+            // Transition entre aube et jour (7h-8h)
+            float t = timeOfDay - 7.0f;
+            light = 0.5f + t * 0.5f; // De 0.5 à 1.0
+        } else if (timeOfDay < 17.0f) {
+            light = 1.0f; // Plein jour - lumière maximale
+        } else if (timeOfDay < 18.0f) {
+            // Transition entre jour et crépuscule (17h-18h)
+            float t = timeOfDay - 17.0f;
+            light = 1.0f - t * 0.3f; // De 1.0 à 0.7
+        } else if (timeOfDay < 19.0f) {
+            // Transition entre crépuscule et soir (18h-19h)
+            float t = timeOfDay - 18.0f;
+            light = 0.7f - t * 0.3f; // De 0.7 à 0.4
+        } else if (timeOfDay < 20.0f) {
+            // Transition entre soir et nuit (19h-20h)
+            float t = timeOfDay - 19.0f;
+            light = 0.4f - t * 0.2f; // De 0.4 à 0.2
+        }
+
+        // Mélange linéaire entre les deux couleurs
+        Color blendColor = useTerrainColor ? finalColor : baseColor;
+
+        unsigned char r = (unsigned char)Clamp((g.color.r * (1 - 0.5f) + blendColor.r * 0.5f) * light, 0, 255);
+        unsigned char v = (unsigned char)Clamp((g.color.g * (1 - 0.5f) + blendColor.g * 0.5f) * light, 0, 255);
+        unsigned char b = (unsigned char)Clamp((g.color.b * (1 - 0.5f) + blendColor.b * 0.5f) * light, 0, 255);
+
+        // Addition des couleurs (avec limitation à 255)
+        //unsigned char r = (unsigned char)Clamp(grassBaseColor.r + blendColor.r * 0.5f, 0, 255);
+        //unsigned char v = (unsigned char)Clamp(grassBaseColor.g + blendColor.g * 0.5f, 0, 255);
+        //unsigned char b = (unsigned char)Clamp(grassBaseColor.b + blendColor.b * 0.5f, 0, 255);
+        
+        rlColor4ub(r, v, b, 255);
+        rlVertex3f(topLeft.x, topLeft.y, topLeft.z);
+        rlVertex3f(topRight.x, topRight.y, topRight.z);
+        rlVertex3f(bottomRight.x, bottomRight.y, bottomRight.z);
+        rlVertex3f(bottomLeft.x, bottomLeft.y, bottomLeft.z);
+    rlEnd();
+}
+
 #define MODE_NORMAL 0
 #define MODE_TEMPERATURE 1
 #define MODE_HUMIDITE 2
@@ -44,7 +263,8 @@ int viewMode = MODE_NORMAL;
 #define VIDE  CLITERAL(Color){ 0, 0, 0, 0 }   // Light Gray
 const float PENTE_SEUIL = 0.20f; //valeur de la pente max
 
-float timeOfDay = 12.0f; // L'heure du jour (de 0 à 24)
+
+
 const float pI = 3.14159265359f;
 
 Color GetSunColor(float timeOfDay) {
@@ -173,10 +393,6 @@ void update_grille(GridCell grille[GRID_SIZE][GRID_SIZE]){
 float variation_hauteur(GridCell cellule) {
     float time = GetTime();
     return cos(cellule.position.x + time) + cos(cellule.position.z + time);
-}
-
-float random_flottant(float min, float max) {
-    return min + (rand() / (float)RAND_MAX) * (max - min);
 }
 
 // Variables globales pour stocker les angles de rotation
@@ -370,19 +586,8 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
     return;
 }
 
-//terrain avec hauteur
-float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSize) {
-    int mapX = (int)((position.x + terrainSize.x / 2.0f) * heightmap.width / terrainSize.x);
-    int mapZ = (int)((position.z + terrainSize.z / 2.0f) * heightmap.height / terrainSize.z);
 
-    mapX = Clamp(mapX, 0, heightmap.width - 1);
-    mapZ = Clamp(mapZ, 0, heightmap.height - 1);
-
-    Color pixel = GetImageColor(heightmap, mapX, mapZ);
-    return (pixel.r / 255.0f) * terrainSize.y;
-}
-
-int minTemp = 0;
+int minTemp = 1;
 int maxTemp = 10;
 //pour la temperature
 Color GetTemperatureColor(int temperature, int minTemp, int maxTemp) {
@@ -790,6 +995,7 @@ int main(void) {
     Vector3 taille_terrain = { 4, 2, 4 }; // Taille du terrain
     int humidite_moyenne = 0;
     int temperature_moyenne = 0;
+    int pluviometrie_moyenne = 0;
    
 
     //pour stocker les trucs sur l'herbe
@@ -822,7 +1028,14 @@ int main(void) {
 
     //declaration de la variable chargées
     int herbeCount = 0;
+
+    //test particules d'herbe
     
+    InitGrassParticles( taille_terrain, image_sol);
+    
+    int grassCount = 0;
+    
+
     while (!WindowShouldClose()) {
         switch (currentScreen)
         {
@@ -913,7 +1126,7 @@ int main(void) {
                                     int pluviometrie = (int) random_flottant(0, 100); // Pluviométrie aléatoire entre PLUVI_MIN et PLUVI_MAX
                                     humidite_moyenne += humidite;
                                     temperature_moyenne += temperature;//TODO voir si c'est utile
-
+                                    pluviometrie_moyenne += pluviometrie;
                                     // Calcul des hauteurs des cellules voisines
                                     float heightLeft = GetHeightFromTerrain((Vector3){ posX - 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
                                     float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
@@ -1218,7 +1431,7 @@ int main(void) {
                     distanceParcourue = 0.0f;
                 }
             }
-            // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
+            //pdate la camera view vector
             Vector3 cameraPos = camera.position;
             SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
             SetShaderValue(herbe_shader, shader.locs[SHADER_LOC_VECTOR_VIEW], &cameraPos, SHADER_UNIFORM_VEC3);
@@ -1237,6 +1450,7 @@ int main(void) {
                         }
                     }
                     UpdateTexture(temperatureTexture, tempImage.data);
+                    terrainColorImage = ImageCopy(tempImage); // Copie pour lecture ultérieure
                     UnloadImage(tempImage);
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
                 } else {
@@ -1258,6 +1472,7 @@ int main(void) {
                         }
                     }
                     UpdateTexture(temperatureTexture, humImage.data);
+                    terrainColorImage = ImageCopy(humImage); // Copie pour lecture ultérieure
                     UnloadImage(humImage);
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
                 } else {
@@ -1279,12 +1494,16 @@ int main(void) {
                         }
                     }
                     UpdateTexture(temperatureTexture, pluvImage.data);
+                    terrainColorImage = ImageCopy(pluvImage); // Copie pour lecture ultérieure
                     UnloadImage(pluvImage);
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = temperatureTexture;
                 } else {
                     // Mode normal : remettre la texture normale
                     model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_sol;
                 }
+            }
+            if (viewMode == MODE_NORMAL){
+                useTerrainColorForGrass = false;
             }
             // Activer/désactiver la rotation avec le clic droit
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) isRotating = true;
@@ -1325,6 +1544,7 @@ int main(void) {
             }
 
             if (viewMode == MODE_TEMPERATURE) {
+                useTerrainColorForGrass = true;
                 Image tempImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
 
                 //l'image avec les couleurs de température
@@ -1348,6 +1568,7 @@ int main(void) {
             }
             //petite actualisation de l'humidite
             if (viewMode == MODE_HUMIDITE) {
+                useTerrainColorForGrass = true;
                 Image humImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
 
                 //maj l'image avec les couleurs d'humidité
@@ -1370,6 +1591,7 @@ int main(void) {
                 }
             }
             if (viewMode == MODE_PLUVIOMETRIE) {
+                useTerrainColorForGrass = true;
                 Image pluvImage = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
 
                 //maj l'image avec les couleurs de pluviometrie
@@ -1493,27 +1715,27 @@ int main(void) {
 
             rlEnableBackfaceCulling();
             //DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
-            for (int i = 0; i < herbeCount ; i++){
-          
-                //regarde si la cellule de la grille correspond à la position de l'herbe
-                int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
-                int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
-
-                //Clamp les coordonnées de grille pour éviter les débordements
-                gridX = Clamp(gridX, 0, GRID_SIZE - 1);
-                gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
-
-                //verifie si l'herbe peut pousser à cette temperature
-                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
-                    Shader originalShader = models_herbe_vecteur[i].materials[0].shader;
-            
-                    // Utilisez un shader de shadow mapping simple pour générer l'ombre
-                    models_herbe_vecteur[i].materials[0].shader = shadowShader; // Utilisez un shader simple pour les ombres
-                    // Restaurez le shader original
-                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
-                    models_herbe_vecteur[i].materials[0].shader = originalShader;
-                }
-            }
+            //for (int i = 0; i < herbeCount ; i++){
+          //
+            //    //regarde si la cellule de la grille correspond à la position de l'herbe
+            //    int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
+            //    int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
+//
+            //    //Clamp les coordonnées de grille pour éviter les débordements
+            //    gridX = Clamp(gridX, 0, GRID_SIZE - 1);
+            //    gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
+//
+            //    //verifie si l'herbe peut pousser à cette temperature
+            //    if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
+            //        Shader originalShader = models_herbe_vecteur[i].materials[0].shader;
+            //
+            //        // Utilisez un shader de shadow mapping simple pour générer l'ombre
+            //        models_herbe_vecteur[i].materials[0].shader = shadowShader; // Utilisez un shader simple pour les ombres
+            //        // Restaurez le shader original
+            //        DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
+            //        models_herbe_vecteur[i].materials[0].shader = originalShader;
+            //    }
+            //}
             isGrass = 0;
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
             rlDisableBackfaceCulling();
@@ -1554,6 +1776,14 @@ int main(void) {
         //Vector4 ambientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
         
         BeginMode3D(camera);
+
+
+
+
+        Color grassColor = GetGrassColorFromTime(timeOfDay); // timeOfDay = 0.0f → 24.0f
+        for (int i = 0; i < MAX_GRASS; i++) {
+            DrawGrassQuad(grass[i], grassColor, useTerrainColorForGrass, terrainColorImage);
+        }
         isGrass = 2;
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
         dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
@@ -1572,24 +1802,21 @@ int main(void) {
             SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
 
 
-            for (int i = 0; i < herbeCount ; i++){
-                //active backface culling ici
-                int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
-                int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
-
-                gridX = Clamp(gridX, 0, GRID_SIZE - 1);
-                gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
-
-                //verifie si l'herbe peut pousser à cette temperature
-                if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
-    
-                    DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
-                }
-//                Vector3 lightPos = { 0.0f, 10.0f, 0.0f }; // Ajustez selon votre lumière
-//                    Vector4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-//                    Vector4 ambientColor = { 0.2f, 0.2f, 0.2f, 1.0f };
-                    
-            }
+            //for (int i = 0; i < herbeCount ; i++){
+            //    //active backface culling ici
+            //    int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
+            //    int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
+//
+            //    gridX = Clamp(gridX, 0, GRID_SIZE - 1);
+            //    gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
+//
+            //    //verifie si l'herbe peut pousser à cette temperature
+            //    if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
+    //
+            //        DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
+            //    }
+                
+//            }
             isGrass = 0;
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
             rlDisableBackfaceCulling();
@@ -1611,6 +1838,7 @@ int main(void) {
             // Optionnel : afficher une échelle de température
             DrawText(TextFormat("Min: %d°C", minTemp), 10, 80, 20, BLUE);
             DrawText(TextFormat("Max: %d°C", maxTemp), 10, 100, 20, RED);
+            
         }
         if (viewMode == MODE_HUMIDITE) {
             DrawText("Mode humidite - Appuyez sur Y pour revenir", 10, 60, 20, BLACK);
