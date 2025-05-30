@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <stdio.h>//pour les printf
 #include <vector>
+#include <chrono>
 
 #include "sol.h"
 #include "nuages.h"
@@ -34,22 +35,8 @@
 #define GRID_SIZE 30
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
-//eau
-#define GOUTE_PLUIE 1000 //nombre de gouttes de pluie
-
-//particules d'herbe
-#define MAX_GRASS 10000
-#define PENTE_SEUIL 0.20f //valeur de la pente max pour l'herbe
-
-typedef struct GrassQuad {
-    Vector3 position;
-    float rotationX;      // Rotation autour de l'axe X (en radians)
-    float rotationY;      // Rotation autour de l'axe Y (en radians)
-    Vector2 size;         // Largeur / Hauteur du quad
-    Color color;
-} GrassQuad;
-
-GrassQuad grass[MAX_GRASS];
+//pour la vitesse de simulation
+float simulationSpeed = 1.0f;//facteur de vitesse de simulation (1.0 = vitesse normale)
 
 // Génère un float aléatoire entre 0.0 et 1.0
 float frand() {
@@ -72,15 +59,172 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
     return (pixel.r / 255.0f) * terrainSize.y;
 }
 
+//eau
+#define GOUTE_PLUIE 1000 //nombre de gouttes de pluie
+bool pleut = false;
+float frequence_pluie = 0.0f;
+float random_pluie = 1.0f;
+//ça serait cool si ça influence la pluviométrie genre on a X quantitée de pluie et plus on en a plus ça change le biome
+typedef struct PluieQuad {
+    Vector3 position;
+    float rotationX;      // Rotation autour de l'axe X (en radians)
+    float rotationY;      // Rotation autour de l'axe Y (en radians)
+    Vector2 size;         // Largeur / Hauteur du quad
+    Vector3 velocite; //pour faire bouger la particule pour la pluie
+    Color color;
+} PluieQuad;
+
+PluieQuad la_pluie[GOUTE_PLUIE];
+
+void InitPluieParticules(Vector3 taille_terrain, Image image_sol){
+for (int i = 0; i < GOUTE_PLUIE; i++) {
+        //pour faire apparaitre la pluie
+        float posX = frand() * taille_terrain.x - taille_terrain.x / 2;
+        float posY = frand() * taille_terrain.y;
+        float posZ = frand() * taille_terrain.z - taille_terrain.z / 2;
+        //petit décalage random pour une distrib plus naturelle
+        float offsetX = random_flottant(-0.1f, 0.1f);
+        float offsetZ = random_flottant(-0.1f, 0.1f);
+        posX += offsetX;
+        posZ += offsetZ;
+        //printf("herbe%d: (%f, %f)\n", i, posX, posZ);
+        //recup la hauteur du terrain
+        float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
+        
+        //on set la position de l'herbe avec la hauteur calculée
+        la_pluie[i].size = (Vector2){0.01f + frand() * 0.02f, 0.08f + frand() * 0.03f};
+        la_pluie[i].position = (Vector3){ posX, height+la_pluie[i].size.y , posZ };
+        la_pluie[i].rotationY = frand() * PI * 2.0f;
+        la_pluie[i].velocite.y = -1.0f * (frand() * 0.50f);
+        //grass[i].rotationX = random_flottant(-0.2f, 0.2f);
+        
+        float teinte = random_flottant(0.8f, 1.0f);
+        la_pluie[i].color = (Color){
+            (unsigned char)(6 * teinte),
+            (unsigned char)(101 * teinte),
+            (unsigned char)(224 * teinte),
+            (unsigned char)(127 * teinte) //faut faire varier ça
+        };
+    }
+}
+
+
+// Dessine un quad à partir d’une position centrale, taille, et rotation X
+void DrawPluieQuad(PluieQuad &p, Image terrainImage, Vector3 taille_terrain, bool pleut, float delta){
+    
+    if (pleut) {
+        p.position.y += p.velocite.y;// * delta * simulationSpeed; voir si on peut ralentir la pluie
+    }
+
+    float w = p.size.x * 0.5f;
+    float h = p.size.y;
+
+    // Vecteurs du quad avant rotation
+    Vector3 topLeft     = (Vector3){ -w, 0.0f, 0.0f };
+    Vector3 topRight    = (Vector3){  w, 0.0f, 0.0f };
+    Vector3 bottomRight = (Vector3){  w, -h, 0.0f };
+    Vector3 bottomLeft  = (Vector3){ -w, -h, 0.0f };
+
+    Matrix rot = MatrixRotateY(p.rotationY);
+    topLeft     = Vector3Transform(topLeft, rot);
+    topRight    = Vector3Transform(topRight, rot);
+    bottomRight = Vector3Transform(bottomRight, rot);
+    bottomLeft  = Vector3Transform(bottomLeft, rot);
+
+    // Applique la position
+    topLeft     = Vector3Add(topLeft, p.position);
+    topRight    = Vector3Add(topRight, p.position);
+    bottomRight = Vector3Add(bottomRight, p.position);
+    bottomLeft  = Vector3Add(bottomLeft, p.position);
+    
+    if (pleut) {
+        float height = GetHeightFromTerrain((Vector3){ p.position.x, 0.0f, p.position.z }, terrainImage, taille_terrain);
+        // Check si elle touche le sol
+        if (p.position.y <= height) {
+            // Réinitialiser la position de la goutte de pluie en haut
+            float posX = frand() * taille_terrain.x - taille_terrain.x / 2;
+            float posZ = frand() * taille_terrain.z - taille_terrain.z / 2;
+            // Petit décalage random pour une distrib plus naturelle
+            float offsetX = random_flottant(-0.1f, 0.1f);
+            float offsetZ = random_flottant(-0.1f, 0.1f);
+            posX += offsetX;
+            posZ += offsetZ;
+            
+            // Obtenir la hauteur à cette position
+            float newHeight = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, terrainImage, taille_terrain);
+            
+            // Placer la goutte en haut du terrain
+            p.position = (Vector3){ posX, newHeight + taille_terrain.y, posZ };
+            
+            // Générer une nouvelle vitesse de chute aléatoire
+            p.velocite.y = -1.0f * (frand() * 0.50f + 0.2f); // Vitesse minimale de 0.2
+        }
+        
+        Color finalColor = p.color;
+        
+        // Dessine manuellement
+        rlBegin(RL_QUADS);
+            rlColor4ub(p.color.r, p.color.g, p.color.b, p.color.a);
+            rlVertex3f(topLeft.x, topLeft.y, topLeft.z);
+            rlVertex3f(topRight.x, topRight.y, topRight.z);
+            rlVertex3f(bottomRight.x, bottomRight.y, bottomRight.z);
+            rlVertex3f(bottomLeft.x, bottomLeft.y, bottomLeft.z);
+        rlEnd();
+    } else {
+        // Si il ne pleut pas, rendre les gouttes invisibles
+        rlBegin(RL_QUADS);
+            rlColor4ub(p.color.r, p.color.g, p.color.b, 0);
+            rlVertex3f(topLeft.x, topLeft.y, topLeft.z);
+            rlVertex3f(topRight.x, topRight.y, topRight.z);
+            rlVertex3f(bottomRight.x, bottomRight.y, bottomRight.z);
+            rlVertex3f(bottomLeft.x, bottomLeft.y, bottomLeft.z);
+        rlEnd();
+    }
+}
+
+//pour gerer le temps de la pluie
+double start_time = 0;
+bool chrono_lance = false;
+void lancer_chrono(double &start_time){
+    start_time = GetTime();
+    chrono_lance = true;
+}
+
+bool is_time_expired(double time_limit, double start_time) {
+    double current_time = GetTime();
+    double elapsed = current_time - start_time;
+    double adjusted_time_limit = time_limit / simulationSpeed;
+    
+    if (elapsed >= adjusted_time_limit) {
+        //faut le stoper le chrono ici
+        chrono_lance = false;
+        return true;
+    }else{
+        return false;
+    }
+}
+//particules d'herbe
+#define MAX_GRASS 10000
+#define PENTE_SEUIL 0.20f //valeur de la pente max pour l'herbe
+
+typedef struct GrassQuad {
+    Vector3 position;
+    float rotationX;      // Rotation autour de l'axe X (en radians)
+    float rotationY;      // Rotation autour de l'axe Y (en radians)
+    Vector2 size;         // Largeur / Hauteur du quad
+    Color color;
+} GrassQuad;
+
+GrassQuad grass[MAX_GRASS];
 
 // Génère les particules
 void InitGrassParticles(Vector3 taille_terrain, Image image_sol) {
     for (int i = 0; i < MAX_GRASS; i++) {
-        // Distributes grass evenly across the terrain
+        //pour faire apparaitre l'herbe partout
         float posX = frand() * taille_terrain.x - taille_terrain.x / 2;
         float posZ = frand() * taille_terrain.z - taille_terrain.z / 2;
         
-        // Add small random offset for natural distribution
+        //petit décalage random pour une distrib plus naturelle
         float offsetX = random_flottant(-0.1f, 0.1f);
         float offsetZ = random_flottant(-0.1f, 0.1f);
         posX += offsetX;
@@ -89,30 +233,30 @@ void InitGrassParticles(Vector3 taille_terrain, Image image_sol) {
         //recup la hauteur du terrain
         float height = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ }, image_sol, taille_terrain);
         float seuil_verification_pente = 0.2f; //seuil pour vérifier la pente
-// --- Calcul de la pente --- //
-float heightLeft  = GetHeightFromTerrain((Vector3){ posX - seuil_verification_pente, 0.0f, posZ }, image_sol, taille_terrain);
-float heightRight = GetHeightFromTerrain((Vector3){ posX + seuil_verification_pente, 0.0f, posZ }, image_sol, taille_terrain);
-float heightUp    = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - seuil_verification_pente }, image_sol, taille_terrain);
-float heightDown  = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + seuil_verification_pente }, image_sol, taille_terrain);
+        // --- Calcul de la pente --- //
+        float heightLeft  = GetHeightFromTerrain((Vector3){ posX - seuil_verification_pente, 0.0f, posZ }, image_sol, taille_terrain);
+        float heightRight = GetHeightFromTerrain((Vector3){ posX + seuil_verification_pente, 0.0f, posZ }, image_sol, taille_terrain);
+        float heightUp    = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - seuil_verification_pente }, image_sol, taille_terrain);
+        float heightDown  = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + seuil_verification_pente }, image_sol, taille_terrain);
 
-float deltaX = fabsf(heightLeft - heightRight);
-float deltaZ = fabsf(heightUp - heightDown);
-float slope = sqrtf((deltaX * deltaX + deltaZ * deltaZ) / 2.0f);
+        float deltaX = fabsf(heightLeft - heightRight);
+        float deltaZ = fabsf(heightUp - heightDown);
+        float slope = sqrtf((deltaX * deltaX + deltaZ * deltaZ) / 2.0f);
 
-// Si la pente dépasse un seuil, on saute ce quad
-const float SLOPE_THRESHOLD = PENTE_SEUIL; // Ajuste selon la tolérance voulue
-if (slope > SLOPE_THRESHOLD) {
-    i--; // Refaire ce quad
-    continue;
-}
+        // Si la pente dépasse un seuil, on saute ce quad
+        const float SLOPE_THRESHOLD = PENTE_SEUIL;
+        if (slope > SLOPE_THRESHOLD) {
+            i--; // Refaire ce quad
+            continue;
+        }
 
-        // Set the grass position with the calculated height
+        //on set la position de l'herbe avec la hauteur calculée
         grass[i].size = (Vector2){0.01f + frand() * 0.02f, 0.04f + frand() * 0.03f};
         grass[i].position = (Vector3){ posX, height+grass[i].size.y, posZ };
         grass[i].rotationY = frand() * PI * 2.0f;
         grass[i].rotationX = random_flottant(-0.2f, 0.2f);
         //grass[i].color = GREEN;
-        float teinte = random_flottant(0.8f, 1.0f);
+        float teinte = random_flottant(0.5f, 1.0f);
         grass[i].color = (Color){
             (unsigned char)(34 * teinte),
             (unsigned char)(139 * teinte),
@@ -268,6 +412,7 @@ void DrawGrassQuad(GrassQuad g, Color baseColor, bool useTerrainColor, Image ter
         //unsigned char r = (unsigned char)Clamp(grassBaseColor.r + blendColor.r * 0.5f, 0, 255);
         //unsigned char v = (unsigned char)Clamp(grassBaseColor.g + blendColor.g * 0.5f, 0, 255);
         //unsigned char b = (unsigned char)Clamp(grassBaseColor.b + blendColor.b * 0.5f, 0, 255);
+        //test couleur
         
         rlColor4ub(r, v, b, 255);
         rlVertex3f(topLeft.x, topLeft.y, topLeft.z);
@@ -449,7 +594,7 @@ bool is_plant_morte(const std::string& nom, const std::vector<Plante>& plantes_m
 }
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
-void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, std::vector<Plante> plantes_mortes, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante){
+void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, std::vector<Plante> plantes_mortes, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante, float delta){
     if(is_plant_morte(cellule->plante.nom, plantes_mortes) || cellule->plante.nom == "Vide"){//si la plante est morte
         if(cellule->plante.age >= cellule->plante.age_max){//si la plante est morte depuis trop longtemps
             Plante bestPlante = vide;
@@ -512,12 +657,12 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             return;
         }
         else{
-            cellule->plante.age++;//bug ça incrémente pas l'age de la plante morte TODO
+            cellule->plante.age += delta;//bug ça incrémente pas l'age de la plante morte TODO
             return;
         }
     }
     else{//si la plante n'est pas morte
-        cellule->plante.age++;
+        cellule->plante.age += delta;
         if (cellule->plante.age >= cellule->plante.age_max) {
             cellule->plante.age = 0;
             float taille_actuelle = cellule->plante.taille;
@@ -599,7 +744,14 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                     
                     // Augmenter la taille de la plante
                     if (cellule->plante.taille < cellule->plante.taille_max) {
-                        cellule->plante.taille *= 1.01f;
+                        //cellule->plante.taille *= 1.01f;
+                        // Utiliser un facteur de croissance qui dépend du temps écoulé
+                        float growthFactor = 1.0f + (0.01f * delta);
+                        cellule->plante.taille *= growthFactor;                
+                        // S'assurer que la taille ne dépasse pas le maximum
+                        if (cellule->plante.taille > cellule->plante.taille_max) {
+                            cellule->plante.taille = cellule->plante.taille_max;
+                        }
                     }
                     return;
                 }
@@ -1052,7 +1204,7 @@ int main(void) {
     // Boucle principale
     float windStrength = 0.7f;//force du vent
     float windSpeed = 1.0f;//vitesse du vent  
-    
+    float delta = 0.0f;
     while (!WindowShouldClose()) {
         switch (currentScreen)
         {
@@ -1064,7 +1216,7 @@ int main(void) {
                         case 0: {
                                 //BeginDrawing();
                                     //choix du terrain qu'on veut
-                                    ClearBackground(RAYWHITE);
+                                    ClearBackground(BLACK);//TODO changer en raywhite
                                     DrawText("Choix du terrain", GetScreenWidth() / 2 - MeasureText("Choix du terrain", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
                                     if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2 - 100, 200, 30 }, "Terrain 1")) {
                                         image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
@@ -1204,7 +1356,7 @@ int main(void) {
                 //}
                         case 2: {
                             InitGrassParticles( taille_terrain, image_sol);
-    
+                            InitPluieParticules(taille_terrain, image_sol);
                             
                                 loadingStage++;
                         } break;
@@ -1223,7 +1375,8 @@ int main(void) {
                 int loadingPercentage = (loadingStage * 100) / 5; // 5 étapes au total
                 if (loadingStage > 1){
                     //BeginDrawing();
-                    ClearBackground(RAYWHITE);
+                    //ClearBackground(RAYWHITE);
+                    ClearBackground(BLACK);//TODO changer en raywhite
                     DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
                     DrawText(TextFormat("%d%%", loadingPercentage), GetScreenWidth() / 2 - MeasureText("100%", 20) / 2, GetScreenHeight() / 2, 20, RAYWHITE);
                     DrawText(TextFormat("Étape %d/5", loadingStage + 1), GetScreenWidth() / 2 - MeasureText("Étape 5/5", 20) / 2, GetScreenHeight() / 2 + 30, 20, DARKGRAY);
@@ -1361,10 +1514,10 @@ int main(void) {
             //hum_modifieur = get_biome_humidite(cherche_la_biome_actuelle(les_biome));
             cloudThreshold = get_biome_densite_nuage(cherche_le_biome_actuelle(les_biome));
 
-            float dt = GetFrameTime();
+            float delta = GetFrameTime() * simulationSpeed;
 
             static float accumulatedTime = 0.0f;
-            accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
+            accumulatedTime += delta * 0.5f; // Contrôle la vitesse d'animation des nuages
             float timeValue = accumulatedTime;
 
             //const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
@@ -1377,11 +1530,11 @@ int main(void) {
 
                 // Déplacer le nuage
                 for (size_t i = 0; i < nuage.positions.size(); i++) {
-                    nuage.positions[i].x += dt * nuage.vitesseDefile;
+                    nuage.positions[i].x += delta * nuage.vitesseDefile;
                 }
 
                 // Mettre à jour la distance parcourue
-                distanceParcourue += dt * nuage.vitesseDefile;
+                distanceParcourue += delta * nuage.vitesseDefile;
 
                 // Vérifier si le nuage a parcouru sa propre largeur
                 if (distanceParcourue >= distanceDeReset) {
@@ -1501,7 +1654,7 @@ int main(void) {
             // Mise à jour des cellules
             for (int x = 0; x < GRID_SIZE; x++) {
                 for (int z = 0; z < GRID_SIZE; z++) {
-                    verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante);
+                    verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
                 }
             }
 
@@ -1629,7 +1782,7 @@ int main(void) {
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
 
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
-            time += dt;  // Incrémenter le temps
+            time += delta;  // Incrémenter le temps
 
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
 
@@ -1653,7 +1806,8 @@ int main(void) {
         Matrix lightView;
         Matrix lightProj;
         BeginTextureMode(shadowMap);
-        ClearBackground(SKYBLUE);
+        //ClearBackground(SKYBLUE);
+        //ClearBackground(BLACK);//TODO changer en SKYBLUE
 
         BeginMode3D(lightCam);
             lightView = rlGetMatrixModelview();
@@ -1723,7 +1877,8 @@ int main(void) {
         EndTextureMode();
         Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
 
-        ClearBackground(SKYBLUE);
+//        ClearBackground(SKYBLUE);
+        ClearBackground(BLACK);//TODO changer en SKYBLUE
 
         SetShaderValueMatrix(shadowShader, lightVPLoc, lightViewProj);
         
@@ -1746,6 +1901,11 @@ int main(void) {
         for (int i = 0; i < MAX_GRASS; i++) {
             DrawGrassQuad(grass[i], grassColor, useTerrainColorForGrass, terrainColorImage, taille_terrain);
         }
+
+        for (int i = 0; i < GOUTE_PLUIE; i++){
+            DrawPluieQuad(la_pluie[i], image_sol, taille_terrain, pleut, delta);
+        }
+
         isGrass = 2;
         SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
         dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
@@ -1866,7 +2026,38 @@ int main(void) {
         */
         // Pour changer la direction de la lumière
         GuiSliderBar((Rectangle){ 100, 100, 300, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
+        GuiSliderBar((Rectangle){ 50, 50, 300, 200 }, "frequence pluie",TextFormat("%.0f:00",frequence_pluie), &frequence_pluie, 0.0f, 100.0f);
+        GuiSliderBar((Rectangle){ 100, 480, 200, 20 }, "Simulation Speed", TextFormat("%.1fx", simulationSpeed), &simulationSpeed, 0.1f, 10.0f);
+        
 
+        static float accumTime = 0.0f;
+
+        if(chrono_lance == true){
+            accumTime += delta;
+            pleut = true;
+            if(is_time_expired(1.0f, start_time)){
+                printf("temps expiré\n");
+                pleut = false;
+                random_pluie = 0.0f;
+                chrono_lance = false;
+                accumTime = 0.0f;
+            }
+        }else{
+            accumTime += delta;
+            //if(accumTime >= 0.5f){
+                random_pluie = GetRandomValue(0, 100);
+                printf("random pluie : %f\n", random_pluie);
+                accumTime = 0.0f;
+                if (random_pluie <= frequence_pluie){
+                    printf("on lance le chrono\n");
+                    lancer_chrono(start_time);
+                    pleut = true;
+                }else{
+                    pleut = false;
+                //}
+            }
+        }
+        
         // Affichage de l'heure
         DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 20, 20, DARKGRAY);
             } break;
