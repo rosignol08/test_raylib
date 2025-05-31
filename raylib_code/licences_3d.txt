@@ -106,3 +106,10 @@ void fragment() {
     // Couleur de base de l'herbe avec ombrage basé sur l'intensité lumineuse
 	
 }
+
+
+### licences sons
+
+effet sonore pluie 
+CALMING RAIN by Liecio
+https://pixabay.com/sound-effects/calming-rain-257596/

@@ -1138,6 +1138,13 @@ int main(void) {
     Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
     Plante erable_mort("Erable_mort", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable, couleur);
     //Plante chene_mort("chene_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_chene, couleur);
+    Plante hetre("Hetre", 3, 100, 70, 80, 10, 15, 1000, 1500, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_hetre, couleur);
+    Plante hetre_mort("Hetre_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre, couleur);
+    //Plante acacia("Acacia", 4, 100, 70, 80, 10, 15, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_acacia, couleur);
+    Plante chene("Chene", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
+    Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
+
+
     Plante vide("Vide", 10, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
     std::vector<Plante> plantes = {bouleau1, bouleau2, erable};//pour les plantes vivantes
