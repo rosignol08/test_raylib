@@ -850,19 +850,20 @@ int main(void) {
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
     
     //pour la pluie
-    Shader postProcessShader;
-    RenderTexture2D target;
-    float rainIntensity = 0.5f; // Valeur entre 0.0 et 1.0
-    postProcessShader = LoadShader("ressources/custom_shader/glsl330/post_pro.vs", 
-                              "ressources/custom_shader/glsl330/post_pro.fs");
-    target = LoadRenderTexture(screenWidth, screenHeight);
+    //Shader postProcessShader;
+    //RenderTexture2D target;
+    //float rainIntensity = 0.5f; // Valeur entre 0.0 et 1.0
+    //postProcessShader = LoadShader("ressources/custom_shader/glsl330/post_pro.vs", 
+    //                          "ressources/custom_shader/glsl330/post_pro.fs");
+    //target = LoadRenderTexture(screenWidth, screenHeight);
 
     //def des uniformes du shader
-    int pluie_resolutionLoc = GetShaderLocation(postProcessShader, "resolution");
-    int pluie_timeLoc = GetShaderLocation(postProcessShader, "time");
-    int pluie_rainEffectLoc = GetShaderLocation(postProcessShader, "rainEffect");
-    int pluie_rainIntensityLoc = GetShaderLocation(postProcessShader, "rainIntensity");
-    int pluie_texture1Loc = GetShaderLocation(postProcessShader, "texture1");
+    //int pluie_resolutionLoc = GetShaderLocation(postProcessShader, "resolution");
+    //int pluie_timeLoc = GetShaderLocation(postProcessShader, "time");
+    //int pluie_rainEffectLoc = GetShaderLocation(postProcessShader, "rainEffect");
+    //int pluie_rainIntensityLoc = GetShaderLocation(postProcessShader, "rainIntensity");
+    //int pluie_texture0Loc = GetShaderLocation(postProcessShader, "texture0");
+    //int pluie_texture1Loc = GetShaderLocation(postProcessShader, "texture1");
 
     //on donne la résolution au shader
     Vector2 resolution = { (float)screenWidth, (float)screenHeight };       
@@ -895,7 +896,7 @@ int main(void) {
 
     //init bruit de perlin
     Image noiseImage = GenImagePerlinNoise(1024, 1024, 0, 0, 100.0f);
-    Texture2D noiseTexture = LoadTextureFromImage(noiseImage);
+    Texture2D noiseTexturee = LoadTextureFromImage(noiseImage);
     UnloadImage(noiseImage);
     
     // Valeurs initiales
@@ -1837,7 +1838,7 @@ int main(void) {
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "noiseScale"), &noiseScale, SHADER_UNIFORM_FLOAT);
-            SetShaderValueTexture(herbe_shader, GetShaderLocation(herbe_shader, "noiseTexture"), noiseTexture);
+            //SetShaderValueTexture(herbe_shader, GetShaderLocation(herbe_shader, "noiseTexture"), noiseTexture);
             } break;
             default: break;
         }
@@ -1850,7 +1851,7 @@ int main(void) {
                 }break;
                 case 1:
                 {
-                    BeginTextureMode(target);
+                    //BeginTextureMode(target);
                         //ClearBackground(BLACK);
                         //on dessine les ombres ici
                         Matrix lightView;
@@ -1871,7 +1872,7 @@ int main(void) {
                                 SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
                                 SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
                                 SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
-                                SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
+                                //SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
                                 SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
                                 SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
                                 SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
@@ -1936,7 +1937,7 @@ int main(void) {
                                 SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
                                 SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
                                 SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
-                                SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
+                                //SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
                                 SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
                                 SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
                                 SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
@@ -1961,33 +1962,28 @@ int main(void) {
 
 
 // Mise à jour des uniformes du shader
-float currentTime = (float)GetTime();
-SetShaderValue(postProcessShader, pluie_timeLoc, &currentTime, SHADER_UNIFORM_FLOAT);
-int rainEffectEnabled = 1;//pleut ? 1 : 0;
-SetShaderValue(postProcessShader, pluie_rainEffectLoc, &rainEffectEnabled, SHADER_UNIFORM_INT);
-SetShaderValue(postProcessShader, pluie_rainIntensityLoc, &rainIntensity, SHADER_UNIFORM_FLOAT);
-SetShaderValue(postProcessShader, pluie_resolutionLoc, &resolution, SHADER_UNIFORM_VEC2);
-Texture2D noiseTexture = LoadTextureFromImage(LoadImage("ressources/br.png")); // Assurez-vous que le chemin est correct
-SetShaderValueTexture(postProcessShader, pluie_texture1Loc, noiseTexture);
+//float currentTime = (float)GetTime();
+//SetShaderValue(postProcessShader, pluie_timeLoc, &currentTime, SHADER_UNIFORM_FLOAT);
+//int rainEffectEnabled = 1;//pleut ? 1 : 0;
+//SetShaderValue(postProcessShader, pluie_rainEffectLoc, &rainEffectEnabled, SHADER_UNIFORM_INT);
+//SetShaderValue(postProcessShader, pluie_rainIntensityLoc, &rainIntensity, SHADER_UNIFORM_FLOAT);
+//SetShaderValue(postProcessShader, pluie_resolutionLoc, &resolution, SHADER_UNIFORM_VEC2);
+////Texture2D noiseTexture = LoadTextureFromImage(LoadImage("ressources/br.png")); // Assurez-vous que le chemin est correct
+//SetShaderValueTexture(postProcessShader, pluie_texture1Loc, target.texture);
+//SetShaderValueTexture(postProcessShader, pluie_texture0Loc, target.texture);
 
-// Ajoutez aussi un contrôle pour l'intensité de la pluie dans l'interface
-if (pleut) {
-    rainIntensity = Clamp(frequence_pluie / 100.0f, 0.1f, 1.0f);
-}
 // Rendu final avec le shader de post-processing
 BeginDrawing();
 //ClearBackground(BLACK);
 
 // Dessiner la texture avec le shader de post-processing
-BeginShaderMode(postProcessShader);
-DrawTextureRec(target.texture, 
-              (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height }, 
-              (Vector2){ 0, 0 }, 
-              WHITE);
-EndShaderMode();
+//BeginShaderMode(postProcessShader);
+//DrawTextureRec(target.texture, 
+//              (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height }, 
+//              (Vector2){ 0, 0 }, 
+//              WHITE);
+//EndShaderMode();
 
-printf("Target texture: id=%u, width=%d, height=%d\n", 
-       target.texture.id, target.texture.width, target.texture.height);
         //DrawGrid(20, 1.0f);
         
         // Ajouter une légende pour le mode température
@@ -2127,8 +2123,8 @@ printf("Target texture: id=%u, width=%d, height=%d\n",
     UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
     // Dans la section de nettoyage (juste avant CloseWindow())
-    UnloadShader(postProcessShader);
-    UnloadRenderTexture(target);
+    //UnloadShader(postProcessShader);
+    //UnloadRenderTexture(target);
 
     // Clear the memory of other resources
     printf("model herbe unload\n");

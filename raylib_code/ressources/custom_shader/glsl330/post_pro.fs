@@ -184,12 +184,26 @@ uniform float rainIntensity; // Intensité de la pluie (0.0 - 1.0)
 uniform vec2 resolution;      // Résolution de l'écran
 uniform sampler2D texture1; //texture de bruit
 
+vec4 simpleBlur(sampler2D tex, vec2 uv, float intensity) {
+    vec4 color = vec4(0.0);
+    float blurSize = intensity * 0.005; // Ajustez cette valeur
+    
+    // Échantillonnage en croix (plus rapide)
+    color += texture(tex, uv + vec2(-blurSize, 0.0));
+    color += texture(tex, uv + vec2(blurSize, 0.0));
+    color += texture(tex, uv + vec2(0.0, -blurSize));
+    color += texture(tex, uv + vec2(0.0, blurSize));
+    color += texture(tex, uv) * 2.0; // Centre avec plus de poids
+    
+    return color / 6.0;
+}
+
 void main() {
     vec2 u = fragTexCoord,
          //n = vec2(random(u * 0.1), random(u * 0.1 + vec2(1.0)));  // Displacement
          n = texture(texture1, u * .1).rg; 
     
-    vec4 f = textureLod(texture1, u, 2.5);//textureLod(texture0, u, 2.5);
+    vec4 f = textureLod(texture0, u, 2.5);//textureLod(texture0, u, 2.5);
     int rainEffecte = 1;
     // Check if rain effect is enabled
     if (rainEffecte == 1) {
@@ -201,7 +215,8 @@ void main() {
             
             // Current drop properties. Coordinates are rounded to ensure a
             // consistent value among the fragment of a given drop.
-            vec4 d = texture(texture1, round(u * x - 0.25) / x);
+            //vec4 d = texture(texture1, round(u * x - 0.25) / x);
+            vec4 d = simpleBlur(texture1, round(u * x - 0.25) / x, 2.0);
             
             // Drop shape and fading
             float t = (s.x+s.y) * max(0.0, 1.0 - fract(time * (d.b + 0.1) + d.g) * 2.0);
@@ -215,7 +230,7 @@ void main() {
                 
                 // Poor man's refraction (no visual need to do more)
                 //f = texture(texture0, u - v.xy * 0.3 * rainIntensity);
-                f = texture(texture0, u - v.xy * 0.6 * rainIntensity);
+                f = simpleBlur(texture1, round(u * x - 0.25) / x, 8.0);//texture(texture1, u - v.xy * 0.6 * rainIntensity);
 
             }
         }
