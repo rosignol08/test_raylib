@@ -1300,8 +1300,31 @@ int main(void) {
     Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
     // FORET TROPICALE HUMIDE
     // Plantes tropicales humides 
+    Plante jungle1("Jungle1", 5, 100, 80, 90, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
+    Plante jungle2("Jungle2", 6, 100, 80, 90, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2, couleur);
+    Plante jungle3("Jungle3", 7, 100, 80, 90, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
+    Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
+    Plante jungle_mort2("Jungle_mort2", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2, couleur);
+    Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
+    // FORET TROPICALE SECHE
+    Plante acacia("Acacia", 8, 100, 40, 70, 25, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_acacia, couleur);
+    Plante acacia_mort("Acacia_mort", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia, couleur);
+    Plante acacia_tree("Acacia_tree", 9, 100, 40, 70, 25, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_acacia_tree, couleur);
+    Plante accacia2("Accacia2", 10, 100, 40, 70, 25, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_accacia2, couleur);
+    Plante accacia2_mort("Accacia2_mort", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2, couleur);
+    // FORET MEDITERANEENNE
+    Plante cypr("Cypr", 11, 100, 60, 80, 20, 40, 300, 800, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_cypr, couleur);
+    Plante cypr_mort("Cypr_mort", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr, couleur);
+    Plante pin("Pin", 12, 100, 60, 80, 20, 40, 300, 800, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_pin, couleur);
+    Plante pin_mort("Pin_mort", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_pin, couleur);
+    // FORET BOREAL
+    Plante sapin_boreal("Sapin_boreal", 13, 100, 50, 70, -10, 10, 200, 600, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal, couleur);
+    Plante sapin_boreal_mort("Sapin_boreal_mort", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal, couleur);
+    Plante sapin1_boreal("Sapin1_boreal", 14, 100, 50, 70, -10, 10, 200, 600, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal, couleur);
+    Plante sapin1_boreal_mort("Sapin1_boreal_mort", 15, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal, couleur);
 
-    Plante vide("Vide", 10, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
+
+    Plante vide("Vide", 16, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
     std::vector<Plante> plantes = {bouleau1, bouleau2, erable, hetre, chene};//pour les plantes vivantes
     std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort, hetre_mort, chene_mort};//pour les plantes mortes
