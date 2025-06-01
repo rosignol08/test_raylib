@@ -15,6 +15,7 @@ using namespace std;
 //- couleur: couleur associée au biome
 //- densite_nuage: densité de nuages dans le biome
 //- biome_actuelle: booléen indiquant si le biome est actuellement actif
+//- frequence_pluie: fréquence de pluie dans le biome (en pourcentage)
 struct Biome {
     public:
         string nom;

@@ -62,7 +62,7 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
 //eau
 #define GOUTE_PLUIE 1000 //nombre de gouttes de pluie
 bool pleut = false;
-float frequence_pluie = 50.0f;
+float frequence_pluie = 0.0f;
 float random_pluie = 1.0f;
 Music musique_pluie;
 bool musique_pluie_on = false;
@@ -1180,18 +1180,22 @@ int main(void) {
     pluviometrie_min: pluviométrie minimale du biome (en mm)
     pluviometrie_max: pluviométrie maximale du biome (en mm)
     */
-    Biome biome_base("Base", 0, 0, 0, 0, 0, 0, Color{255, 255, 255, 255}, 1.0f, true, 5.0f); // Un biome de base pour le début du programme
+    Biome biome_base("Base", 0, 0, 0, 0, 0, 0, Color{255, 255, 255, 255}, 1.0f, true, 0.0f); // Un biome de base pour le début du programme
     //forets temperee 5°C à 25°C 60 à 80 % 500 à 1 500 mm
-    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 141, 34, 255}, 1.0f, false, 30.f);//on doit en metre au moin une sur true
+    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 255, 204, 255}, 1.0f, false, 30.0f);//on doit en metre au moin une sur true
     
     //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
-    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{0, 161, 231, 255}, 1.0f, false, 80.f);
+    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{102, 255, 153, 255}, 1.0f, false, 80.0f);
     
     //forets tropicale seche 25°C à 35°C 40 à 70 % 1 000 à 2 000 mm
-    Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{255, 255, 255, 255}, 1.01f, false, 0.5f);
-
-    //biome biome_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
-    std::vector<Biome> les_biome = {biome_base, biome_tempere, biome_tropic_humide, biome_tropic_sec};
+    Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{204, 255, 204, 255}, 0.01f, false, 25.0f);
+    
+    //foret boreale -10°C à 10°C 50 à 70 % 200 à 600 mm
+    Biome biome_boreale("Boreale", -10 , 10, 50, 70, 200, 600, Color{102, 204, 255, 255}, 1.0f, false, 20.0f);
+    
+    //biome mediteraneen 20°C à 40°C 60 à 80 % 300 à 800 mm
+    Biome biome_mediteraneen("Mediteraneen", 20, 40, 60, 80, 300, 800, Color{255, 255, 153, 255}, 1.0f, false, 15.0f);
+    std::vector<Biome> les_biome = {biome_base, biome_tempere, biome_tropic_humide, biome_tropic_sec, biome_boreale, biome_mediteraneen};
     // Initialisation de la grille
     /*Vector3 position;
     Model model;
@@ -1213,11 +1217,6 @@ int main(void) {
     //DisableCursor();// Limit cursor to relative movement inside the window
     int frameCounter = 0;
     SetTargetFPS(60);
-    Mesh sphere_test = GenMeshSphere(1.0f, 16, 16);
-    Material material_test = LoadMaterialDefault();
-    Texture2D argyleTexture = LoadTexture("ressources/argyle.png");
-    material_test.maps[MATERIAL_MAP_DIFFUSE].texture = argyleTexture;
-    material_test.shader = shadowShader;
     std::vector<Nuage> grandsNuages;
     float cloudThreshold = 0.6f; // Seuil initial
     float noiseScale = 10.0f; // Échelle initiale
@@ -1246,7 +1245,7 @@ int main(void) {
                         case 0: {
                                 
                                     //choix du terrain qu'on veut
-                                    ClearBackground(BLACK);//TODO changer en raywhite
+                                    ClearBackground(RAYWHITE);
                                     DrawText("Choix du terrain", GetScreenWidth() / 2 - MeasureText("Choix du terrain", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
                                     if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2 - 100, 200, 30 }, "Terrain 1")) {
                                         image_sol = LoadImage("ressources/heightmap.png");     // Load heightmap image (RAM)
@@ -1260,8 +1259,6 @@ int main(void) {
                                         choisis = true;
                                     }
                     
-
-                    
                                     if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2, 200, 30 }, "Terrain 3")) {
                                         image_sol = LoadImage("ressources/paris_hm.png");     // Load heightmap image (RAM)
                                         printf("paris_hm.png\n");
@@ -1270,21 +1267,17 @@ int main(void) {
                     
                                     if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2 + 50, 200, 30 }, "Terrain 4")) {
                                         image_sol = LoadImage("ressources/test.png");     // Load heightmap image (RAM)
-                                        printf("test.png\n");
                                         choisis = true;
                                     }
                                 //EndDrawing();
                                 if (choisis){
-                                printf("ont est ici");
                                 //image de la temperature
                                 temperatureMap = GenImageColor(GRID_SIZE, GRID_SIZE, WHITE);
                                 temperatureTexture = LoadTextureFromImage(temperatureMap);
                                 UnloadImage(temperatureMap);
-                                printf("ont a fini ici");   
                                 mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
                                 model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
                                 image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
-                                printf("fin chargement image texture sol\n");
                                 texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
                                 shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
                                 uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
@@ -1301,10 +1294,8 @@ int main(void) {
                                 model_sol.materials[0].maps[MATERIAL_MAP_NORMAL].texture = perlinNoiseTexture; // Set map normal texture
                                 model_sol.materials[0].maps[MATERIAL_MAP_ROUGHNESS].texture = perlinNoiseTexture; // Set map roughness texture
                                 model_sol.materials[0].maps[MATERIAL_MAP_EMISSION].texture = perlinNoiseTexture; // Set map emission texture
-                                //model_sol.materials[0].shader = shader_taille; // Assign the shader to the model ça sert à rien
                                 // Set the shader for the model
                                 model_sol.materials[0].shader = shadowShader;
-                                printf("ont est ici");
                                 loadingStage++;
                             }
                         }break;
@@ -1381,7 +1372,7 @@ int main(void) {
                         }break;        
                 ////ecrant de chargement  Copyright (c) 2021-2025 Ramon Santamaria (@raysan5)
                         case 2: {
-                            InitGrassParticles( taille_terrain, image_sol);
+                            InitGrassParticles(taille_terrain, image_sol);
                             InitPluieParticules(taille_terrain, image_sol);
                             
                                 loadingStage++;
@@ -1401,8 +1392,7 @@ int main(void) {
                 int loadingPercentage = (loadingStage * 100) / 5; // 5 étapes au total
                 if (loadingStage > 1){
                     
-                    //ClearBackground(RAYWHITE);
-                    ClearBackground(BLACK);//TODO changer en raywhite
+                    ClearBackground(RAYWHITE);
                     DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
                     DrawText(TextFormat("%d%%", loadingPercentage), GetScreenWidth() / 2 - MeasureText("100%", 20) / 2, GetScreenHeight() / 2, 20, RAYWHITE);
                     DrawText(TextFormat("Étape %d/5", loadingStage + 1), GetScreenWidth() / 2 - MeasureText("Étape 5/5", 20) / 2, GetScreenHeight() / 2 + 30, 20, DARKGRAY);
@@ -1460,7 +1450,6 @@ int main(void) {
                         grille[x][z].pluviometrie += delta; // Modifier la pluviometrie de chaque case
 
                         //comme ça la pluviometrie reste dans la plage 0-100
-                        grille[x][z].pluviometrie = Clamp(grille[x][z].pluviometrie, 0, 100);
                     
                         if (grille[x][z].pluviometrie < minPluv) minPluv = grille[x][z].pluviometrie;
                         if (grille[x][z].pluviometrie > maxPluv) maxPluv = grille[x][z].pluviometrie;
@@ -1533,13 +1522,12 @@ int main(void) {
                 prev_pluv_min = pluviometrie_modifieur_min;
                 prev_pluv_max = pluviometrie_modifieur_max;
                 
-                printf("Biome changed: Temp range [%d, %d], Humidity range [%d, %d]\n", 
-                       temperature_modifieur_min, temperature_modifieur_max,
-                       humidite_modifieur_min, humidite_modifieur_max);
+                //printf("Biome changed: Temp range [%d, %d], Humidity range [%d, %d]\n", 
+                //       temperature_modifieur_min, temperature_modifieur_max,
+                //       humidite_modifieur_min, humidite_modifieur_max);
             }
             //hum_modifieur = get_biome_humidite(cherche_la_biome_actuelle(les_biome));
-            cloudThreshold = get_biome_densite_nuage(cherche_le_biome_actuelle(les_biome));
-            frequence_pluie = get_biome_frequence_pluie(cherche_le_biome_actuelle(les_biome));
+            
 
             float delta = GetFrameTime() * simulationSpeed;
                 if (pleut && !musique_pluie_on) {
@@ -1843,7 +1831,7 @@ int main(void) {
             default: break;
         }
         // Rendu final (vue normale)
-        //BeginDrawing();
+        BeginDrawing();
         switch(currentScreen)
             {
                 case 0:
@@ -1857,12 +1845,13 @@ int main(void) {
                         Matrix lightView;
                         Matrix lightProj;
                         BeginTextureMode(shadowMap);
-                            //ClearBackground(SKYBLUE);
+                            ClearBackground(SKYBLUE);
                             //ClearBackground(BLACK);//TODO changer en SKYBLUE
 
                             BeginMode3D(lightCam);
                                 lightView = rlGetMatrixModelview();
                                 lightProj = rlGetMatrixProjection();
+                                
                                 dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
                                 int isGrass = 1;
 
@@ -1957,8 +1946,7 @@ int main(void) {
                                //DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, lightColor);
 
                         EndMode3D();
-
-                    EndTextureMode();
+                    //EndTextureMode();
 
 
 // Mise à jour des uniformes du shader
@@ -1973,7 +1961,7 @@ int main(void) {
 //SetShaderValueTexture(postProcessShader, pluie_texture0Loc, target.texture);
 
 // Rendu final avec le shader de post-processing
-BeginDrawing();
+//BeginDrawing();
 //ClearBackground(BLACK);
 
 // Dessiner la texture avec le shader de post-processing
@@ -2008,6 +1996,7 @@ BeginDrawing();
         }
         DrawText(" d'objets 3D - Utilisez la souris pour naviguer", 10, 10, 20, DARKGRAY);
         DrawText("Maintenez le clic droit pour tourner la scène", 10, 25, 20, DARKGRAY);
+        
         if (GuiButton((Rectangle){ 100, 370, 200, 30 }, "Tempere")) {
             for (auto& biome : les_biome) {
                 biome.biome_actuelle = (biome.nom == "Tempere");
@@ -2025,12 +2014,19 @@ BeginDrawing();
                 biome.biome_actuelle = (biome.nom == "Tropic sec");
             }
         }
-        //GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
-        //GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
-        GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
-        GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
-        // Sliders for wind parameters
-        GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 4.0f);
+        
+        if (GuiButton((Rectangle){ 100, 490, 200, 30 }, "Boreale")) {
+            for (auto& biome : les_biome) {
+                biome.biome_actuelle = (biome.nom == "Boreale");
+            }
+        }
+
+        if (GuiButton((Rectangle){ 100, 530, 200, 30 }, "Mediteraneen")) {
+            for (auto& biome : les_biome) {
+                biome.biome_actuelle = (biome.nom == "Mediteraneen");
+            }
+        }
+        
         //GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f); //ca sert à rien
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
@@ -2050,24 +2046,42 @@ BeginDrawing();
             lastNoiseScale = noiseScale;
         }
         DrawFPS(10, 40);
-
+        // Display active biome information
+        DrawText(TextFormat("Active Biome: %s", cherche_le_biome_actuelle(les_biome).nom.c_str()), screenWidth/2 - 150, 50, 20, DARKGRAY);
+        // Detect biome changes to update rain frequency
+        static std::string lastActiveBiome = "";
+        std::string currentActiveBiome = cherche_le_biome_actuelle(les_biome).nom;
+        if (currentActiveBiome != lastActiveBiome) {
+            // Biome has changed, update rain frequency
+            frequence_pluie = cherche_le_biome_actuelle(les_biome).frequence_pluie;
+            lastActiveBiome = currentActiveBiome;
+            printf("Biome changed to %s, rain frequency set to %.2f\n", currentActiveBiome.c_str(), frequence_pluie);
+            
+        }
         
 
         /*
         l'ui pour controler les paramètres
         */
         // Pour changer la direction de la lumière
-        GuiSliderBar((Rectangle){ 100, 100, 300, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
-        GuiSliderBar((Rectangle){ 50, 50, 300, 20 }, "frequence pluie",TextFormat("%.0f:00",frequence_pluie), &frequence_pluie, 0.0f, 100.0f);
+        GuiSliderBar((Rectangle){ screenWidth/2 - 150, 100, 300, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
+        // Affichage de l'heure
+        DrawText(TextFormat("Time: %.0f:00", timeOfDay), screenWidth/2 - 320, 100, 20, DARKGRAY);
         GuiSliderBar((Rectangle){ 100, 80, 200, 20 }, "Simulation Speed", TextFormat("%.1fx", simulationSpeed), &simulationSpeed, 0.1f, 10.0f);
         
+        GuiSliderBar((Rectangle){ screenWidth-300, 150, 200, 50 }, "frequence pluie",TextFormat("%.0f:00",frequence_pluie), &frequence_pluie, 0.0f, 100.0f);
+        GuiSliderBar((Rectangle){ screenWidth-300, 200, 200, 50 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
+        GuiSliderBar((Rectangle){ screenWidth-300, 250, 200, 50 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
+        GuiSliderBar((Rectangle){ screenWidth-300, 300, 200, 50 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
+        //pour le vent
+        GuiSliderBar((Rectangle){ screenWidth-300, 350, 200, 50 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 4.0f);
 
         static float accumTime = 0.0f;
 
         if(chrono_lance == true){
             accumTime += delta;
             pleut = true;
-            if(is_time_expired(10.0f, start_time)){
+            if(is_time_expired(2.0f, start_time)){
                 printf("temps expiré\n");
                 pleut = false;
                 random_pluie = 0.0f;
@@ -2075,23 +2089,30 @@ BeginDrawing();
                 accumTime = 0.0f;
             }
         }else{
+            // Generate a random number every 0.5 seconds
             accumTime += delta;
-            //if(accumTime >= 0.5f){
+            //if (accumTime >= 0.5f) {
                 random_pluie = GetRandomValue(1, 100);
-                printf("random pluie : %f\n", random_pluie);
+                //printf("random pluie : %f\n", random_pluie);
                 accumTime = 0.0f;
+                
                 if (random_pluie <= frequence_pluie){
                     printf("on lance le chrono\n");
                     lancer_chrono(start_time);
                     pleut = true;
                 }else{
                     pleut = false;
-                //}
-            }
+                }
+            //}//if (random_pluie <= frequence_pluie){
+             //       printf("on lance le chrono\n");
+             //       lancer_chrono(start_time);
+             //       pleut = true;
+             //   }else{
+             //       pleut = false;
+            //}
         }
         
-        // Affichage de l'heure
-        DrawText(TextFormat("Time: %.0f:00", timeOfDay), 310, 20, 20, DARKGRAY);
+        
             } break;
         default: break;
         }
@@ -2112,12 +2133,6 @@ BeginDrawing();
     UnloadModel(model_mort_hetre);
     UnloadModel(model_chene);
     UnloadModel(model_mort_chene);
-    //UnloadModel(model_mort);
-    //UnloadModel(model_sapin);
-    //UnloadTexture(texture_sapin);
-    //UnloadModel(model_buisson_europe);
-    //UnloadTexture(texture_buisson_europe);
-    //UnloadModel(model_chene);
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
