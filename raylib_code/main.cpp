@@ -827,7 +827,7 @@ int main(void) {
 
     InitWindow(screenWidth, screenHeight, "raylib - Projet tutore");
     InitAudioDevice(); // pour la pluie et peut être d'autres sons
-    musique_pluie = LoadMusicStream("sounds/calming-rain.wav");
+    musique_pluie = LoadMusicStream("sounds/calming-rain.mp3");
     SetMusicVolume(musique_pluie, 0.5f);
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
     rlEnableColorBlend(); // Activer le blending
@@ -1545,15 +1545,38 @@ int main(void) {
                     musique_pluie_on = true;
                     printf("Son de pluie activé\n");
                 } else if (!pleut && musique_pluie_on) {
-        StopMusicStream(musique_pluie);
-        musique_pluie_on = false;
-        printf("Son de pluie désactivé\n");
+            StopMusicStream(musique_pluie);
+            musique_pluie_on = false;
+            printf("Son de pluie désactivé\n");
     }
 
     // Mettre à jour le flux audio
     if (musique_pluie_on) {
         UpdateMusicStream(musique_pluie);
+            // Calculer la distance entre la caméra et le centre du terrai
+        Vector3 centreTerrainPosition = {0.0f, 0.0f, 0.0f}; 
+        float distance = Vector3Distance(camera.position, centreTerrainPosition);
+    
+        // Définir les paramètres de l'effet de volume
+        float distanceMax = 50.0f;        
+        float distanceMin = 5.0f;         
+        float volumeMin = 0.1f;           
+        float volumeMax = 1.0f;           
+    
+        // Calculer le volume en fonction de la distance (interpolation linéaire)
+        float volume = volumeMax;
+    if (distance > distanceMin) {
+        // Normaliser la distance entre distanceMin et distanceMax
+        float t = Clamp((distance - distanceMin) / (distanceMax - distanceMin), 0.0f, 1.0f);
+        // Interpoler entre volumeMax et volumeMin
+        volume = volumeMax - t * (volumeMax - volumeMin);
     }
+    
+    // Appliquer le volume
+    SetMusicVolume(musique_pluie, volume);
+        
+    }
+    
 
             static float accumulatedTime = 0.0f;
             accumulatedTime += delta * 0.5f; // Contrôle la vitesse d'animation des nuages
