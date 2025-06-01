@@ -62,8 +62,10 @@ float GetHeightFromTerrain(Vector3 position, Image heightmap, Vector3 terrainSiz
 //eau
 #define GOUTE_PLUIE 1000 //nombre de gouttes de pluie
 bool pleut = false;
-float frequence_pluie = 0.0f;
+float frequence_pluie = 50.0f;
 float random_pluie = 1.0f;
+Music musique_pluie;
+bool musique_pluie_on = false;
 //ça serait cool si ça influence la pluviométrie genre on a X quantitée de pluie et plus on en a plus ça change le biome
 typedef struct PluieQuad {
     Vector3 position;
@@ -824,6 +826,9 @@ int main(void) {
     SetConfigFlags(FLAG_MSAA_4X_HINT); // Enable Multi Sampling Anti Aliasing 4x (if available)
 
     InitWindow(screenWidth, screenHeight, "raylib - Projet tutore");
+    InitAudioDevice(); // pour la pluie et peut être d'autres sons
+    musique_pluie = LoadMusicStream("sounds/calming-rain.wav");
+    SetMusicVolume(musique_pluie, 0.5f);
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
     rlEnableColorBlend(); // Activer le blending
     rlSetBlendMode(RL_BLEND_ALPHA);
@@ -1228,6 +1233,7 @@ int main(void) {
     float windStrength = 0.7f;//force du vent
     float windSpeed = 1.0f;//vitesse du vent  
     float delta = 0.0f;
+
     while (!WindowShouldClose()) {
         switch (currentScreen)
         {
@@ -1252,6 +1258,8 @@ int main(void) {
                                         printf("plaine_hm.png\n");
                                         choisis = true;
                                     }
+                    
+
                     
                                     if (GuiButton((Rectangle){ screenWidth / 2 - 100, screenHeight / 2, 200, 30 }, "Terrain 3")) {
                                         image_sol = LoadImage("ressources/paris_hm.png");     // Load heightmap image (RAM)
@@ -1327,13 +1335,13 @@ int main(void) {
                                     float heightRight = GetHeightFromTerrain((Vector3){ posX + 0.3f, 0.0f, posZ }, image_sol, taille_terrain);
                                     float heightUp = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ - 0.3f }, image_sol, taille_terrain);
                                     float heightDown = GetHeightFromTerrain((Vector3){ posX, 0.0f, posZ + 0.3f }, image_sol, taille_terrain);
-                                
+
                                     // Calcul des variations de hauteur
                                     float deltaLeft = fabs(height - heightLeft);
                                     float deltaRight = fabs(height - heightRight);
                                     float deltaUp = fabs(height - heightUp);
                                     float deltaDown = fabs(height - heightDown);
-                                
+
                                     // Calcul du taux de pente
                                     float penteX = (deltaLeft + deltaRight) / 2.0f;
                                     float penteZ = (deltaUp + deltaDown) / 2.0f;
@@ -1532,6 +1540,20 @@ int main(void) {
             cloudThreshold = get_biome_densite_nuage(cherche_le_biome_actuelle(les_biome));
 
             float delta = GetFrameTime() * simulationSpeed;
+                if (pleut && !musique_pluie_on) {
+                    PlayMusicStream(musique_pluie);
+                    musique_pluie_on = true;
+                    printf("Son de pluie activé\n");
+                } else if (!pleut && musique_pluie_on) {
+        StopMusicStream(musique_pluie);
+        musique_pluie_on = false;
+        printf("Son de pluie désactivé\n");
+    }
+
+    // Mettre à jour le flux audio
+    if (musique_pluie_on) {
+        UpdateMusicStream(musique_pluie);
+    }
 
             static float accumulatedTime = 0.0f;
             accumulatedTime += delta * 0.5f; // Contrôle la vitesse d'animation des nuages
@@ -2096,6 +2118,9 @@ printf("Target texture: id=%u, width=%d, height=%d\n",
     printf("image sol unload\n");
     UnloadImage(image_texture_sol);
     printf("image texture sol unload\n");
+    UnloadMusicStream(musique_pluie);
+    CloseAudioDevice();
+    printf("musique pluie unload\n");
     CloseWindow();
 
     return 0;
