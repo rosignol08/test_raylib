@@ -2053,7 +2053,7 @@ printf("Target texture: id=%u, width=%d, height=%d\n",
         if(chrono_lance == true){
             accumTime += delta;
             pleut = true;
-            if(is_time_expired(1.0f, start_time)){
+            if(is_time_expired(30.0f, start_time)){
                 printf("temps expiré\n");
                 pleut = false;
                 random_pluie = 0.0f;
