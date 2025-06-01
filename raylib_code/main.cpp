@@ -973,6 +973,33 @@ int main(void) {
     Model model_chene = LoadModel("models/foret_tempere/arb_oak/oaks_feuilles.glb");
     Model model_mort_chene = LoadModel("models/foret_tempere/arb_oak/oaks_mort.glb");
 
+    // Forêt tropicale humide
+    Model model_jungle1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_feuillage.glb");
+    Model model_jungle2 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_feuillage2.glb");
+    Model model_jungle3 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_feuillage3.glb");
+    Model model_mort_jungle1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_mort1.glb");
+    Model model_mort_jungle2 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_mort2.glb");
+    Model model_mort_jungle3 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_mort3.glb");
+
+    // Forêt tropicale sèche
+    Model model_acacia = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_feuillage1.glb");
+    Model model_mort_acacia = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_mort1.glb");
+    Model model_acacia_tree = LoadModel("models/foret_tropicale_seche/arb_accacia2/acacia_tree1.glb");
+    Model model_accacia2 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_feuillage2.glb");
+    Model model_mort_accacia2 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_mort2.glb");
+
+    // FORET MEDITERANEENNE
+    Model model_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_feuillage.glb");
+    Model model_mort_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_mort.glb");
+    Model model_pin = LoadModel("models/foret_mediteranee/arb_pin/pin_feuillage.glb");
+    Model model_mort_pin = LoadModel("models/foret_mediteranee/arb_pin/pin_mort.glb");
+
+    // FORET BOREAL
+    Model model_sapin_boreal = LoadModel("models/foret_boreal/arb_sapin/sapin_feuilles.glb");
+    Model model_mort_sapin_boreal = LoadModel("models/foret_boreal/arb_sapin/sapin_mort.glb");
+    Model model_sapin1_boreal = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_feuilles.glb");
+    Model model_mort_sapin1_boreal = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_mort.glb");
+
     //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
     //5 jungle1 jungle_feuillage
     //6 jungle2 jungle_feuillage2
@@ -1033,6 +1060,112 @@ int main(void) {
     {
         model_mort_chene.materials[i].shader = herbe_shader;
     }
+    model_jungle1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_jungle1.materialCount; i++)
+    {
+        model_jungle1.materials[i].shader = herbe_shader;
+    }
+    model_mort_jungle1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_jungle1.materialCount; i++)
+    {
+        model_mort_jungle1.materials[i].shader = herbe_shader;
+    }
+    model_jungle2.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_jungle2.materialCount; i++)
+    {
+        model_jungle2.materials[i].shader = herbe_shader;
+    }
+    model_mort_jungle2.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_jungle2.materialCount; i++)
+    {
+        model_mort_jungle2.materials[i].shader = herbe_shader;
+    }
+    model_jungle3.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_jungle3.materialCount; i++)
+    {
+        model_jungle3.materials[i].shader = herbe_shader;
+    }
+    model_mort_jungle3.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_jungle3.materialCount; i++)
+    {
+        model_mort_jungle3.materials[i].shader = herbe_shader;
+    }
+    model_acacia.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_acacia.materialCount; i++)
+    {
+        model_acacia.materials[i].shader = herbe_shader;
+    }
+    model_mort_acacia.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_acacia.materialCount; i++)
+    {
+        model_mort_acacia.materials[i].shader = herbe_shader;
+    }
+    model_acacia_tree.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_acacia_tree.materialCount; i++)
+    {
+        model_acacia_tree.materials[i].shader = herbe_shader;
+    }
+    model_accacia2.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_accacia2.materialCount; i++)
+    {
+        model_accacia2.materials[i].shader = herbe_shader;
+    }
+    model_mort_accacia2.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_accacia2.materialCount; i++)
+    {
+        model_mort_accacia2.materials[i].shader = herbe_shader;
+    }
+    model_acacia_tree.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_acacia_tree.materialCount; i++)
+    {
+        model_acacia_tree.materials[i].shader = herbe_shader;
+    }
+    model_cypr.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_cypr.materialCount; i++)
+    {
+        model_cypr.materials[i].shader = herbe_shader;
+    }
+    model_mort_cypr.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_cypr.materialCount; i++)
+    {
+        model_mort_cypr.materials[i].shader = herbe_shader;
+    }
+    model_pin.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_pin.materialCount; i++)
+    {
+        model_pin.materials[i].shader = herbe_shader;
+    }
+    model_mort_pin.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_pin.materialCount; i++)
+    {
+        model_mort_pin.materials[i].shader = herbe_shader;
+    }
+    model_sapin.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_sapin.materialCount; i++)
+    {
+        model_sapin.materials[i].shader = herbe_shader;
+    }
+    model_mort_sapin_boreal.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_sapin_boreal.materialCount; i++)
+    {
+        model_mort_sapin_boreal.materials[i].shader = herbe_shader;
+    }
+    model_sapin_boreal.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_sapin_boreal.materialCount; i++)
+    {
+        model_sapin_boreal.materials[i].shader = herbe_shader;
+    }
+    model_sapin1_boreal.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_sapin1_boreal.materialCount; i++)
+    {
+        model_sapin1_boreal.materials[i].shader = herbe_shader;
+    }
+    model_mort_sapin1_boreal.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_sapin1_boreal.materialCount; i++)
+    {
+        model_mort_sapin1_boreal.materials[i].shader = herbe_shader;
+    }
+
     //model_acacia.materials[0].shader = shadowShader;
     //for (int i = 0; i < model_acacia.materialCount; i++)
     //{
@@ -1145,7 +1278,7 @@ int main(void) {
     Color couleur = WHITE;
     int influence_temperature = GetRandomValue(-5, 5);
     int influence_humidite = GetRandomValue(-5, 5);
-
+    // FORET TEMPERE
     Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau1, couleur);
     influence_temperature = GetRandomValue(-5, 5);
     influence_humidite = GetRandomValue(-5, 5);
@@ -1165,7 +1298,8 @@ int main(void) {
     //Plante acacia("Acacia", 4, 100, 70, 80, 10, 15, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_acacia, couleur);
     Plante chene("Chene", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
     Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
-
+    // FORET TROPICALE HUMIDE
+    // Plantes tropicales humides 
 
     Plante vide("Vide", 10, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
