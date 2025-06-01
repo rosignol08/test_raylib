@@ -27,8 +27,9 @@ struct Biome {
         Color couleur;
         float densite_nuage;
         bool biome_actuelle = false;
-        Biome(string nom, int t_min, int t_max, int h_min, int h_max, int pluv_min, int pluv_max, Color couleur, float densite_nuage, bool biome_actuelle)
-            : nom(nom), temperature_min(t_min), temperature_max(t_max), humidite_min(h_min), humidite_max(h_max), pluviometrie_min(pluv_min),pluviometrie_max(pluv_max), couleur(couleur), densite_nuage(densite_nuage), biome_actuelle(biome_actuelle) {}
+        float frequence_pluie;
+        Biome(string nom, int t_min, int t_max, int h_min, int h_max, int pluv_min, int pluv_max, Color couleur, float densite_nuage, bool biome_actuelle, float frequence_pluie = 0.0f)
+            : nom(nom), temperature_min(t_min), temperature_max(t_max), humidite_min(h_min), humidite_max(h_max), pluviometrie_min(pluv_min),pluviometrie_max(pluv_max), couleur(couleur), densite_nuage(densite_nuage), biome_actuelle(biome_actuelle), frequence_pluie(frequence_pluie) {}
 };
 
 Biome ajoute_biome(vector<Biome>& liste_biome, Biome biome);
@@ -46,6 +47,7 @@ int get_biome_pluviometrie_max(Biome biome);
 
 Color get_biome_couleur(Biome biome);
 float get_biome_densite_nuage(Biome biome);
+float get_biome_frequence_pluie(Biome biome);
 /*
 les parametres defini par notre météo : 
 windStrength : à voir pour le rendre plus intererssant avec le shader de l'herbe pour qu'il aille vraiment plus vite

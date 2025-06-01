@@ -827,7 +827,7 @@ int main(void) {
 
     InitWindow(screenWidth, screenHeight, "raylib - Projet tutore");
     InitAudioDevice(); // pour la pluie et peut être d'autres sons
-    musique_pluie = LoadMusicStream("sounds/calming-rain.mp3");
+    musique_pluie = LoadMusicStream("sounds/calming-rain.mp3"); // raylib gère mieux le wav mais je sais pas pourquoi c'est plus lent à compiler
     SetMusicVolume(musique_pluie, 0.5f);
     rlDisableBackfaceCulling();//pour voir l'arriere des objets
     rlEnableColorBlend(); // Activer le blending
@@ -1179,15 +1179,15 @@ int main(void) {
     pluviometrie_min: pluviométrie minimale du biome (en mm)
     pluviometrie_max: pluviométrie maximale du biome (en mm)
     */
-    Biome biome_base("Base", 0, 0, 0, 0, 0, 0, Color{255, 255, 255, 255}, 1.0f, true); // Un biome de base pour le début du programme
+    Biome biome_base("Base", 0, 0, 0, 0, 0, 0, Color{255, 255, 255, 255}, 1.0f, true, 5.0f); // Un biome de base pour le début du programme
     //forets temperee 5°C à 25°C 60 à 80 % 500 à 1 500 mm
-    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 141, 34, 255}, 1.0f, false);//on doit en metre au moin une sur true
+    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 141, 34, 255}, 1.0f, false, 30.f);//on doit en metre au moin une sur true
     
     //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
-    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{0, 161, 231, 255}, 1.0f, false);
+    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{0, 161, 231, 255}, 1.0f, false, 80.f);
     
     //forets tropicale seche 25°C à 35°C 40 à 70 % 1 000 à 2 000 mm
-    Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{255, 255, 255, 255}, 1.01f, false);
+    Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{255, 255, 255, 255}, 1.01f, false, 0.5f);
 
     //biome biome_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
     std::vector<Biome> les_biome = {biome_base, biome_tempere, biome_tropic_humide, biome_tropic_sec};
@@ -1538,6 +1538,7 @@ int main(void) {
             }
             //hum_modifieur = get_biome_humidite(cherche_la_biome_actuelle(les_biome));
             cloudThreshold = get_biome_densite_nuage(cherche_le_biome_actuelle(les_biome));
+            frequence_pluie = get_biome_frequence_pluie(cherche_le_biome_actuelle(les_biome));
 
             float delta = GetFrameTime() * simulationSpeed;
                 if (pleut && !musique_pluie_on) {
@@ -1553,26 +1554,20 @@ int main(void) {
     // Mettre à jour le flux audio
     if (musique_pluie_on) {
         UpdateMusicStream(musique_pluie);
-            // Calculer la distance entre la caméra et le centre du terrai
         Vector3 centreTerrainPosition = {0.0f, 0.0f, 0.0f}; 
         float distance = Vector3Distance(camera.position, centreTerrainPosition);
     
-        // Définir les paramètres de l'effet de volume
         float distanceMax = 50.0f;        
         float distanceMin = 5.0f;         
         float volumeMin = 0.1f;           
-        float volumeMax = 1.0f;           
+        float volumeMax = 1.0f;        
     
-        // Calculer le volume en fonction de la distance (interpolation linéaire)
         float volume = volumeMax;
     if (distance > distanceMin) {
-        // Normaliser la distance entre distanceMin et distanceMax
         float t = Clamp((distance - distanceMin) / (distanceMax - distanceMin), 0.0f, 1.0f);
-        // Interpoler entre volumeMax et volumeMin
         volume = volumeMax - t * (volumeMax - volumeMin);
     }
     
-    // Appliquer le volume
     SetMusicVolume(musique_pluie, volume);
         
     }
@@ -2076,7 +2071,7 @@ printf("Target texture: id=%u, width=%d, height=%d\n",
         if(chrono_lance == true){
             accumTime += delta;
             pleut = true;
-            if(is_time_expired(30.0f, start_time)){
+            if(is_time_expired(10.0f, start_time)){
                 printf("temps expiré\n");
                 pleut = false;
                 random_pluie = 0.0f;

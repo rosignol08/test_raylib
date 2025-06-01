@@ -64,3 +64,7 @@ Color get_biome_couleur(Biome biome){
 float get_biome_densite_nuage(Biome biome){
     return biome.densite_nuage;
 }
+
+float get_biome_frequence_pluie(Biome biome) {
+    return biome.frequence_pluie;
+}
