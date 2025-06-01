@@ -183,32 +183,16 @@ uniform int rainEffect;      // Activer/désactiver l'effet de pluie
 uniform float rainIntensity; // Intensité de la pluie (0.0 - 1.0)
 uniform vec2 resolution;      // Résolution de l'écran
 uniform sampler2D texture1; //texture de bruit
-// Heartfelt - by Martijn Steinrucken aka BigWings - 2017
-// Email:countfrolic@gmail.com Twitter:@The_ArtOfCode
-// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
-// I revisited the rain effect I did for another shader. This one is better in multiple ways:
-// 1. The glass gets foggy.
-// 2. Drops cut trails in the fog on the glass.
-// 3. The amount of rain is adjustable (with Mouse.y)
-
-// To have full control over the rain, uncomment the HAS_HEART define 
-
-// A video of the effect can be found here:
-// https://www.youtube.com/watch?v=uiF5Tlw22PI&feature=youtu.be
-
-// Music - Alone In The Dark - Vadim Kiselev
-// https://soundcloud.com/ahmed-gado-1/sad-piano-alone-in-the-dark
-// Rain sounds:
-// https://soundcloud.com/elirtmusic/sleeping-sound-rain-and-thunder-1-hours
 void main() {
     vec2 u = fragTexCoord,
-         n = vec2(random(u * 0.1), random(u * 0.1 + vec2(1.0)));  // Displacement
+         //n = vec2(random(u * 0.1), random(u * 0.1 + vec2(1.0)));  // Displacement
+         n = texture(texture1, u * .1).rg; 
     
-    vec4 f = textureLod(texture0, u, 2.5);
-    
+    vec4 f = textureLod(texture1, u, 2.5);//textureLod(texture0, u, 2.5);
+    int rainEffecte = 1;
     // Check if rain effect is enabled
-    if (rainEffect == 1) {
+    if (rainEffecte == 1) {
         // Loop through the different inverse sizes of drops
         for (float r = 4. ; r > 0. ; r--) {
             vec2 x = resolution.xy * r * 0.015 * rainIntensity,  // Number of potential drops (in a grid)
@@ -217,30 +201,35 @@ void main() {
             
             // Current drop properties. Coordinates are rounded to ensure a
             // consistent value among the fragment of a given drop.
-            vec2 dropCoord = round(u * x - 0.25) / x;
-            float d_r = random(dropCoord);
-            float d_g = random(dropCoord + vec2(0.1));
-            float d_b = random(dropCoord + vec2(0.2));
+            vec4 d = texture(texture1, round(u * x - 0.25) / x);
             
             // Drop shape and fading
-            float t = (s.x+s.y) * max(0.0, 1.0 - fract(time * (d_b + 0.1) + d_g) * 2.0);
+            float t = (s.x+s.y) * max(0.0, 1.0 - fract(time * (d.b + 0.1) + d.g) * 2.0);
             
             // d_r -> only x% of drops are kept on, with x depending on the size of drops
-            if (d_r < (5.0-r)*0.08 && t > 0.5) {
+            //if (d.r < (5.0-r)*0.08 && t > 0.5) {
+            if (d.r < (5.0 - r) * 0.15 && t > 0.2){
+
                 // Drop normal
                 vec3 v = normalize(-vec3(cos(p), mix(0.2, 2.0, t-0.5)));
                 
                 // Poor man's refraction (no visual need to do more)
-                f = texture(texture0, u - v.xy * 0.3 * rainIntensity);
+                //f = texture(texture0, u - v.xy * 0.3 * rainIntensity);
+                f = texture(texture0, u - v.xy * 0.6 * rainIntensity);
+
             }
         }
         
         // Add a slight bluish tint for rain atmosphere
         f = mix(f, vec4(0.7, 0.8, 1.0, 1.0) * f, rainIntensity * 0.2);
+        fragColor = f;
     } else {
         // If effect is disabled, simply display the texture
-        f = texture(texture0, fragTexCoord);
+        //f = texture(texture0, fragTexCoord);
+                //fragColor = vec4(1.0, 0.0, 0.0, 1.0); // Rouge si rainEffect est activé
+                fragColor = f;
+
     }
     
-    fragColor = f;
+    //fragColor = f;
 }

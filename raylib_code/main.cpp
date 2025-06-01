@@ -857,6 +857,7 @@ int main(void) {
     int pluie_timeLoc = GetShaderLocation(postProcessShader, "time");
     int pluie_rainEffectLoc = GetShaderLocation(postProcessShader, "rainEffect");
     int pluie_rainIntensityLoc = GetShaderLocation(postProcessShader, "rainIntensity");
+    int pluie_texture1Loc = GetShaderLocation(postProcessShader, "texture1");
 
     //on donne la résolution au shader
     Vector2 resolution = { (float)screenWidth, (float)screenHeight };       
@@ -1926,6 +1927,8 @@ int rainEffectEnabled = 1;//pleut ? 1 : 0;
 SetShaderValue(postProcessShader, pluie_rainEffectLoc, &rainEffectEnabled, SHADER_UNIFORM_INT);
 SetShaderValue(postProcessShader, pluie_rainIntensityLoc, &rainIntensity, SHADER_UNIFORM_FLOAT);
 SetShaderValue(postProcessShader, pluie_resolutionLoc, &resolution, SHADER_UNIFORM_VEC2);
+Texture2D noiseTexture = LoadTextureFromImage(LoadImage("ressources/br.png")); // Assurez-vous que le chemin est correct
+SetShaderValueTexture(postProcessShader, pluie_texture1Loc, noiseTexture);
 
 // Ajoutez aussi un contrôle pour l'intensité de la pluie dans l'interface
 if (pleut) {
