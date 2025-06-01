@@ -465,7 +465,7 @@ Color GetSunColor(float timeOfDay) {
             255
         }; // Coucher du soleil - transition du blanc au doré
     } else if (timeOfDay < 19.0f) {
-        float t = (timeOfDay - 18.0f); // Transition de 18h à 19h
+        float t = timeOfDay - 18.0f; // Transition de 18h à 19h
         return (Color){
             255,  // Rouge constant
             (unsigned char)(105 + t * 45),  // Vert augmente légèrement
@@ -663,7 +663,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
     }
     else{//si la plante n'est pas morte
         cellule->plante.age += delta;
-        if (cellule->plante.age >= cellule->plante.age_max) {
+        if (cellule->plante.age >= cellule->plante.age_max || cellule->plante.sante <= 0) {//si la plante est morte
             cellule->plante.age = 0;
             float taille_actuelle = cellule->plante.taille;
             
@@ -679,7 +679,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             return;
         }
         else{
-            if(cellule->plante.sante >= 1 || cellule->plante.age >= cellule->plante.age_max){
+            if(cellule->plante.sante >= 1){//si la plante est en bonne santé
                 //if (cellule->plante.sante <= 1){
                 //    cellule->plante.sante = 0;
                 //    cellule->plante.age = 0;
@@ -689,7 +689,6 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                 //    cellule->plante = planteMorteActuelle;
                 //    return;
                 //}
-            //modifer pout ajouter un système de santée
                 if (cellule->pente >= cellule->plante.pente_min &&
                     cellule->pente <= cellule->plante.pente_max) {//si elle peut survivre
                     //verifier si la plante à cette case est la meilleure sinon on baisse sa santée
@@ -839,13 +838,29 @@ int main(void) {
     };
 
     //Lumière directionnelle
-    // Load basic lighting shader
+    //basic lighting shader
     Shader shader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/lighting.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/lighting.fs", GLSL_VERSION));
+    
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
-    //shader pour les arbres
-    //Shader arbres_shader = LoadShader("raylib_code/ressources/custom_shader/glsl330/arbre_shader.vs","raylib_code/ressources/custom_shader/glsl330/arbre_shader.fs");
     
+    //pour la pluie
+    Shader postProcessShader;
+    RenderTexture2D target;
+    float rainIntensity = 0.5f; // Valeur entre 0.0 et 1.0
+    postProcessShader = LoadShader("ressources/custom_shader/glsl330/post_pro.vs", 
+                              "ressources/custom_shader/glsl330/post_pro.fs");
+    target = LoadRenderTexture(screenWidth, screenHeight);
+
+    //def des uniformes du shader
+    int pluie_resolutionLoc = GetShaderLocation(postProcessShader, "resolution");
+    int pluie_timeLoc = GetShaderLocation(postProcessShader, "time");
+    int pluie_rainEffectLoc = GetShaderLocation(postProcessShader, "rainEffect");
+    int pluie_rainIntensityLoc = GetShaderLocation(postProcessShader, "rainIntensity");
+
+    //on donne la résolution au shader
+    Vector2 resolution = { (float)screenWidth, (float)screenHeight };       
+
     //l'herbe
     Shader herbe_shader = LoadShader("ressources/custom_shader/glsl330/herbe_shader.vs","ressources/custom_shader/glsl330/herbe_shader.fs");
     // Configurez les locations du shader de l'ombre et des arbres
@@ -1050,7 +1065,7 @@ int main(void) {
     //    model_herbe.materials[i].shader = shadowShader;
     //}
     model_herbe_instance.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_herbe_instance.materialCount; i++)
+    for (int i = 0; i < model_herbe_instance.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id; i++)
     {
         model_herbe_instance.materials[i].shader = herbe_shader;
     }
@@ -1147,8 +1162,8 @@ int main(void) {
 
     Plante vide("Vide", 10, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
-    std::vector<Plante> plantes = {bouleau1, bouleau2, erable};//pour les plantes vivantes
-    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort};//pour les plantes mortes
+    std::vector<Plante> plantes = {bouleau1, bouleau2, erable, hetre, chene};//pour les plantes vivantes
+    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort, hetre_mort, chene_mort};//pour les plantes mortes
     //ajout des différentes météo
     /*
     temperature_min: température minimale du biome (en degrés)
@@ -1158,9 +1173,9 @@ int main(void) {
     pluviometrie_min: pluviométrie minimale du biome (en mm)
     pluviometrie_max: pluviométrie maximale du biome (en mm)
     */
-    
+    Biome biome_base("Base", 0, 0, 0, 0, 0, 0, Color{255, 255, 255, 255}, 1.0f, true); // Un biome de base pour le début du programme
     //forets temperee 5°C à 25°C 60 à 80 % 500 à 1 500 mm
-    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 141, 34, 255}, 1.0f, true);//on doit en metre au moin une sur true
+    Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 141, 34, 255}, 1.0f, false);//on doit en metre au moin une sur true
     
     //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
     Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{0, 161, 231, 255}, 1.0f, false);
@@ -1169,7 +1184,7 @@ int main(void) {
     Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{255, 255, 255, 255}, 1.01f, false);
 
     //biome biome_brouillard("Brouillard", 0, 0, Color{255, 255, 255, 255}, 0.1f);
-    std::vector<Biome> les_biome = {biome_tempere, biome_tropic_humide, biome_tropic_sec};
+    std::vector<Biome> les_biome = {biome_base, biome_tempere, biome_tropic_humide, biome_tropic_sec};
     // Initialisation de la grille
     /*Vector3 position;
     Model model;
@@ -1221,7 +1236,7 @@ int main(void) {
                 if (!initializationDone) {
                     switch (loadingStage) {
                         case 0: {
-                                //BeginDrawing();
+                                
                                     //choix du terrain qu'on veut
                                     ClearBackground(BLACK);//TODO changer en raywhite
                                     DrawText("Choix du terrain", GetScreenWidth() / 2 - MeasureText("Choix du terrain", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
@@ -1355,12 +1370,6 @@ int main(void) {
                             loadingStage++;
                         }break;        
                 ////ecrant de chargement  Copyright (c) 2021-2025 Ramon Santamaria (@raysan5)
-                //frameCounter++;    // Count frames
-                //// Wait for 2 seconds (120 frames) before jumping to TITLE screen
-                //if (frameCounter > 300)
-                //{
-                //    currentScreen = 1;
-                //}
                         case 2: {
                             InitGrassParticles( taille_terrain, image_sol);
                             InitPluieParticules(taille_terrain, image_sol);
@@ -1381,7 +1390,7 @@ int main(void) {
                 // Afficher les messages de chargement avec le pourcentage
                 int loadingPercentage = (loadingStage * 100) / 5; // 5 étapes au total
                 if (loadingStage > 1){
-                    //BeginDrawing();
+                    
                     //ClearBackground(RAYWHITE);
                     ClearBackground(BLACK);//TODO changer en raywhite
                     DrawText("CHARGEMENT", GetScreenWidth() / 2 - MeasureText("CHARGEMENT", 40) / 2, GetScreenHeight() / 2 - 60, 40, RAYWHITE);
@@ -1775,15 +1784,6 @@ int main(void) {
             SetShaderValue(shadowShader, lightColLoc, &lightColorNormalized, SHADER_UNIFORM_VEC4);
             SetShaderValue(shadowShader, lightDirLoc, &lightDir, SHADER_UNIFORM_VEC3);
 
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "lightDir"), &lightDir, SHADER_UNIFORM_VEC3);
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "windStrength"), &windStrength, SHADER_UNIFORM_FLOAT);
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "windSpeed"), &windSpeed, SHADER_UNIFORM_FLOAT);
-            //SetShaderValue(arbres_shader, GetShaderLocation(arbres_shader, "noiseScale"), &noiseScale, SHADER_UNIFORM_FLOAT);
-            //SetShaderValueTexture(arbres_shader, GetShaderLocation(arbres_shader, "noiseTexture"), noiseTexture);
-
             //test temp TODO
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightPos"), &lightDir, SHADER_UNIFORM_VEC3);
             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "lightColor"), &lightColorNormalized, SHADER_UNIFORM_VEC4);
@@ -1801,7 +1801,7 @@ int main(void) {
             default: break;
         }
         // Rendu final (vue normale)
-        BeginDrawing();
+        //BeginDrawing();
         switch(currentScreen)
             {
                 case 0:
@@ -1809,158 +1809,144 @@ int main(void) {
                 }break;
                 case 1:
                 {
-        //on dessine les ombres ici
-        Matrix lightView;
-        Matrix lightProj;
-        BeginTextureMode(shadowMap);
-        //ClearBackground(SKYBLUE);
-        //ClearBackground(BLACK);//TODO changer en SKYBLUE
+                    BeginTextureMode(target);
+                        //ClearBackground(BLACK);
+                        //on dessine les ombres ici
+                        Matrix lightView;
+                        Matrix lightProj;
+                        BeginTextureMode(shadowMap);
+                            //ClearBackground(SKYBLUE);
+                            //ClearBackground(BLACK);//TODO changer en SKYBLUE
 
-        BeginMode3D(lightCam);
-            lightView = rlGetMatrixModelview();
-            lightProj = rlGetMatrixProjection();
-            dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
-            int isGrass = 1;
+                            BeginMode3D(lightCam);
+                                lightView = rlGetMatrixModelview();
+                                lightProj = rlGetMatrixProjection();
+                                dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+                                int isGrass = 1;
 
-            SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, windSpeedLocation, &windSpeed, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
-            SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
-            SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
-            SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
-            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, windSpeedLocation, &windSpeed, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
+                                SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
+                                SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
+                                SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
+                                SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+                                SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
 
-            //maj des uniformes pour le shader
-            SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
+                                //maj des uniformes pour le shader
+                                SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
 
-            rlEnableBackfaceCulling();
-            //DrawMesh(sphere_test, material_test, MatrixTranslate(0.0f, 2.0f, 0.0f));
-            //for (int i = 0; i < herbeCount ; i++){
-          //
-            //    //regarde si la cellule de la grille correspond à la position de l'herbe
-            //    int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
-            //    int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
-//
-            //    //Clamp les coordonnées de grille pour éviter les débordements
-            //    gridX = Clamp(gridX, 0, GRID_SIZE - 1);
-            //    gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
-//
-            //    //verifie si l'herbe peut pousser à cette temperature
-            //    if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
-            //        Shader originalShader = models_herbe_vecteur[i].materials[0].shader;
-            //
-            //        // Utilisez un shader de shadow mapping simple pour générer l'ombre
-            //        models_herbe_vecteur[i].materials[0].shader = shadowShader; // Utilisez un shader simple pour les ombres
-            //        // Restaurez le shader original
-            //        DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
-            //        models_herbe_vecteur[i].materials[0].shader = originalShader;
-            //    }
-            //}
-            isGrass = 0;
-            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-            rlDisableBackfaceCulling();
-            // Après avoir généré les nuages
-            for (auto& nuage : grandsNuages) {
-                for (size_t i = 0; i < nuage.plans.size(); i++) {
-                    //config le matériau pour la transparence
-                    nuage.plans[i].materials[0].shader = shadowShader;
-                    nuage.plans[i].materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-                }
-            }
+                                rlEnableBackfaceCulling();
+
+                                isGrass = 0;
+                                SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+                                rlDisableBackfaceCulling();
+                                // Après avoir généré les nuages
+                                for (auto& nuage : grandsNuages) {
+                                    for (size_t i = 0; i < nuage.plans.size(); i++) {
+                                        //config le matériau pour la transparence
+                                        nuage.plans[i].materials[0].shader = shadowShader;
+                                        nuage.plans[i].materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+                                    }
+                                }
+                            
+                                // Dans la boucle principale, lors du rendu
+                                rlEnableColorBlend();
+                                for (auto& nuage : grandsNuages) {
+                                    for (size_t i = 0; i < nuage.plans.size(); i++) {
+                                        DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
+                                    }
+                                }
+                            
+                            EndMode3D();
+                        EndTextureMode();
+                        Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
+                        
+                        ClearBackground(SKYBLUE);
+                        
+                        SetShaderValueMatrix(shadowShader, lightVPLoc, lightViewProj);
+                        
+                        rlEnableShader(shadowShader.id);
+                        
+                        int slot = 10;
+                        rlActiveTextureSlot(10);
+                        rlEnableTexture(shadowMap.depth.id);
+                        rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
+                        BeginMode3D(camera);
+                        
+                            Color grassColor = GetGrassColorFromTime(timeOfDay); // timeOfDay = 0.0f → 24.0f
+                            for (int i = 0; i < MAX_GRASS; i++) {
+                                DrawGrassQuad(grass[i], grassColor, useTerrainColorForGrass, terrainColorImage, taille_terrain);
+                            }
+                        
+                            for (int i = 0; i < GOUTE_PLUIE; i++){
+                                DrawPluieQuad(la_pluie[i], image_sol, taille_terrain, pleut, delta);
+                            }
+                        
+                            isGrass = 2;
+                            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+                            dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+                                isGrass = 1;
+                                SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, windSpeedLocation, &windSpeed, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
+                                SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
+                                SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
+                                SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
+                                SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
+                                SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+                                SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
+                                //maj des uniformes pour le shader
+                                SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
+                        
+                                isGrass = 0;
+                                SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
+                                rlDisableBackfaceCulling();
+
+                               //dessine le grand nuage
+                               for (auto& nuage : grandsNuages) {
+                                for (size_t i = 0; i < nuage.plans.size(); i++) {
+                                    DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
+                                }
+                            }
+                               //DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, lightColor);
+
+                        EndMode3D();
+
+                    EndTextureMode();
+
+
+// Mise à jour des uniformes du shader
+float currentTime = (float)GetTime();
+SetShaderValue(postProcessShader, pluie_timeLoc, &currentTime, SHADER_UNIFORM_FLOAT);
+int rainEffectEnabled = 1;//pleut ? 1 : 0;
+SetShaderValue(postProcessShader, pluie_rainEffectLoc, &rainEffectEnabled, SHADER_UNIFORM_INT);
+SetShaderValue(postProcessShader, pluie_rainIntensityLoc, &rainIntensity, SHADER_UNIFORM_FLOAT);
+SetShaderValue(postProcessShader, pluie_resolutionLoc, &resolution, SHADER_UNIFORM_VEC2);
+
+// Ajoutez aussi un contrôle pour l'intensité de la pluie dans l'interface
+if (pleut) {
+    rainIntensity = Clamp(frequence_pluie / 100.0f, 0.1f, 1.0f);
+}
+// Rendu final avec le shader de post-processing
+BeginDrawing();
+//ClearBackground(BLACK);
+
+// Dessiner la texture avec le shader de post-processing
+BeginShaderMode(postProcessShader);
+DrawTextureRec(target.texture, 
+              (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height }, 
+              (Vector2){ 0, 0 }, 
+              WHITE);
+EndShaderMode();
+
+printf("Target texture: id=%u, width=%d, height=%d\n", 
+       target.texture.id, target.texture.width, target.texture.height);
+        //DrawGrid(20, 1.0f);
         
-            // Dans la boucle principale, lors du rendu
-            rlEnableColorBlend();
-            for (auto& nuage : grandsNuages) {
-                for (size_t i = 0; i < nuage.plans.size(); i++) {
-                    DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
-                }
-            }
-            //DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, WHITE);
-            
-        EndMode3D();
-        EndTextureMode();
-        Matrix lightViewProj = MatrixMultiply(lightView, lightProj);
-
-//        ClearBackground(SKYBLUE);
-        ClearBackground(BLACK);//TODO changer en SKYBLUE
-
-        SetShaderValueMatrix(shadowShader, lightVPLoc, lightViewProj);
-        
-        rlEnableShader(shadowShader.id);
-
-        int slot = 10;
-        rlActiveTextureSlot(10);
-        rlEnableTexture(shadowMap.depth.id);
-        rlSetUniform(shadowMapLoc, &slot, SHADER_UNIFORM_INT, 1);
-        //Vector3 lightPos = { 0.0f, 10.0f, 0.0f }; // Ajustez selon votre lumière
-        //Vector4 lightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-        //Vector4 ambientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-        
-        BeginMode3D(camera);
-
-
-
-
-        Color grassColor = GetGrassColorFromTime(timeOfDay); // timeOfDay = 0.0f → 24.0f
-        for (int i = 0; i < MAX_GRASS; i++) {
-            DrawGrassQuad(grass[i], grassColor, useTerrainColorForGrass, terrainColorImage, taille_terrain);
-        }
-
-        for (int i = 0; i < GOUTE_PLUIE; i++){
-            DrawPluieQuad(la_pluie[i], image_sol, taille_terrain, pleut, delta);
-        }
-
-        isGrass = 2;
-        SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-        dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
-            isGrass = 1;
-            SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, windSpeedLocation, &windSpeed, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, isGrassLocation, &isGrass, SHADER_UNIFORM_INT);
-            SetShaderValue(herbe_shader, windTextureTileSizeLocation, &windTextureTileSize, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(herbe_shader, windVerticalStrengthLocation, &windVerticalStrength, SHADER_UNIFORM_FLOAT);
-            SetShaderValueTexture(herbe_shader, noiseTextureLoc, noiseTexture);
-            SetShaderValue(herbe_shader, windHorizontalDirectionLocation, &windHorizontalDirection, SHADER_UNIFORM_VEC2);
-            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "time"), &time, SHADER_UNIFORM_FLOAT);
-            //maj des uniformes pour le shader
-            SetShaderValue(herbe_shader, noiseScaleLoc, &noiseScale, SHADER_UNIFORM_FLOAT);
-
-
-            //for (int i = 0; i < herbeCount ; i++){
-            //    //active backface culling ici
-            //    int gridX = (int)((position_herbe[i].x + taille_terrain.x / 2) * GRID_SIZE / taille_terrain.x);
-            //    int gridZ = (int)((position_herbe[i].z + taille_terrain.z / 2) * GRID_SIZE / taille_terrain.z);
-//
-            //    gridX = Clamp(gridX, 0, GRID_SIZE - 1);
-            //    gridZ = Clamp(gridZ, 0, GRID_SIZE - 1);
-//
-            //    //verifie si l'herbe peut pousser à cette temperature
-            //    if (grille[gridX][gridZ].temperature > -20 && grille[gridX][gridZ].temperature < 50) {
-    //
-            //        DrawModel(models_herbe_vecteur[i], position_herbe[i], 0.005f, WHITE);
-            //    }
-                
-//            }
-            isGrass = 0;
-            SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-            rlDisableBackfaceCulling();
-            
-           //dessine le grand nuage
-           for (auto& nuage : grandsNuages) {
-            for (size_t i = 0; i < nuage.plans.size(); i++) {
-                DrawModelEx(nuage.plans[i], nuage.positions[i], (Vector3){0, 1, 0}, nuage.rotations[i], (Vector3){nuage.scales[i], nuage.scales[i], nuage.scales[i]}, WHITE);
-            }
-        }
-           //DrawModelEx(grandsNuages[0].plans[0], grandsNuages[0].positions[0], (Vector3){0, 1, 0}, grandsNuages[0].rotations[0], (Vector3){grandsNuages[0].scales[0], grandsNuages[0].scales[0], grandsNuages[0].scales[0]}, lightColor);
-           
-        EndMode3D();
-        DrawGrid(20, 1.0f);
-        EndMode3D();
         // Ajouter une légende pour le mode température
         if (viewMode == MODE_TEMPERATURE) {
             DrawText("Mode température - Appuyez sur T pour revenir", 10, 60, 20, BLACK);
@@ -2002,11 +1988,11 @@ int main(void) {
         }
         //GuiSliderBar((Rectangle){ 100, 190, 200, 20 }, "Noise Scale", TextFormat("%.2f", noiseScale), &noiseScale, 1.0f, 20.0f);
         //GuiSliderBar((Rectangle){ 100, 220, 200, 20 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
-        //GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
-        //GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
+        GuiSliderBar((Rectangle){ 100, 250, 200, 20 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
+        GuiSliderBar((Rectangle){ 100, 280, 200, 20 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         // Sliders for wind parameters
-        GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 7.0f);
-        GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f);
+        GuiSliderBar((Rectangle){ 100, 310, 200, 20 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 4.0f);
+        //GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f); //ca sert à rien
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
         static float lastNoiseScale = noiseScale;
@@ -2033,8 +2019,8 @@ int main(void) {
         */
         // Pour changer la direction de la lumière
         GuiSliderBar((Rectangle){ 100, 100, 300, 20 }, "Time of Day", TextFormat("%.0f:00", timeOfDay), &timeOfDay, 0.0f, 24.0f);
-        GuiSliderBar((Rectangle){ 50, 50, 300, 200 }, "frequence pluie",TextFormat("%.0f:00",frequence_pluie), &frequence_pluie, 0.0f, 100.0f);
-        GuiSliderBar((Rectangle){ 100, 480, 200, 20 }, "Simulation Speed", TextFormat("%.1fx", simulationSpeed), &simulationSpeed, 0.1f, 10.0f);
+        GuiSliderBar((Rectangle){ 50, 50, 300, 20 }, "frequence pluie",TextFormat("%.0f:00",frequence_pluie), &frequence_pluie, 0.0f, 100.0f);
+        GuiSliderBar((Rectangle){ 100, 80, 200, 20 }, "Simulation Speed", TextFormat("%.1fx", simulationSpeed), &simulationSpeed, 0.1f, 10.0f);
         
 
         static float accumTime = 0.0f;
@@ -2052,7 +2038,7 @@ int main(void) {
         }else{
             accumTime += delta;
             //if(accumTime >= 0.5f){
-                random_pluie = GetRandomValue(0, 100);
+                random_pluie = GetRandomValue(1, 100);
                 printf("random pluie : %f\n", random_pluie);
                 accumTime = 0.0f;
                 if (random_pluie <= frequence_pluie){
@@ -2097,6 +2083,9 @@ int main(void) {
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
     UnloadShadowmapRenderTexture(shadowMap);
+    // Dans la section de nettoyage (juste avant CloseWindow())
+    UnloadShader(postProcessShader);
+    UnloadRenderTexture(target);
 
     // Clear the memory of other resources
     printf("model herbe unload\n");
