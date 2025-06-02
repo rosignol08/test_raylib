@@ -542,7 +542,7 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
 }
 
 //pour dessiner la scene 
-void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model emptyModel, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition);
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition);
 
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
@@ -960,15 +960,6 @@ int main(void) {
     //fin test sol
 
     //chargement du modèle et la texture test commentaire
-    //Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
-    Model model_sapin = LoadModel("models/pine_tree/scene.glb");
-    Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
-    Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
-    model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
-    //Model model_herbe = LoadModel("models/herbe/untitled.glb");
-    
-    //pour l'herbe du sol
-    Model model_herbe_instance = LoadModel("models/herbe/untitled2.glb");
     //forets temperee
     //0 bouleau bouleau_feuilles1
     Model model_bouleau1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles1.glb");
@@ -1011,11 +1002,6 @@ int main(void) {
     Model model_mort_sapin_boreal = LoadModel("models/foret_boreal/arb_sapin/sapin_mort.glb");
     Model model_sapin1_boreal = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_feuilles.glb");
     Model model_mort_sapin1_boreal = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_mort.glb");
-
-    //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
-    //5 jungle1 jungle_feuillage
-    //6 jungle2 jungle_feuillage2
-    //7 jungle3 jungle_feuillage3
     
     //on applique la lumière sur toutes les plantes
     model_bouleau1.materials[0].shader = herbe_shader;
@@ -1142,11 +1128,6 @@ int main(void) {
     {
         model_mort_pin.materials[i].shader = herbe_shader;
     }
-    model_sapin.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_sapin.materialCount; i++)
-    {
-        model_sapin.materials[i].shader = herbe_shader;
-    }
     model_mort_sapin_boreal.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_mort_sapin_boreal.materialCount; i++)
     {
@@ -1168,60 +1149,10 @@ int main(void) {
         model_mort_sapin1_boreal.materials[i].shader = herbe_shader;
     }
 
-    //model_acacia.materials[0].shader = shadowShader;
-    //for (int i = 0; i < model_acacia.materialCount; i++)
-    //{
-    //    model_acacia.materials[i].shader = shadowShader;
-    //}
-    //
-    //model_acacia.materials[0].shader = herbe_shader;
-    //for (int i = 0; i < model_acacia.materialCount; i++)
-    //{
-    //    model_acacia.materials[i].shader = herbe_shader;
-    //}
-//
-    //model_acacia.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    //
-    //model_sapin.materials[0].shader = shadowShader;
-    //for (int i = 0; i < model_sapin.materialCount; i++)
-    //{
-    //    model_sapin.materials[i].shader = shadowShader;
-    //}
-    //model_buisson_europe.materials[0].shader = shadowShader;
-    //for (int i = 0; i < model_buisson_europe.materialCount; i++)
-    //{
-    //    model_buisson_europe.materials[i].shader = shadowShader;
-    //}
-    //
-    
-
-    //model_mort.materials[0].shader = shadowShader;
-    //for (int i = 0; i < model_mort.materialCount; i++)
-    //{
-    //    model_mort.materials[i].shader = shadowShader;
-    //}
-    
-    //model_herbe.materials[0].shader = shadowShader;
-    //for (int i = 0; i < model_herbe.materialCount; i++)
-    //{
-    //    model_herbe.materials[i].shader = shadowShader;
-    //}
-    model_herbe_instance.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_herbe_instance.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id; i++)
-    {
-        model_herbe_instance.materials[i].shader = herbe_shader;
-    }
-    
-    
     // Après avoir chargé le shader
     if (herbe_shader.id == 0) {
         printf("Erreur lors du chargement du shader d'herbe!\n");
-    }
-    
-    //model_sol.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    //model_mort.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-    
-    model_herbe_instance.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    }    
     // Create an empty model to represent an empty cell
     Mesh emptyMesh = GenMeshCube(0.0f, 0.0f, 0.0f); // Generate a cube with zero size
     Model emptyModel = LoadModelFromMesh(emptyMesh);
@@ -1309,16 +1240,16 @@ int main(void) {
     influence_humidite = GetRandomValue(-00.1, 00.1);
     // FORET TROPICALE HUMIDE
     // Plantes tropicales humides 
-    Plante jungle1("Jungle1", 5, 100, 85, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
+    Plante jungle1("Jungle1", 5, 100, 80, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.009f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante jungle2("Jungle2", 6, 100, 75, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
-    Plante jungle3("Jungle3", 7, 100, 80, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.04f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
-    Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
+    Plante jungle3("Jungle3", 7, 100, 85, 95, 20, 35, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.03f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
+    Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.009f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
     Plante jungle_mort2("Jungle_mort2", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2, couleur);
-    Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
+    Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.03f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
     // FORET TROPICALE SECHE
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
@@ -1365,7 +1296,7 @@ int main(void) {
     Biome biome_tempere("Tempere", 5, 25, 60, 80, 500, 1500, Color{255, 255, 204, 255}, 1.0f, false, 30.0f);//on doit en metre au moin une sur true
     
     //foret tropicale humide 20°C à 35°C 75 à 95 % 2 000 à 5 000 mm
-    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{102, 255, 153, 255}, 1.0f, false, 80.0f);
+    Biome biome_tropic_humide("Tropic humide", 20, 35, 75, 95, 2000, 5000, Color{44,225,9, 255}, 1.0f, false, 80.0f);
     
     //forets tropicale seche 25°C à 35°C 40 à 70 % 1 000 à 2 000 mm
     Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{204, 255, 204, 255}, 0.01f, false, 25.0f);
@@ -1586,29 +1517,44 @@ int main(void) {
             } break;
             case 1:{
             //faut appliquer la modification de température à toutes les cases une seule fois
-            static int last_temp_modif = 0; // Stocker la dernière valeur appliquée
+            static int last_temp_modif = 0; //la dernière valeur appliquée
             int temp_modif = (int)temperature_modifieur;
 
-            if (temp_modif != last_temp_modif) { // Vérifier si la valeur a changé
-                int delta = temp_modif - last_temp_modif; // Calculer la différence
-                for (int x = 0; x < GRID_SIZE; x++) {
-                for (int z = 0; z < GRID_SIZE; z++) {
-                    grille[x][z].temperature += delta; // Modifier la température de chaque case
-                    if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
-                    if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
-                }
-                }
-                last_temp_modif = temp_modif; // Mettre à jour la dernière valeur appliquée
-            }
-
-            static int last_hum_modif = 0; // Stocker la dernière valeur appliquée
-            int hum_modif = (int)hum_modifieur;
-
-            if (hum_modif != last_hum_modif) { // Vérifier si la valeur a changé
-                int delta = hum_modif - last_hum_modif; // Calculer la différence
+            if (temp_modif != last_temp_modif) { //verif si la valeur a changé
+                int delta = temp_modif - last_temp_modif; //calcul la différence
                 for (int x = 0; x < GRID_SIZE; x++) {
                     for (int z = 0; z < GRID_SIZE; z++) {
-                        grille[x][z].humidite += delta; // Modifier l'humidite de chaque case
+                        grille[x][z].temperature += delta; //modif la température de chaque case
+                        if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
+                        if (grille[x][z].temperature > maxTemp) maxTemp = grille[x][z].temperature;
+                    }
+                }
+                last_temp_modif = temp_modif; //maj la dernière valeur appliquée
+            }
+
+            static int last_pluvio_modif = 0; //la dernière valeur appliquée
+            int pluvi_modif = (int)pluviometrie_modifieur;
+
+            if (pluvi_modif != last_pluvio_modif) { //verif si la valeur a changé
+                int delta = pluvi_modif - last_pluvio_modif; //calcul la différence
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        grille[x][z].pluviometrie += delta; //modif la température de chaque case
+                        if (grille[x][z].pluviometrie < minPluv) minPluv = grille[x][z].pluviometrie;
+                        if (grille[x][z].pluviometrie > maxPluv) maxPluv = grille[x][z].pluviometrie;
+                    }
+                }
+                last_pluvio_modif = pluvi_modif; //maj la dernière valeur appliquée
+            }
+
+            static int last_hum_modif = 0; //la dernière valeur appliquée
+            int hum_modif = (int)hum_modifieur;
+
+            if (hum_modif != last_hum_modif) { //verif si la valeur a changé
+                int delta = hum_modif - last_hum_modif; //calcul la différence
+                for (int x = 0; x < GRID_SIZE; x++) {
+                    for (int z = 0; z < GRID_SIZE; z++) {
+                        grille[x][z].humidite += delta; //modif la température de chaque case
 
                         //comme ça l'humidité reste dans la plage 0-100
                         grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
@@ -1617,25 +1563,7 @@ int main(void) {
                         if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
                     }
                 }
-                last_hum_modif = hum_modif; // Mettre à jour la dernière valeur appliquée
-            }
-
-            static int last_pluv_modif = 0; // Stocker la dernière valeur appliquée
-            int pluv_modif = (int)pluviometrie_modifieur;
-
-            if (pluv_modif != last_pluv_modif) { // Vérifier si la valeur a changé
-                int delta = pluv_modif - last_pluv_modif; // Calculer la différence
-                for (int x = 0; x < GRID_SIZE; x++) {
-                    for (int z = 0; z < GRID_SIZE; z++) {
-                        grille[x][z].pluviometrie += delta; // Modifier la pluviometrie de chaque case
-
-                        //comme ça la pluviometrie reste dans la plage 0-100
-                    
-                        if (grille[x][z].pluviometrie < minPluv) minPluv = grille[x][z].pluviometrie;
-                        if (grille[x][z].pluviometrie > maxPluv) maxPluv = grille[x][z].pluviometrie;
-                    }
-                }
-                last_pluv_modif = pluv_modif; // Mettre à jour la dernière valeur appliquée
+                last_hum_modif = hum_modif; //maj la dernière valeur appliquée
             }
 
             //le biome : on redéfini les valeurs de température etc
@@ -1707,17 +1635,18 @@ int main(void) {
                 //       humidite_modifieur_min, humidite_modifieur_max);
             }
             //hum_modifieur = get_biome_humidite(cherche_la_biome_actuelle(les_biome));
+            //temperature_modifieur = get_biome_temperature(cherche_la_biome_actuelle(les_biome));
             
 
             float delta = GetFrameTime() * simulationSpeed;
                 if (pleut && !musique_pluie_on) {
                     PlayMusicStream(musique_pluie);
                     musique_pluie_on = true;
-                    printf("Son de pluie activé\n");
+                    //printf("Son de pluie activé\n");
                 } else if (!pleut && musique_pluie_on) {
             StopMusicStream(musique_pluie);
             musique_pluie_on = false;
-            printf("Son de pluie désactivé\n");
+            //printf("Son de pluie désactivé\n");
     }
 
     // Mettre à jour le flux audio
@@ -2031,7 +1960,7 @@ int main(void) {
                                 lightView = rlGetMatrixModelview();
                                 lightProj = rlGetMatrixProjection();
                                 
-                                dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+                                dessine_scene(camera, image_sol, taille_terrain, model_sol, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
                                 int isGrass = 1;
 
                                 SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
@@ -2097,7 +2026,7 @@ int main(void) {
                         
                             isGrass = 2;
                             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-                            dessine_scene(camera, image_sol, taille_terrain, model_sol, model_buisson_europe, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+                            dessine_scene(camera, image_sol, taille_terrain, model_sol, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
                                 isGrass = 1;
                                 SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
                                 SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
@@ -2226,7 +2155,7 @@ int main(void) {
         }
         DrawFPS(10, 40);
         // Display active biome information
-        DrawText(TextFormat("Active Biome: %s", cherche_le_biome_actuelle(les_biome).nom.c_str()), screenWidth/2 - 150, 50, 20, DARKGRAY);
+        DrawText(TextFormat("Biome: %s", cherche_le_biome_actuelle(les_biome).nom.c_str()), screenWidth/2 - 150, 50, 20, DARKGRAY);
         // Detect biome changes to update rain frequency
         static std::string lastActiveBiome = "";
         std::string currentActiveBiome = cherche_le_biome_actuelle(les_biome).nom;
@@ -2234,8 +2163,20 @@ int main(void) {
             // Biome has changed, update rain frequency
             frequence_pluie = cherche_le_biome_actuelle(les_biome).frequence_pluie;
             lastActiveBiome = currentActiveBiome;
-            printf("Biome changed to %s, rain frequency set to %.2f\n", currentActiveBiome.c_str(), frequence_pluie);
+            //printf("Biome changed to %s, rain frequency set to %.2f\n", currentActiveBiome.c_str(), frequence_pluie);
             
+        }
+        // Update pluviometrie_modifieur based on frequence_pluie with non-linear relationship
+        // Low frequence_pluie (1) = 100 pluviometrie
+        // High frequence_pluie (100) = 5000 pluviometrie
+        if (fabsf(pluviometrie_modifieur - ((frequence_pluie * frequence_pluie * 0.5f) + 50.0f)) > 1.0f) {
+            // Using a quadratic relationship to make the increase more significant at higher values
+            pluviometrie_modifieur = (frequence_pluie * frequence_pluie * 0.5f) + 50.0f;
+            
+            // Display the relationship for debugging
+            DrawText(TextFormat("Pluie: %.0f => Pluviometrie: %.0f", 
+                     frequence_pluie, pluviometrie_modifieur), 
+                     screenWidth/2 - 150, 70, 20, DARKGRAY);
         }
         
 
@@ -2250,8 +2191,8 @@ int main(void) {
         
         GuiSliderBar((Rectangle){ screenWidth-300, 150, 200, 50 }, "frequence pluie",TextFormat("%.0f:00",frequence_pluie), &frequence_pluie, 0.0f, 100.0f);
         GuiSliderBar((Rectangle){ screenWidth-300, 200, 200, 50 }, "Cloud Threshold", TextFormat("%.2f", cloudThreshold), &cloudThreshold, 0.0f, 1.5f);
-        GuiSliderBar((Rectangle){ screenWidth-300, 250, 200, 50 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
-        GuiSliderBar((Rectangle){ screenWidth-300, 300, 200, 50 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
+        GuiSliderBar((Rectangle){ screenWidth-300, 250, 200, 50 }, "Temperature", TextFormat("%.0f", temperature_modifieur), &temperature_modifieur, -30.0f, 30.0f);
+        GuiSliderBar((Rectangle){ screenWidth-300, 300, 200, 50 }, "Humidite", TextFormat("%.0f", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         //pour le vent
         //GuiSliderBar((Rectangle){ screenWidth-300, 350, 200, 50 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 4.0f);
         GuiSliderBar((Rectangle){ screenWidth-300, 350, 200, 50 }, "Force vent", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f); //ca sert à rien
@@ -2262,7 +2203,7 @@ int main(void) {
             accumTime += delta;
             pleut = true;
             if(is_time_expired(1.0f, start_time)){
-                printf("temps expiré\n");
+                //printf("temps expiré\n");
                 pleut = false;
                 random_pluie = 0.0f;
                 chrono_lance = false;
@@ -2277,7 +2218,7 @@ int main(void) {
                 accumTime = 0.0f;
                 
                 if (random_pluie <= frequence_pluie){
-                    printf("on lance le chrono\n");
+                    //printf("on lance le chrono\n");
                     lancer_chrono(start_time);
                     pleut = true;
                 }else{
@@ -2304,7 +2245,6 @@ int main(void) {
     UnloadShader(shader_taille);
     UnloadShader(herbe_shader);
     // Désallocation des ressources
-    UnloadModel(model_herbe_instance);
     UnloadModel(model_bouleau1);
     UnloadModel(model_bouleau2);
     UnloadModel(model_mort_bouleau1);
@@ -2313,6 +2253,22 @@ int main(void) {
     UnloadModel(model_mort_hetre);
     UnloadModel(model_chene);
     UnloadModel(model_mort_chene);
+    UnloadModel(model_acacia);
+    UnloadModel(model_mort_acacia);
+    UnloadModel(model_accacia2);
+    UnloadModel(model_mort_accacia2);
+    UnloadModel(model_erable);
+    UnloadModel(model_mort_erable);
+    UnloadModel(model_jungle1);
+    UnloadModel(model_mort_jungle1);
+    UnloadModel(model_jungle2);
+    UnloadModel(model_mort_jungle2);
+    UnloadModel(model_jungle3);
+    UnloadModel(model_mort_jungle3);
+    UnloadModel(model_cypr);
+    UnloadModel(model_mort_cypr);
+    UnloadModel(model_pin);
+    UnloadModel(model_mort_pin);
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
@@ -2335,7 +2291,7 @@ int main(void) {
     return 0;
 }
 
-void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, Model emptyModel, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition) {
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
     int objectCount = 0;
     // Ajouter le sol à la liste
@@ -2357,9 +2313,13 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
             }
         }
     }
-    // update des températures min et max
+    // update des températures min et max faut que les valeur min et max soient faussent pour qu'elles soient corrigées
     minTemp = 0;
     maxTemp = 1;
+    minHum = 10;
+    maxHum = 1;
+    minPluv = 500;
+    maxPluv = 1;
     for (int x = 0; x < GRID_SIZE; x++) {
         for (int z = 0; z < GRID_SIZE; z++) {
             if (grille[x][z].temperature < minTemp) minTemp = grille[x][z].temperature;
@@ -2368,6 +2328,8 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
             grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
             if (grille[x][z].humidite < minHum) minHum = grille[x][z].humidite;
             if (grille[x][z].humidite > maxHum) maxHum = grille[x][z].humidite;
+            if (grille[x][z].pluviometrie < minPluv) minPluv = grille[x][z].pluviometrie;
+            if (grille[x][z].pluviometrie > maxPluv) maxPluv = grille[x][z].pluviometrie;
         }
     }
     // Trier les objets par profondeur
