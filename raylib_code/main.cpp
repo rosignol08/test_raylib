@@ -82,7 +82,7 @@ void InitPluieParticules(Vector3 taille_terrain, Image image_sol){
 for (int i = 0; i < GOUTE_PLUIE; i++) {
         //pour faire apparaitre la pluie
         float posX = frand() * taille_terrain.x - taille_terrain.x / 2;
-        float posY = frand() * taille_terrain.y;
+        //float posY = frand() * taille_terrain.y;
         float posZ = frand() * taille_terrain.z - taille_terrain.z / 2;
         //petit décalage random pour une distrib plus naturelle
         float offsetX = random_flottant(-0.1f, 0.1f);
@@ -162,7 +162,7 @@ void DrawPluieQuad(PluieQuad &p, Image terrainImage, Vector3 taille_terrain, boo
             p.velocite.y = -1.0f * (frand() * 0.50f + 0.2f); // Vitesse minimale de 0.2
         }
         
-        Color finalColor = p.color;
+        //Color finalColor = p.color;
         
         // Dessine manuellement
         rlBegin(RL_QUADS);
@@ -607,17 +607,25 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             float scorePluviometrie = 0;
             float score = 0;
             for (Plante plante : plantes) {
-                if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max &&
-                    cellule->pluviometrie >= plante.pluviometrie_min && cellule->pluviometrie <= plante.pluviometrie_max &&
+                if (cellule->temperature >= plante.temperature_min && 
+                    cellule->temperature <= plante.temperature_max &&
+                    cellule->humidite >= plante.humidite_min &&
+                    cellule->humidite <= plante.humidite_max &&
+                    cellule->pluviometrie >= plante.pluviometrie_min && 
+                    cellule->pluviometrie <= plante.pluviometrie_max &&
                     cellule->pente >= plante.pente_min &&
                     cellule->pente <= plante.pente_max) {
                     nb_plantes_qui_peuvent_survivre++;
                 }
             }
             for (Plante plante : plantes) {
-                if (cellule->temperature >= plante.temperature_min && cellule->temperature <= plante.temperature_max &&
-                    cellule->humidite >= plante.humidite_min && cellule->humidite <= plante.humidite_max && cellule->pente >= plante.pente_min &&
+                if (cellule->temperature >= plante.temperature_min && 
+                    cellule->temperature <= plante.temperature_max &&
+                    cellule->humidite >= plante.humidite_min && 
+                    cellule->humidite <= plante.humidite_max && 
+                    cellule->pluviometrie >= plante.pluviometrie_min &&  
+                    cellule->pluviometrie <= plante.pluviometrie_max && 
+                    cellule->pente >= plante.pente_min && 
                     cellule->pente <= plante.pente_max) {
                     scoreTemperature = fabs(cellule->temperature - ((plante.temperature_max + plante.temperature_min) / 2.0f)); //fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
                     scoreHumidite = fabs(cellule->humidite - ((plante.humidite_max + plante.humidite_min) / 2.0f));//fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
@@ -699,6 +707,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                     int nb_plantes_qui_peuvent_survivre = 0;
                     float scoreTemperature = 0;
                     float scoreHumidite = 0;
+                    float scorePluviometrie = 0;
                     float score = 0;
                     for (Plante plante : plantes) {
                         if (cellule->temperature >= plante.temperature_min &&
@@ -711,6 +720,8 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                             cellule->pente <= plante.pente_max) {
                                 //printf("plante %s peut survivre\n", plante.nom.c_str());
                             nb_plantes_qui_peuvent_survivre++;
+                            
+                            
                         }
                     }
                     for (Plante plante : plantes) {
@@ -724,10 +735,12 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                             cellule->pente <= plante.pente_max) {
                             scoreTemperature = fabs(cellule->temperature - (plante.temperature_max + plante.temperature_min)); //plus c'est proche de 0 mieux c'est
                             scoreHumidite = fabs(cellule->humidite - (plante.humidite_max + plante.humidite_min)); //plus c'est proche de 0 mieux c'est
-                            score = scoreTemperature + scoreHumidite;
+                            scorePluviometrie = fabs(cellule->pluviometrie - (plante.pluviometrie_max + plante.pluviometrie_min)); //plus c'est proche de 0 mieux c'est
+                            score = scoreTemperature + scoreHumidite + scorePluviometrie;
                             if (score < bestScore || bestScore == 0) {
                                 bestScore = score;
                                 bestPlante = plante;
+                                //printf("la meilleure plante est : %s\n", plante.nom.c_str());
                             }
                         }
                     }
@@ -747,7 +760,7 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
                     if (cellule->plante.taille < cellule->plante.taille_max) {
                         //cellule->plante.taille *= 1.01f;
                         // Utiliser un facteur de croissance qui dépend du temps écoulé
-                        float growthFactor = 1.0f + (0.01f * delta);
+                        float growthFactor = 1.0f + (0.05f * delta);
                         cellule->plante.taille *= growthFactor;                
                         // S'assurer que la taille ne dépasse pas le maximum
                         if (cellule->plante.taille > cellule->plante.taille_max) {
@@ -866,7 +879,7 @@ int main(void) {
     //int pluie_texture1Loc = GetShaderLocation(postProcessShader, "texture1");
 
     //on donne la résolution au shader
-    Vector2 resolution = { (float)screenWidth, (float)screenHeight };       
+    //Vector2 resolution = { (float)screenWidth, (float)screenHeight };       
 
     //l'herbe
     Shader herbe_shader = LoadShader("ressources/custom_shader/glsl330/herbe_shader.vs","ressources/custom_shader/glsl330/herbe_shader.fs");
@@ -905,7 +918,7 @@ int main(void) {
     Vector2 windHorizontalDirection = { 1.0f, 0.5f };
     
     // Stocker l'ID de la localisation de l'uniform noiseTexture dans le shader
-    int noiseTextureLoc = GetShaderLocation(herbe_shader, "noiseTexture");
+    //int noiseTextureLoc = GetShaderLocation(herbe_shader, "noiseTexture");
     int noiseScaleLoc = GetShaderLocation(herbe_shader, "noiseScale");
 
     int windTextureTileSizeLocation = GetShaderLocation(herbe_shader, "windTextureTileSize");
@@ -917,7 +930,7 @@ int main(void) {
     int windSpeedLocation = GetShaderLocation(herbe_shader, "windSpeed");
     int isGrassLocation = GetShaderLocation(herbe_shader, "isGrass");
 
-    int ambientLoc = GetShaderLocation(shadowShader, "ambient");
+    //int ambientLoc = GetShaderLocation(shadowShader, "ambient");
     int lightVPLoc = GetShaderLocation(shadowShader, "lightVP");
     int shadowMapLoc = GetShaderLocation(shadowShader, "shadowMap");
     int shadowMapResolution = SHADOWMAP_RESOLUTION;
@@ -984,12 +997,11 @@ int main(void) {
     // Forêt tropicale sèche
     Model model_acacia = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_feuillage1.glb");
     Model model_mort_acacia = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_mort1.glb");
-    Model model_acacia_tree = LoadModel("models/foret_tropicale_seche/arb_accacia2/acacia_tree1.glb");
     Model model_accacia2 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_feuillage2.glb");
     Model model_mort_accacia2 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_mort2.glb");
 
     // FORET MEDITERANEENNE
-    Model model_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_feuillage.glb");
+    Model model_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_feuillage.glb");    
     Model model_mort_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_mort.glb");
     Model model_pin = LoadModel("models/foret_mediteranee/arb_pin/pin_feuillage.glb");
     Model model_mort_pin = LoadModel("models/foret_mediteranee/arb_pin/pin_mort.glb");
@@ -1100,11 +1112,6 @@ int main(void) {
     {
         model_mort_acacia.materials[i].shader = herbe_shader;
     }
-    model_acacia_tree.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_acacia_tree.materialCount; i++)
-    {
-        model_acacia_tree.materials[i].shader = herbe_shader;
-    }
     model_accacia2.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_accacia2.materialCount; i++)
     {
@@ -1114,11 +1121,6 @@ int main(void) {
     for (int i = 0; i < model_mort_accacia2.materialCount; i++)
     {
         model_mort_accacia2.materials[i].shader = herbe_shader;
-    }
-    model_acacia_tree.materials[0].shader = herbe_shader;
-    for (int i = 0; i < model_acacia_tree.materialCount; i++)
-    {
-        model_acacia_tree.materials[i].shader = herbe_shader;
     }
     model_cypr.materials[0].shader = herbe_shader;
     for (int i = 0; i < model_cypr.materialCount; i++)
@@ -1276,58 +1278,79 @@ int main(void) {
     faut regler les soucis d'accacia
         */
     Color couleur = WHITE;
-    int influence_temperature = GetRandomValue(-5, 5);
-    int influence_humidite = GetRandomValue(-5, 5);
+    int influence_temperature = GetRandomValue(-00.1, 00.1);
+    int influence_humidite = GetRandomValue(-00.1, 00.1);
     // FORET TEMPERE
     Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau1, couleur);
-    influence_temperature = GetRandomValue(-5, 5);
-    influence_humidite = GetRandomValue(-5, 5);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau2("Bouleau2", 1, 100, 75, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau2, couleur);
-    influence_temperature = GetRandomValue(-5, 5);
-    influence_humidite = GetRandomValue(-5, 5);
-    Plante erable("Erable", 2, 100, 70, 80, 10, 25, 500, 1500, 0, 0, 0.01f, 0.04f, 0.0f, 01.f, 0, false, 350, model_erable, couleur);
-    influence_temperature = GetRandomValue(-5, 5);
-    influence_humidite = GetRandomValue(-5, 5);
-    //Plante chene("Chene", 3, 100, 70, 80, 10, 15, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante erable("Erable", 2, 100, 70, 80, 5, 10, 500, 1500, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, false, 350, model_erable, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau_mort1("Bouleau_mort1", 0, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau1, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante erable_mort("Erable_mort", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable, couleur);
-    //Plante chene_mort("chene_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_chene, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante hetre("Hetre", 3, 100, 70, 80, 10, 15, 1000, 1500, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_hetre, couleur);
     Plante hetre_mort("Hetre_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre, couleur);
-    //Plante acacia("Acacia", 4, 100, 70, 80, 10, 15, 500, 1000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_acacia, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante chene("Chene", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
     Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
     // FORET TROPICALE HUMIDE
     // Plantes tropicales humides 
-    Plante jungle1("Jungle1", 5, 100, 80, 90, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
-    Plante jungle2("Jungle2", 6, 100, 80, 90, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2, couleur);
-    Plante jungle3("Jungle3", 7, 100, 80, 90, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
-    Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
+    Plante jungle1("Jungle1", 5, 100, 85, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante jungle2("Jungle2", 6, 100, 75, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante jungle3("Jungle3", 7, 100, 80, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.04f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
+    Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
     Plante jungle_mort2("Jungle_mort2", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2, couleur);
-    Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
+    Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
     // FORET TROPICALE SECHE
-    Plante acacia("Acacia", 8, 100, 40, 70, 25, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_acacia, couleur);
-    Plante acacia_mort("Acacia_mort", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia, couleur);
-    Plante acacia_tree("Acacia_tree", 9, 100, 40, 70, 25, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_acacia_tree, couleur);
-    Plante accacia2("Accacia2", 10, 100, 40, 70, 25, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_accacia2, couleur);
-    Plante accacia2_mort("Accacia2_mort", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante acacia("Acacia", 8, 100, 40, 70, 25, 30, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_acacia, couleur);
+    Plante acacia_mort("Acacia_mort", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante accacia2("Accacia2", 10, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2, couleur);
+    Plante accacia2_mort("Accacia2_mort", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2, couleur);
     // FORET MEDITERANEENNE
-    Plante cypr("Cypr", 11, 100, 60, 80, 20, 40, 300, 800, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_cypr, couleur);
-    Plante cypr_mort("Cypr_mort", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr, couleur);
-    Plante pin("Pin", 12, 100, 60, 80, 20, 40, 300, 800, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_pin, couleur);
-    Plante pin_mort("Pin_mort", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_pin, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante cypr("Cypr", 11, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr, couleur);
+    Plante cypr_mort("Cypr_mort", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr, couleur);
+    influence_temperature = GetRandomValue(-00.1, 00.1);
+    influence_humidite = GetRandomValue(-00.1, 00.1);
+    Plante pin("Pin", 12, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin, couleur);
+    Plante pin_mort("Pin_mort", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin, couleur);
+
     // FORET BOREAL
-    Plante sapin_boreal("Sapin_boreal", 13, 100, 50, 70, -10, 10, 200, 600, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal, couleur);
+    influence_temperature = GetRandomValue(-00.2, 00.1);
+    influence_humidite = GetRandomValue(-00.2, 00.1);
+    Plante sapin_boreal("Sapin_boreal", 13, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal, couleur);
     Plante sapin_boreal_mort("Sapin_boreal_mort", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal, couleur);
-    Plante sapin1_boreal("Sapin1_boreal", 14, 100, 50, 70, -10, 10, 200, 600, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal, couleur);
-    Plante sapin1_boreal_mort("Sapin1_boreal_mort", 15, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal, couleur);
-
-
+    influence_temperature = GetRandomValue(-00.2, 00.1);
+    influence_humidite = GetRandomValue(-00.2, 00.1);
+    Plante sapin1_boreal("Sapin1_boreal", 14, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal, couleur);
+    Plante sapin1_boreal_mort("Sapin1_boreal_mort", 14, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal, couleur);
     Plante vide("Vide", 16, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
-    std::vector<Plante> plantes = {bouleau1, bouleau2, erable, hetre, chene};//pour les plantes vivantes
-    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort, hetre_mort, chene_mort};//pour les plantes mortes
+    std::vector<Plante> plantes = {bouleau1, bouleau2, erable, hetre, chene, jungle1, jungle2, jungle3, acacia, accacia2, cypr, pin, sapin_boreal, sapin1_boreal};//pour les plantes vivantes
+    std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort, hetre_mort, chene_mort, jungle_mort1, jungle_mort2, jungle_mort3, acacia_mort, accacia2_mort, cypr_mort, pin_mort, sapin_boreal_mort, sapin1_boreal_mort, vide};//pour les plantes mortes
     //ajout des différentes météo
     /*
     temperature_min: température minimale du biome (en degrés)
@@ -1348,7 +1371,7 @@ int main(void) {
     Biome biome_tropic_sec("Tropic sec", 25, 35, 40, 70, 1000, 2000, Color{204, 255, 204, 255}, 0.01f, false, 25.0f);
     
     //foret boreale -10°C à 10°C 50 à 70 % 200 à 600 mm
-    Biome biome_boreale("Boreale", -10 , 10, 50, 70, 200, 600, Color{102, 204, 255, 255}, 1.0f, false, 20.0f);
+    Biome biome_boreale("Boreale", -25 , 10, 50, 70, 200, 600, Color{102, 204, 255, 255}, 1.0f, false, 20.0f);
     
     //biome mediteraneen 20°C à 40°C 60 à 80 % 300 à 800 mm
     Biome biome_mediteraneen("Mediteraneen", 20, 40, 60, 80, 300, 800, Color{255, 255, 153, 255}, 1.0f, false, 15.0f);
@@ -1721,7 +1744,6 @@ int main(void) {
 
             static float accumulatedTime = 0.0f;
             accumulatedTime += delta * 0.5f; // Contrôle la vitesse d'animation des nuages
-            float timeValue = accumulatedTime;
 
             //const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
 
@@ -1947,12 +1969,12 @@ int main(void) {
             lightCam.target = Vector3Zero();
 
             // l'intensité de la lumière en fonction de l'heure
-            float lightIntensity = 1.0f;
-            if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
-                lightIntensity = 0.0f; // Nuit
-            } else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
-                lightIntensity = 0.6f; // Lever/Coucher du soleil
-            }
+            //float lightIntensity = 1.0f;
+            //if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
+            //    lightIntensity = 0.0f; // Nuit
+            //} else if (timeOfDay < 8.0f || timeOfDay > 16.0f) {
+            //    lightIntensity = 0.6f; // Lever/Coucher du soleil
+            //}
 
             //lightColor = GetSunColor(timeOfDay);  //couleur en fonction du temps
             //on ajoute la couleur de la météo
@@ -2184,7 +2206,7 @@ int main(void) {
             }
         }
         
-        //GuiSliderBar((Rectangle){ 100, 340, 200, 20 }, "Wind Strength", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f); //ca sert à rien
+        
         // Si l'un des paramètres change, régénérer la texture
         static float lastCloudThreshold = cloudThreshold;
         static float lastNoiseScale = noiseScale;
@@ -2231,14 +2253,15 @@ int main(void) {
         GuiSliderBar((Rectangle){ screenWidth-300, 250, 200, 50 }, "Temperature", TextFormat("%d", temperature_modifieur), (float*)&temperature_modifieur, -30.0, 30.0);
         GuiSliderBar((Rectangle){ screenWidth-300, 300, 200, 50 }, "Humidite", TextFormat("%d", hum_modifieur), &hum_modifieur, 0.0f, 100.0f);
         //pour le vent
-        GuiSliderBar((Rectangle){ screenWidth-300, 350, 200, 50 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 4.0f);
+        //GuiSliderBar((Rectangle){ screenWidth-300, 350, 200, 50 }, "Wind Speed", TextFormat("%.2f", windSpeed), &windSpeed, 0.0f, 4.0f);
+        GuiSliderBar((Rectangle){ screenWidth-300, 350, 200, 50 }, "Force vent", TextFormat("%.2f", windStrength), &windStrength, 0.0f, 2.0f); //ca sert à rien
 
         static float accumTime = 0.0f;
 
         if(chrono_lance == true){
             accumTime += delta;
             pleut = true;
-            if(is_time_expired(2.0f, start_time)){
+            if(is_time_expired(1.0f, start_time)){
                 printf("temps expiré\n");
                 pleut = false;
                 random_pluie = 0.0f;
