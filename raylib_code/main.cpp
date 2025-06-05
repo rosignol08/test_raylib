@@ -672,6 +672,24 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
         }
     }
     else{//si la plante n'est pas morte
+        //check si les condition de température etc sont respectées
+        if (cellule->temperature < cellule->plante.temperature_min || 
+            cellule->temperature > cellule->plante.temperature_max || 
+            cellule->humidite < cellule->plante.humidite_min || 
+            cellule->humidite > cellule->plante.humidite_max || 
+            cellule->pluviometrie < cellule->plante.pluviometrie_min || 
+            cellule->pluviometrie > cellule->plante.pluviometrie_max) {
+    
+            cellule->plante.sante -= 4;
+            couleur_sante = (Color){
+                (unsigned char)Clamp(cellule->plante.couleur.r - 10.0f, 0, 255),
+                (unsigned char)Clamp(cellule->plante.couleur.g - 10.0f, 0, 255),
+                (unsigned char)Clamp(cellule->plante.couleur.b - 10.0f, 0, 255),
+                cellule->plante.couleur.a
+                };
+            cellule->plante.couleur = couleur_sante;
+        }
+        
         cellule->plante.age += delta;
         if (cellule->plante.age >= cellule->plante.age_max || cellule->plante.sante <= 0) {//si la plante est morte
             cellule->plante.age = 0;
@@ -688,6 +706,8 @@ void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellu
             }
             return;
         }
+    
+    
         else{
             if(cellule->plante.sante >= 1){//si la plante est en bonne santé
                 //if (cellule->plante.sante <= 1){
