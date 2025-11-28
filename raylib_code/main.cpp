@@ -983,22 +983,33 @@ int main(void) {
     //forets temperee
     //0 bouleau bouleau_feuilles1
     Model model_bouleau1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles1.glb");
+    Model model_bouleau1_l1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles1_l1.glb");
     Model model_mort_bouleau1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_mort1.glb");
+    Model model_mort_bouleau1_l1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_mort1_l1.glb");
     //1 bouleau bouleau_feuilles2
     Model model_bouleau2 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles2.glb");
+    Model model_bouleau2_l1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_feuilles2_l1.glb");
     Model model_mort_bouleau2 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_mort2.glb");
+    Model model_mort_bouleau2_l1 = LoadModel("models/foret_tempere/arb_bouleau/bouleau_mort2_l1.glb");
     //2 erable erable_feuilles
     Model model_erable = LoadModel("models/foret_tempere/arb_erable/erable_feuilles.glb");
+    Model model_erable_l1 = LoadModel("models/foret_tempere/arb_erable/erable_feuilles_l1.glb");
     Model model_mort_erable = LoadModel("models/foret_tempere/arb_erable/erable_mort.glb");
+    Model model_mort_erable_l1 = LoadModel("models/foret_tempere/arb_erable/erable_mort_l1.glb");
     //3 hetre hetre_feuilles
     Model model_hetre = LoadModel("models/foret_tempere/arb_hetre/hetre_feuilles.glb");
+    Model model_hetre_l1 = LoadModel("models/foret_tempere/arb_hetre/hetre_feuilles_l1.glb");
     Model model_mort_hetre = LoadModel("models/foret_tempere/arb_hetre/hetre_mort.glb");
+    Model model_mort_hetre_l1 = LoadModel("models/foret_tempere/arb_hetre/hetre_mort_l1.glb");
     //4 chene oaks_feuilles
     Model model_chene = LoadModel("models/foret_tempere/arb_oak/oaks_feuilles.glb");
+    Model model_chene_l1 = LoadModel("models/foret_tempere/arb_oak/oaks_feuilles_l1.glb");
     Model model_mort_chene = LoadModel("models/foret_tempere/arb_oak/oaks_mort.glb");
+    Model model_mort_chene_l1 = LoadModel("models/foret_tempere/arb_oak/oaks_mort_l1.glb");
 
     // Forêt tropicale humide
     Model model_jungle1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_feuillage.glb");
+    Model model_jungle1_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_feuillage_l1.glb");
     Model model_jungle2 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_feuillage2.glb");
     Model model_jungle3 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_feuillage3.glb");
     Model model_mort_jungle1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_mort1.glb");
