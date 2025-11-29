@@ -1011,28 +1011,45 @@ int main(void) {
     Model model_jungle1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_feuillage.glb");
     Model model_jungle1_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_feuillage_l1.glb");
     Model model_jungle2 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_feuillage2.glb");
+    Model model_jungle2_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_feuillage2_l1.glb");
     Model model_jungle3 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_feuillage3.glb");
+    Model model_jungle3_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_feuillage3_l1.glb");
     Model model_mort_jungle1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_mort1.glb");
+    Model model_mort_jungle1_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle1/jungle_mort1_l1.glb");
     Model model_mort_jungle2 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_mort2.glb");
+    Model model_mort_jungle2_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle2/jungle_mort2_l1.glb");
     Model model_mort_jungle3 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_mort3.glb");
+    Model model_mort_jungle3_l1 = LoadModel("models/foret_tropicale_hum/arb_jungle3/jungle_mort3_l1.glb");
 
     // Forêt tropicale sèche
     Model model_acacia = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_feuillage1.glb");
+    Model model_acacia_l1 = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_feuillage1_l1.glb");
     Model model_mort_acacia = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_mort1.glb");
+    Model model_mort_acacia_l1 = LoadModel("models/foret_tropicale_seche/arb_accacia/accacia_mort1_l1.glb");
     Model model_accacia2 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_feuillage2.glb");
+    Model model_accacia2_l1 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_feuillage2_l1.glb");
     Model model_mort_accacia2 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_mort2.glb");
+    Model model_mort_accacia2_l1 = LoadModel("models/foret_tropicale_seche/arb_accacia2/accacia_mort2_l1.glb");
 
     // FORET MEDITERANEENNE
-    Model model_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_feuillage.glb");    
+    Model model_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_feuillage.glb");
+    Model model_cypr_l1 = LoadModel("models/foret_mediteranee/arb_cypr/cypr_feuillage_l1.glb");
     Model model_mort_cypr = LoadModel("models/foret_mediteranee/arb_cypr/cypr_mort.glb");
+    Model model_mort_cypr_l1 = LoadModel("models/foret_mediteranee/arb_cypr/cypr_mort_l1.glb");
     Model model_pin = LoadModel("models/foret_mediteranee/arb_pin/pin_feuillage.glb");
+    Model model_pin_l1 = LoadModel("models/foret_mediteranee/arb_pin/pin_feuillage_l1.glb");
     Model model_mort_pin = LoadModel("models/foret_mediteranee/arb_pin/pin_mort.glb");
+    Model model_mort_pin_l1 = LoadModel("models/foret_mediteranee/arb_pin/pin_mort_l1.glb");
 
     // FORET BOREAL
     Model model_sapin_boreal = LoadModel("models/foret_boreal/arb_sapin/sapin_feuilles.glb");
+    Model model_sapin_boreal_l1 = LoadModel("models/foret_boreal/arb_sapin/sapin_feuilles_l1.glb");
     Model model_mort_sapin_boreal = LoadModel("models/foret_boreal/arb_sapin/sapin_mort.glb");
+    Model model_mort_sapin_boreal_l1 = LoadModel("models/foret_boreal/arb_sapin/sapin_mort_l1.glb");
     Model model_sapin1_boreal = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_feuilles.glb");
+    Model model_sapin1_boreal_l1 = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_feuilles_l1.glb");
     Model model_mort_sapin1_boreal = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_mort.glb");
+    Model model_mort_sapin1_boreal_l1 = LoadModel("models/foret_boreal/arb_sapin1/sapin_fir_mort_l1.glb");
     
     //on applique la lumière sur toutes les plantes
     model_bouleau1.materials[0].shader = herbe_shader;
@@ -2300,6 +2317,32 @@ int main(void) {
     UnloadModel(model_mort_cypr);
     UnloadModel(model_pin);
     UnloadModel(model_mort_pin);
+    //les meme model lodL1
+    UnloadModel(model_bouleau1_l1);
+    UnloadModel(model_bouleau2_l1);
+    UnloadModel(model_mort_bouleau1_l1);
+    UnloadModel(model_mort_bouleau2_l1);
+    UnloadModel(model_hetre_l1);
+    UnloadModel(model_mort_hetre_l1);
+    UnloadModel(model_chene_l1);
+    UnloadModel(model_mort_chene_l1);
+    UnloadModel(model_acacia_l1);
+    UnloadModel(model_mort_acacia_l1);
+    UnloadModel(model_accacia2_l1);
+    UnloadModel(model_mort_accacia2_l1);
+    UnloadModel(model_erable_l1);
+    UnloadModel(model_mort_erable_l1);
+    UnloadModel(model_jungle1_l1);
+    UnloadModel(model_mort_jungle1_l1);
+    UnloadModel(model_jungle2_l1);
+    UnloadModel(model_mort_jungle2_l1);
+    UnloadModel(model_jungle3_l1);
+    UnloadModel(model_mort_jungle3_l1);
+    UnloadModel(model_cypr_l1);
+    UnloadModel(model_mort_cypr_l1);
+    UnloadModel(model_pin_l1);
+    UnloadModel(model_mort_pin_l1);
+
     UnloadModel(model_sol);
     UnloadTexture(texture_sol);
     UnloadTexture(temperatureTexture);
