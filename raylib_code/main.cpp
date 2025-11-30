@@ -2871,6 +2871,9 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
 //
 //                //printf("couleur : R=%d, G=%d, B=%d, A=%d\n", sceneObjects[i].color.r, sceneObjects[i].color.g, sceneObjects[i].color.b, sceneObjects[i].color.a);
 //        }
+ else {
+        DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+    }
         } else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture de température
