@@ -2828,7 +2828,8 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 //DrawCubeV((Vector3){ mapPosition.x, mapPosition.y - 0.1f, mapPosition.z }, taille_terrain, GRAY);
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-//            } else {
+            } 
+//            else {
 //                //si la distance entre cette case et la caméra est plus grande que 10 on dessine l'arbre qui a le meme id de la liste plantes_l1
 //                float distanceToCamera = Vector3Distance(camera.position, sceneObjects[i].position);
 //                if(distanceToCamera > 5.0f) {
@@ -2861,15 +2862,15 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
 //        // Appliquer la transformation d'échelle avant de dessiner
 //        truc_a_dessiner.transform = MatrixScale(scale, scale, scale);
 //        DrawModel(truc_a_dessiner, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-    } else {
-        DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-    }
-                }else{
-                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-                }
-
-                //printf("couleur : R=%d, G=%d, B=%d, A=%d\n", sceneObjects[i].color.r, sceneObjects[i].color.g, sceneObjects[i].color.b, sceneObjects[i].color.a);
-            }
+//    } else {
+//        DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+//    }
+//                }else{
+//                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+//                }
+//
+//                //printf("couleur : R=%d, G=%d, B=%d, A=%d\n", sceneObjects[i].color.r, sceneObjects[i].color.g, sceneObjects[i].color.b, sceneObjects[i].color.a);
+//        }
         } else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture de température
