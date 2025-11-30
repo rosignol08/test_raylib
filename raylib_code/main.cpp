@@ -15,8 +15,13 @@
 #include <stdio.h>//pour les printf
 #include <vector>
 #include <chrono>
+
 #include <thread>
 #include <mutex>
+#include <queue>
+#include <condition_variable>
+#include <functional>
+
 #include <climits>
 
 #include "sol.h"
@@ -40,6 +45,64 @@
 
 //pour la vitesse de simulation
 float simulationSpeed = 1.0f;//facteur de vitesse de simulation (1.0 = vitesse normale)
+class ThreadPool {
+private:
+    std::vector<std::thread> workers;
+    std::queue<std::function<void()>> tasks;
+    std::mutex queueMutex;
+    std::condition_variable condition;
+    bool stop;
+
+public:
+    ThreadPool(size_t numThreads) : stop(false) {
+        for (size_t i = 0; i < numThreads; ++i) {
+            workers.emplace_back([this] {
+                while (true) {
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(this->queueMutex);
+                        this->condition.wait(lock, [this] { 
+                            return this->stop || !this->tasks.empty(); 
+                        });
+                        if (this->stop && this->tasks.empty()) return;
+                        task = std::move(this->tasks.front());
+                        this->tasks.pop();
+                    }
+                    task();
+                }
+            });
+        }
+    }
+
+    template<class F>
+    void enqueue(F&& f) {
+        {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            tasks.emplace(std::forward<F>(f));
+        }
+        condition.notify_one();
+    }
+
+    void wait() {
+        while (true) {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            if (tasks.empty()) break;
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
+    }
+
+    ~ThreadPool() {
+        {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            stop = true;
+        }
+        condition.notify_all();
+        for (std::thread &worker : workers) {
+            worker.join();
+        }
+    }
+};
 
 // Génère un float aléatoire entre 0.0 et 1.0
 float frand() {
@@ -604,7 +667,7 @@ void ModifierParametreGrille(std::vector<std::vector<GridCell>>& grille,
                               int delta, 
                               std::string parametre,
                               std::mutex& minMaxMutex,
-                              int& minVal, int& maxVal) {
+                              int* minVal, int* maxVal) {
     int localMin = INT_MAX;
     int localMax = INT_MIN;
     
@@ -631,8 +694,8 @@ void ModifierParametreGrille(std::vector<std::vector<GridCell>>& grille,
     
     // Mise à jour thread-safe des min/max globaux
     std::lock_guard<std::mutex> lock(minMaxMutex);
-    if (localMin < minVal) minVal = localMin;
-    if (localMax > maxVal) maxVal = localMax;
+    if (localMin < *minVal) *minVal = localMin;
+    if (localMax > *maxVal) *maxVal = localMax;
 }
 
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
@@ -1612,6 +1675,11 @@ int main(void) {
     float windSpeed = 1.0f;//vitesse du vent  
     float delta = 0.0f;
 
+    //mutex et threads
+    // Mutex pour protéger les variables partagées
+    std::mutex minMaxMutex;
+    ThreadPool threadPool(4);//les threads
+
     while (!WindowShouldClose()) {
         switch (currentScreen)
         {
@@ -1833,11 +1901,9 @@ int main(void) {
                 last_hum_modif = hum_modif; //maj la dernière valeur appliquée
             }
             */
-           // Mutex pour protéger les variables partagées
-std::mutex minMaxMutex;
 
 // TEMPÉRATURE
-static int last_temp_modif = 0; //la dernière valeur appliquée
+static int last_temp_modif = 0;
 int temp_modif = (int)temperature_modifieur;
 if (temp_modif != last_temp_modif) {
     int delta = temp_modif - last_temp_modif;
@@ -1846,8 +1912,7 @@ if (temp_modif != last_temp_modif) {
     minTemp = INT_MAX;
     maxTemp = INT_MIN;
     
-    // Parallélisation
-    std::vector<std::thread> threads;
+    // Utiliser le thread pool au lieu de créer des threads
     int numThreads = 4;
     int rowsPerThread = GRID_SIZE / numThreads;
     
@@ -1855,25 +1920,26 @@ if (temp_modif != last_temp_modif) {
         int startRow = t * rowsPerThread;
         int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
         
-        threads.emplace_back(ModifierParametreGrille, 
-                             std::ref(grille), 
-                             startRow, endRow, 
-                             delta, 
-                             "temperature",
-                             std::ref(minMaxMutex),
-                             std::ref(minTemp), 
-                             std::ref(maxTemp));
+        // Enqueue la tâche dans le thread pool
+        threadPool.enqueue([&grille, startRow, endRow, delta, &minMaxMutex, minTempPtr = &minTemp, maxTempPtr = &maxTemp]() {
+            ModifierParametreGrille(grille, 
+                                   startRow, endRow, 
+                                   delta, 
+                                   "temperature",
+                                   minMaxMutex,
+                                   minTempPtr, 
+                                   maxTempPtr);
+        });
     }
     
-    for (auto& thread : threads) {
-        thread.join();
-    }
+    // Attendre que toutes les tâches soient terminées
+    threadPool.wait();
     
     last_temp_modif = temp_modif;
 }
 
 // PLUVIOMÉTRIE
-static int last_pluvio_modif = 0; //la dernière valeur appliquée
+static int last_pluvio_modif = 0;
 int pluvi_modif = (int)pluviometrie_modifieur;
 
 if (pluvi_modif != last_pluvio_modif) {
@@ -1883,8 +1949,6 @@ if (pluvi_modif != last_pluvio_modif) {
     minPluv = INT_MAX;
     maxPluv = INT_MIN;
     
-    // Parallélisation
-    std::vector<std::thread> threads;
     int numThreads = 4;
     int rowsPerThread = GRID_SIZE / numThreads;
     
@@ -1892,25 +1956,24 @@ if (pluvi_modif != last_pluvio_modif) {
         int startRow = t * rowsPerThread;
         int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
         
-        threads.emplace_back(ModifierParametreGrille, 
-                             std::ref(grille), 
-                             startRow, endRow, 
-                             delta, 
-                             "pluviometrie",
-                             std::ref(minMaxMutex),
-                             std::ref(minPluv), 
-                             std::ref(maxPluv));
+        threadPool.enqueue([&grille, startRow, endRow, delta, &minMaxMutex, minPluvPtr = &minPluv, maxPluvPtr = &maxPluv]() {
+            ModifierParametreGrille(grille, 
+                                   startRow, endRow, 
+                                   delta, 
+                                   "pluviometrie",
+                                   minMaxMutex,
+                                   minPluvPtr, 
+                                   maxPluvPtr);
+        });
     }
     
-    for (auto& thread : threads) {
-        thread.join();
-    }
+    threadPool.wait();
     
     last_pluvio_modif = pluvi_modif;
 }
 
 // HUMIDITÉ
-static int last_hum_modif = 0; //la dernière valeur appliquée
+static int last_hum_modif = 0;
 int hum_modif = (int)hum_modifieur;
 if (hum_modif != last_hum_modif) {
     int delta = hum_modif - last_hum_modif;
@@ -1919,8 +1982,6 @@ if (hum_modif != last_hum_modif) {
     minHum = INT_MAX;
     maxHum = INT_MIN;
     
-    // Parallélisation
-    std::vector<std::thread> threads;
     int numThreads = 4;
     int rowsPerThread = GRID_SIZE / numThreads;
     
@@ -1928,23 +1989,21 @@ if (hum_modif != last_hum_modif) {
         int startRow = t * rowsPerThread;
         int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
         
-        threads.emplace_back(ModifierParametreGrille, 
-                             std::ref(grille), 
-                             startRow, endRow, 
-                             delta, 
-                             "humidite",
-                             std::ref(minMaxMutex),
-                             std::ref(minHum), 
-                             std::ref(maxHum));
+        threadPool.enqueue([&grille, startRow, endRow, delta, &minMaxMutex, minHumPtr = &minHum, maxHumPtr = &maxHum]() {
+            ModifierParametreGrille(grille, 
+                                   startRow, endRow, 
+                                   delta, 
+                                   "humidite",
+                                   minMaxMutex,
+                                   minHumPtr, 
+                                   maxHumPtr);
+        });
     }
     
-    for (auto& thread : threads) {
-        thread.join();
-    }
+    threadPool.wait();
     
     last_hum_modif = hum_modif;
-}
-            //le biome : on redéfini les valeurs de température etc
+}            //le biome : on redéfini les valeurs de température etc
             int temperature_modifieur_min = get_biome_temperature_min(cherche_le_biome_actuelle(les_biome));//get_biome_temperature(cherche_le_biome_actuelle(les_biome));
             int temperature_modifieur_max = get_biome_temperature_max(cherche_le_biome_actuelle(les_biome));
 
@@ -2190,29 +2249,28 @@ if (hum_modif != last_hum_modif) {
             //        verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
             //    }
             //}
-            // Diviser la grille en sections pour chaque thread
-            std::vector<std::thread> threads;
-            int numThreads = 4;
-            int rowsPerThread = GRID_SIZE / numThreads;
+            //division de la grille en sections pour chaque thread
+            // REMPLACER LE BLOC DE THREADS À LA LIGNE 2164 PAR:
+int numThreads = 4;
+int rowsPerThread = GRID_SIZE / numThreads;
 
-            for (int t = 0; t < numThreads; t++) {
-                threads.emplace_back([&, t]() {
-                    int startRow = t * rowsPerThread;
-                    int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
-
-                    for (int x = startRow; x < endRow; x++) {
-                        for (int z = 0; z < GRID_SIZE; z++) {
-                            verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, 
-                                           minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
-                        }
-                    }
-                });
+for (int t = 0; t < numThreads; t++) {
+    int startRow = t * rowsPerThread;
+    int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
+    
+    // Utiliser le thread pool au lieu de créer des threads
+    threadPool.enqueue([&grille, startRow, endRow, &plantes, &plantes_mortes, &vide, minTemp, maxTemp, minHum, maxHum, couleur_sante, delta]() {
+        for (int x = startRow; x < endRow; x++) {
+            for (int z = 0; z < GRID_SIZE; z++) {
+                verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, 
+                               minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
             }
+        }
+    });
+}
 
-            // Attendre que tous les threads terminent
-            for (auto& thread : threads) {
-                thread.join();
-            }
+// Attendre que toutes les tâches soient terminées
+threadPool.wait();
 
             if (viewMode == MODE_TEMPERATURE) {
                 useTerrainColorForGrass = true;
