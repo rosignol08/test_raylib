@@ -1533,81 +1533,97 @@ int main(void) {
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
         Plante bouleau_mort2_l1("Bouleau_mort2_l1", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante erable_mort("Erable_mort", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable, couleur);
         Plante erable_mort_l1("Erable_mort_l1", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante hetre("Hetre", 3, 100, 70, 80, 10, 15, 1000, 1500, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_hetre, couleur);
         Plante hetre_l1("Hetre_l1", 3, 100, 70, 80, 10, 15, 1000, 1500, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_hetre_l1, couleur);
-    Plante hetre_mort("Hetre_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre, couleur);
+    
+        Plante hetre_mort("Hetre_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre, couleur);
         Plante hetre_mort_l1("Hetre_mort_l1", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante chene("Chene", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
         Plante chene_l1("Chene_l1", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene_l1, couleur);
-    Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
+    
+        Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
         Plante chene_mort_l1("Chene_mort_l1", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     // FORET TROPICALE HUMIDE
     // Plantes tropicales humides 
     Plante jungle1("Jungle1", 5, 100, 80, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.009f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
         Plante jungle1_l1("Jungle1_l1", 5, 100, 80, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.009f, 0.0f, 0.2f, 0, false, 500, model_jungle1_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante jungle2("Jungle2", 6, 100, 75, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2, couleur);
         Plante jungle2_l1("Jungle2_l1", 6, 100, 75, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante jungle3("Jungle3", 7, 100, 85, 95, 20, 35, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.03f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
         Plante jungle3_l1("Jungle3_l1", 7, 100, 85, 95, 20, 35, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.03f, 0.0f, 0.2f, 0, false, 500, model_jungle3_l1, couleur);
-    Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.009f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
+    
+        Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.009f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
         Plante jungle_mort1_l1("Jungle_mort1_l1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.009f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1_l1, couleur);
-    Plante jungle_mort2("Jungle_mort2", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2, couleur);
+    
+        Plante jungle_mort2("Jungle_mort2", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2, couleur);
         Plante jungle_mort2_l1("Jungle_mort2_l1", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2_l1, couleur);
-    Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.03f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
+    
+        Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.03f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
         Plante jungle_mort3_l1("Jungle_mort3_l1", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.03f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3_l1, couleur);
     // FORET TROPICALE SECHE
+    
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante acacia("Acacia", 8, 100, 40, 70, 25, 30, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_acacia, couleur);
         Plante acacia_l1("Acacia_l1", 8, 100, 40, 70, 25, 30, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_acacia_l1, couleur);
+    
     Plante acacia_mort("Acacia_mort", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia, couleur);
         Plante acacia_mort_l1("Acacia_mort_l1", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia_l1, couleur);
-    influence_temperature = GetRandomValue(-00.1, 00.1);
+    
+        influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
-    Plante accacia2("Accacia2", 10, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2, couleur);
-        Plante accacia2_l1("Accacia2_l1", 10, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2_l1, couleur);
-    Plante accacia2_mort("Accacia2_mort", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2, couleur);
-        Plante accacia2_mort_l1("Accacia2_mort_l1", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2_l1, couleur);
+    Plante accacia2("Accacia2", 9, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2, couleur);
+        Plante accacia2_l1("Accacia2_l1", 9, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2_l1, couleur);
+    
+    Plante accacia2_mort("Accacia2_mort", 9, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2, couleur);
+        Plante accacia2_mort_l1("Accacia2_mort_l1", 9, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2_l1, couleur);
     // FORET MEDITERANEENNE
+
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
-    Plante cypr("Cypr", 11, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr, couleur);
-        Plante cypr_l1("Cypr_l1", 11, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr_l1, couleur);
-    Plante cypr_mort("Cypr_mort", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr, couleur);
-        Plante cypr_mort_l1("Cypr_mort_l1", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr_l1, couleur);
+    Plante cypr("Cypr", 10, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr, couleur);
+        Plante cypr_l1("Cypr_l1", 10, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr_l1, couleur);
+    Plante cypr_mort("Cypr_mort", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr, couleur);
+        Plante cypr_mort_l1("Cypr_mort_l1", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
-    Plante pin("Pin", 12, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin, couleur);
-        Plante pin_l1("Pin_l1", 12, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin_l1, couleur);
-    Plante pin_mort("Pin_mort", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin, couleur);
-        Plante pin_mort_l1("Pin_mort_l1", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin_l1, couleur);
-    // FORET BOREAL 
+    Plante pin("Pin", 11, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin, couleur);
+        Plante pin_l1("Pin_l1", 11, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin_l1, couleur);
+    Plante pin_mort("Pin_mort", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin, couleur);
+        Plante pin_mort_l1("Pin_mort_l1", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin_l1, couleur);
+    // FORET BOREAL
     influence_temperature = GetRandomValue(-00.2, 00.1);
     influence_humidite = GetRandomValue(-00.2, 00.1);
-    Plante sapin_boreal("Sapin_boreal", 13, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal, couleur);
-        Plante sapin_boreal_l1("Sapin_boreal_l1", 13, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal_l1, couleur);
-    Plante sapin_boreal_mort("Sapin_boreal_mort", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal, couleur);
-        Plante sapin_boreal_mort_l1("Sapin_boreal_mort_l1", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal_l1, couleur);
+    Plante sapin_boreal("Sapin_boreal", 12, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal, couleur);
+        Plante sapin_boreal_l1("Sapin_boreal_l1", 12, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal_l1, couleur);
+    Plante sapin_boreal_mort("Sapin_boreal_mort", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal, couleur);
+        Plante sapin_boreal_mort_l1("Sapin_boreal_mort_l1", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal_l1, couleur);
     influence_temperature = GetRandomValue(-00.2, 00.1);
     influence_humidite = GetRandomValue(-00.2, 00.1);
-    Plante sapin1_boreal("Sapin1_boreal", 14, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal, couleur);
-        Plante sapin1_boreal_l1("Sapin1_boreal_l1", 14, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal_l1, couleur);
-    Plante sapin1_boreal_mort("Sapin1_boreal_mort", 14, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal, couleur);
-        Plante sapin1_boreal_mort_l1("Sapin1_boreal_mort_l1", 14, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal_l1, couleur);
+    Plante sapin1_boreal("Sapin1_boreal", 13, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal, couleur);
+        Plante sapin1_boreal_l1("Sapin1_boreal_l1", 13, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal_l1, couleur);
+    Plante sapin1_boreal_mort("Sapin1_boreal_mort", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal, couleur);
+        Plante sapin1_boreal_mort_l1("Sapin1_boreal_mort_l1", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal_l1, couleur);
 
     Plante vide("Vide", 16, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
@@ -2799,9 +2815,8 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 sceneObjects[objectCount].color = grille[x][z].plante.couleur;
                 sceneObjects[objectCount].planteId = grille[x][z].plante.id;
                 sceneObjects[objectCount].scale = grille[x][z].plante.taille;
-                //float scale = grille[x][z].plante.taille;
-                //sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
-                //objectCount++;
+                float scale = grille[x][z].plante.taille;
+                sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
             //}
             if (grille[x][z].plante.id >= 0 && grille[x][z].plante.id < plantes_l1.size()) {
                     sceneObjects[objectCount].modelLOD = &plantes_l1[grille[x][z].plante.id].model;
