@@ -15,6 +15,9 @@
 #include <stdio.h>//pour les printf
 #include <vector>
 #include <chrono>
+#include <thread>
+#include <mutex>
+#include <climits>
 
 #include "sol.h"
 #include "nuages.h"
@@ -32,7 +35,7 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 
-#define GRID_SIZE 30
+#define GRID_SIZE 100
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
 //pour la vitesse de simulation
@@ -595,6 +598,43 @@ bool is_plant_morte(const std::string& nom, const std::vector<Plante>& plantes_m
     return false;
 }
 
+// Fonction helper pour paralléliser les modifications de grille
+void ModifierParametreGrille(std::vector<std::vector<GridCell>>& grille, 
+                              int startX, int endX, 
+                              int delta, 
+                              std::string parametre,
+                              std::mutex& minMaxMutex,
+                              int& minVal, int& maxVal) {
+    int localMin = INT_MAX;
+    int localMax = INT_MIN;
+    
+    for (int x = startX; x < endX; x++) {
+        for (int z = 0; z < GRID_SIZE; z++) {
+            if (parametre == "temperature") {
+                grille[x][z].temperature += delta;
+                if (grille[x][z].temperature < localMin) localMin = grille[x][z].temperature;
+                if (grille[x][z].temperature > localMax) localMax = grille[x][z].temperature;
+            }
+            else if (parametre == "pluviometrie") {
+                grille[x][z].pluviometrie += delta;
+                if (grille[x][z].pluviometrie < localMin) localMin = grille[x][z].pluviometrie;
+                if (grille[x][z].pluviometrie > localMax) localMax = grille[x][z].pluviometrie;
+            }
+            else if (parametre == "humidite") {
+                grille[x][z].humidite += delta;
+                grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
+                if (grille[x][z].humidite < localMin) localMin = grille[x][z].humidite;
+                if (grille[x][z].humidite > localMax) localMax = grille[x][z].humidite;
+            }
+        }
+    }
+    
+    // Mise à jour thread-safe des min/max globaux
+    std::lock_guard<std::mutex> lock(minMaxMutex);
+    if (localMin < minVal) minVal = localMin;
+    if (localMax > maxVal) maxVal = localMax;
+}
+
 //fonction pour vierifie quel plante peut vivre sous les conditions de sa case
 void verifier_plante(std::vector<std::vector<GridCell>> &grille, GridCell *cellule, std::vector<Plante> plantes, std::vector<Plante> plantes_mortes, Plante vide, int minTemp, int maxTemp, int minHum, int maxHum, Color couleur_sante, float delta){
     if(is_plant_morte(cellule->plante.nom, plantes_mortes) || cellule->plante.nom == "Vide"){//si la plante est morte
@@ -847,6 +887,8 @@ Color GetPluviometrieColor(int rainfall, int minPluv, int maxPluv) {
     
     return (Color){r, g, b, 255};
 }
+
+
 
 int main(void) {
     // Initialisation
@@ -1742,6 +1784,7 @@ int main(void) {
             } break;
             case 1:{
             //faut appliquer la modification de température à toutes les cases une seule fois
+            /*
             static int last_temp_modif = 0; //la dernière valeur appliquée
             int temp_modif = (int)temperature_modifieur;
 
@@ -1780,7 +1823,6 @@ int main(void) {
                 for (int x = 0; x < GRID_SIZE; x++) {
                     for (int z = 0; z < GRID_SIZE; z++) {
                         grille[x][z].humidite += delta; //modif la température de chaque case
-
                         //comme ça l'humidité reste dans la plage 0-100
                         grille[x][z].humidite = Clamp(grille[x][z].humidite, 0, 100);
                     
@@ -1790,7 +1832,118 @@ int main(void) {
                 }
                 last_hum_modif = hum_modif; //maj la dernière valeur appliquée
             }
+            */
+           // Mutex pour protéger les variables partagées
+std::mutex minMaxMutex;
 
+// TEMPÉRATURE
+static int last_temp_modif = 0; //la dernière valeur appliquée
+int temp_modif = (int)temperature_modifieur;
+if (temp_modif != last_temp_modif) {
+    int delta = temp_modif - last_temp_modif;
+    
+    // Réinitialiser min/max
+    minTemp = INT_MAX;
+    maxTemp = INT_MIN;
+    
+    // Parallélisation
+    std::vector<std::thread> threads;
+    int numThreads = 4;
+    int rowsPerThread = GRID_SIZE / numThreads;
+    
+    for (int t = 0; t < numThreads; t++) {
+        int startRow = t * rowsPerThread;
+        int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
+        
+        threads.emplace_back(ModifierParametreGrille, 
+                             std::ref(grille), 
+                             startRow, endRow, 
+                             delta, 
+                             "temperature",
+                             std::ref(minMaxMutex),
+                             std::ref(minTemp), 
+                             std::ref(maxTemp));
+    }
+    
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    
+    last_temp_modif = temp_modif;
+}
+
+// PLUVIOMÉTRIE
+static int last_pluvio_modif = 0; //la dernière valeur appliquée
+int pluvi_modif = (int)pluviometrie_modifieur;
+
+if (pluvi_modif != last_pluvio_modif) {
+    int delta = pluvi_modif - last_pluvio_modif;
+    
+    // Réinitialiser min/max
+    minPluv = INT_MAX;
+    maxPluv = INT_MIN;
+    
+    // Parallélisation
+    std::vector<std::thread> threads;
+    int numThreads = 4;
+    int rowsPerThread = GRID_SIZE / numThreads;
+    
+    for (int t = 0; t < numThreads; t++) {
+        int startRow = t * rowsPerThread;
+        int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
+        
+        threads.emplace_back(ModifierParametreGrille, 
+                             std::ref(grille), 
+                             startRow, endRow, 
+                             delta, 
+                             "pluviometrie",
+                             std::ref(minMaxMutex),
+                             std::ref(minPluv), 
+                             std::ref(maxPluv));
+    }
+    
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    
+    last_pluvio_modif = pluvi_modif;
+}
+
+// HUMIDITÉ
+static int last_hum_modif = 0; //la dernière valeur appliquée
+int hum_modif = (int)hum_modifieur;
+if (hum_modif != last_hum_modif) {
+    int delta = hum_modif - last_hum_modif;
+    
+    // Réinitialiser min/max
+    minHum = INT_MAX;
+    maxHum = INT_MIN;
+    
+    // Parallélisation
+    std::vector<std::thread> threads;
+    int numThreads = 4;
+    int rowsPerThread = GRID_SIZE / numThreads;
+    
+    for (int t = 0; t < numThreads; t++) {
+        int startRow = t * rowsPerThread;
+        int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
+        
+        threads.emplace_back(ModifierParametreGrille, 
+                             std::ref(grille), 
+                             startRow, endRow, 
+                             delta, 
+                             "humidite",
+                             std::ref(minMaxMutex),
+                             std::ref(minHum), 
+                             std::ref(maxHum));
+    }
+    
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    
+    last_hum_modif = hum_modif;
+}
             //le biome : on redéfini les valeurs de température etc
             int temperature_modifieur_min = get_biome_temperature_min(cherche_le_biome_actuelle(les_biome));//get_biome_temperature(cherche_le_biome_actuelle(les_biome));
             int temperature_modifieur_max = get_biome_temperature_max(cherche_le_biome_actuelle(les_biome));
@@ -1826,6 +1979,7 @@ int main(void) {
                 maxPluv = pluviometrie_modifieur_max;
 
                 //update les cellules avec les nouvelles valeurs
+                //TODO mettre ça en thread
                 for (int x = 0; x < GRID_SIZE; x++) {
                     for (int z = 0; z < GRID_SIZE; z++) {
                         //on genere des valeurs random dans une fourchette
@@ -2031,10 +2185,33 @@ int main(void) {
             ShowCursor();//pour voir le curseur
 
             // Mise à jour des cellules
-            for (int x = 0; x < GRID_SIZE; x++) {
-                for (int z = 0; z < GRID_SIZE; z++) {
-                    verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
-                }
+            //for (int x = 0; x < GRID_SIZE; x++) {
+            //    for (int z = 0; z < GRID_SIZE; z++) {
+            //        verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
+            //    }
+            //}
+            // Diviser la grille en sections pour chaque thread
+            std::vector<std::thread> threads;
+            int numThreads = 4;
+            int rowsPerThread = GRID_SIZE / numThreads;
+
+            for (int t = 0; t < numThreads; t++) {
+                threads.emplace_back([&, t]() {
+                    int startRow = t * rowsPerThread;
+                    int endRow = (t == numThreads - 1) ? GRID_SIZE : (t + 1) * rowsPerThread;
+
+                    for (int x = startRow; x < endRow; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            verifier_plante(grille, &grille[x][z], plantes, plantes_mortes, vide, 
+                                           minTemp, maxTemp, minHum, maxHum, couleur_sante, delta);
+                        }
+                    }
+                });
+            }
+
+            // Attendre que tous les threads terminent
+            for (auto& thread : threads) {
+                thread.join();
             }
 
             if (viewMode == MODE_TEMPERATURE) {
