@@ -645,6 +645,9 @@ typedef struct {
     Model *model;        // Modèle 3D
     float depth;         // Distance caméra → objet
     Color color = WHITE; // Couleur de l'objet, par défaut blanche
+    int planteId;        // ID de la plante
+    float scale;         // Échelle de la plante
+    Model *modelLOD;     // Pointeur vers le modèle LOD L1
 } SceneObject;
 int CompareSceneObjects(const void *a, const void *b) {
     SceneObject *objA = (SceneObject *)a;
@@ -2784,6 +2787,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
     sceneObjects[objectCount].position = mapPosition;
     sceneObjects[objectCount].model = &model_sol;
     sceneObjects[objectCount].depth = Vector3Distance(camera.position, mapPosition);
+    sceneObjects[objectCount].planteId = -1; //pas une plante
     objectCount++;
     // Ajouter les arbres à la liste
     for (int x = 0; x < GRID_SIZE; x++) {
@@ -2791,10 +2795,20 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
             if (grille[x][z].active) {
                 sceneObjects[objectCount].position = grille[x][z].position;
                 sceneObjects[objectCount].model = &grille[x][z].plante.model;
-                float scale = grille[x][z].plante.taille;
-                sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
                 sceneObjects[objectCount].depth = Vector3Distance(camera.position, grille[x][z].position);
                 sceneObjects[objectCount].color = grille[x][z].plante.couleur;
+                sceneObjects[objectCount].planteId = grille[x][z].plante.id;
+                sceneObjects[objectCount].scale = grille[x][z].plante.taille;
+                //float scale = grille[x][z].plante.taille;
+                //sceneObjects[objectCount].model->transform = MatrixScale(scale, scale, scale);
+                //objectCount++;
+            //}
+            if (grille[x][z].plante.id >= 0 && grille[x][z].plante.id < plantes_l1.size()) {
+                    sceneObjects[objectCount].modelLOD = &plantes_l1[grille[x][z].plante.id].model;
+                } else {
+                    sceneObjects[objectCount].modelLOD = sceneObjects[objectCount].model;
+                }
+                
                 objectCount++;
             }
         }
@@ -2824,72 +2838,40 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
     // Dessiner les objets dans l'ordre trié
     for (int i = 0; i < objectCount; i++) {
         if (viewMode == MODE_NORMAL) {
-            if (sceneObjects[i].model == &model_sol) {
-                //DrawCubeV((Vector3){ mapPosition.x, mapPosition.y - 0.1f, mapPosition.z }, taille_terrain, GRAY);
-                //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
+            if (sceneObjects[i].planteId == -1) { // C'est le sol
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-            } 
-//            else {
-//                //si la distance entre cette case et la caméra est plus grande que 10 on dessine l'arbre qui a le meme id de la liste plantes_l1
-//                float distanceToCamera = Vector3Distance(camera.position, sceneObjects[i].position);
-//                if(distanceToCamera > 5.0f) {
-//                    // Trouver l'id de la plante correspondante
-//                    int id_correspondant = -1;
-//                    for (int x = 0; x < GRID_SIZE; x++) {
-//                        for (int z = 0; z < GRID_SIZE; z++) {
-//                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-//                                id_correspondant = grille[x][z].plante.id;
-//                                break;
-//                            }
-//                        }
-//                        if (id_correspondant != -1) break;
-//                    }
-//                    
-//                    if (id_correspondant >= 0 && id_correspondant < plantes_l1.size()) {
-//        // Récupérer l'échelle de la plante originale
-//        float scale = 1.0f;
-//        for (int x = 0; x < GRID_SIZE; x++) {
-//            for (int z = 0; z < GRID_SIZE; z++) {
-//                if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-//                    scale = grille[x][z].plante.taille;
-//                    break;
-//                }
-//            }
-//            if (scale != 1.0f) break;
-//        }
-//        
-//        truc_a_dessiner = plantes_l1[id_correspondant].model;
-//        // Appliquer la transformation d'échelle avant de dessiner
-//        truc_a_dessiner.transform = MatrixScale(scale, scale, scale);
-//        DrawModel(truc_a_dessiner, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-//    } else {
-//        DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-//    }
-//                }else{
-//                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-//                }
-//
-//                //printf("couleur : R=%d, G=%d, B=%d, A=%d\n", sceneObjects[i].color.r, sceneObjects[i].color.g, sceneObjects[i].color.b, sceneObjects[i].color.a);
-//        }
- else {
-        DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
-    }
-        } else if (viewMode == MODE_TEMPERATURE) {
+            } else {
+                // Calculer la distance une seule fois
+                float distanceToCamera = Vector3Distance(camera.position, sceneObjects[i].position);
+                
+                // Choisir le modèle approprié (LOD ou normal)
+                Model* modelToRender = (distanceToCamera > 5.0f) ? sceneObjects[i].modelLOD : sceneObjects[i].model;
+                
+                // Appliquer la transformation d'échelle
+                modelToRender->transform = MatrixScale(sceneObjects[i].scale, 
+                                                       sceneObjects[i].scale, 
+                                                       sceneObjects[i].scale);
+                
+                // Dessiner
+                DrawModel(*modelToRender, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+            }
+        }  else if (viewMode == MODE_TEMPERATURE) {
             if (sceneObjects[i].model == &model_sol) {
                 // Le sol utilise déjà la texture de température
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
-                // Pour les autres objets, utilisez la couleur de température
-                for (int x = 0; x < GRID_SIZE; x++) {
-                    for (int z = 0; z < GRID_SIZE; z++) {
-                        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                            Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
-                            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, tempColor);
-                            break;
-                        }
-                    }
-                }
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+                //// Pour les autres objets, utilisez la couleur de température
+                //for (int x = 0; x < GRID_SIZE; x++) {
+                //    for (int z = 0; z < GRID_SIZE; z++) {
+                //        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                //            Color tempColor = GetTemperatureColor(grille[x][z].temperature, minTemp, maxTemp);
+                //            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, tempColor);
+                //            break;
+                //        }
+                //    }
+                //}
             }
         } else if(viewMode == MODE_HUMIDITE){
             if (sceneObjects[i].model == &model_sol) {
@@ -2897,16 +2879,17 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
-                // Pour les autres objets, utilisez la couleur de l'humiité
-                for (int x = 0; x < GRID_SIZE; x++) {
-                    for (int z = 0; z < GRID_SIZE; z++) {
-                        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                            Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
-                            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, humColor);
-                            break;
-                        }
-                    }
-                }
+                //// Pour les autres objets, utilisez la couleur de l'humiité
+                //for (int x = 0; x < GRID_SIZE; x++) {
+                //    for (int z = 0; z < GRID_SIZE; z++) {
+                //        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                //            Color humColor = GetHumidityColor(grille[x][z].humidite, minHum, maxHum);
+                //            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, humColor);
+                //            break;
+                //        }
+                //    }
+                //}
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
             }
         } else if(viewMode == MODE_PLUVIOMETRIE){
             if (sceneObjects[i].model == &model_sol) {
@@ -2915,15 +2898,16 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
                 // Pour les autres objets, utilisez la couleur de la pluviometrie
-                for (int x = 0; x < GRID_SIZE; x++) {
-                    for (int z = 0; z < GRID_SIZE; z++) {
-                        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                            Color pluvColor = GetPluviometrieColor(grille[x][z].pluviometrie, minPluv, maxPluv);
-                            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, pluvColor);
-                            break;
-                        }
-                    }
-                }
+                //for (int x = 0; x < GRID_SIZE; x++) {
+                //    for (int z = 0; z < GRID_SIZE; z++) {
+                //        if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                //            Color pluvColor = GetPluviometrieColor(grille[x][z].pluviometrie, minPluv, maxPluv);
+                //            DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, pluvColor);
+                //            break;
+                //        }
+                //    }
+                //}
+                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
             }
         }
     }
