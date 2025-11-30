@@ -2828,39 +2828,39 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 //DrawCubeV((Vector3){ mapPosition.x, mapPosition.y - 0.1f, mapPosition.z }, taille_terrain, GRAY);
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
-            } else {
-                //si la distance entre cette case et la caméra est plus grande que 10 on dessine l'arbre qui a le meme id de la liste plantes_l1
-                float distanceToCamera = Vector3Distance(camera.position, sceneObjects[i].position);
-                if(distanceToCamera > 5.0f) {
-                    // Trouver l'id de la plante correspondante
-                    int id_correspondant = -1;
-                    for (int x = 0; x < GRID_SIZE; x++) {
-                        for (int z = 0; z < GRID_SIZE; z++) {
-                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                                id_correspondant = grille[x][z].plante.id;
-                                break;
-                            }
-                        }
-                        if (id_correspondant != -1) break;
-                    }
-                    
-                    if (id_correspondant >= 0 && id_correspondant < plantes_l1.size()) {
-        // Récupérer l'échelle de la plante originale
-        float scale = 1.0f;
-        for (int x = 0; x < GRID_SIZE; x++) {
-            for (int z = 0; z < GRID_SIZE; z++) {
-                if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
-                    scale = grille[x][z].plante.taille;
-                    break;
-                }
-            }
-            if (scale != 1.0f) break;
-        }
-        
-        truc_a_dessiner = plantes_l1[id_correspondant].model;
-        // Appliquer la transformation d'échelle avant de dessiner
-        truc_a_dessiner.transform = MatrixScale(scale, scale, scale);
-        DrawModel(truc_a_dessiner, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+//            } else {
+//                //si la distance entre cette case et la caméra est plus grande que 10 on dessine l'arbre qui a le meme id de la liste plantes_l1
+//                float distanceToCamera = Vector3Distance(camera.position, sceneObjects[i].position);
+//                if(distanceToCamera > 5.0f) {
+//                    // Trouver l'id de la plante correspondante
+//                    int id_correspondant = -1;
+//                    for (int x = 0; x < GRID_SIZE; x++) {
+//                        for (int z = 0; z < GRID_SIZE; z++) {
+//                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+//                                id_correspondant = grille[x][z].plante.id;
+//                                break;
+//                            }
+//                        }
+//                        if (id_correspondant != -1) break;
+//                    }
+//                    
+//                    if (id_correspondant >= 0 && id_correspondant < plantes_l1.size()) {
+//        // Récupérer l'échelle de la plante originale
+//        float scale = 1.0f;
+//        for (int x = 0; x < GRID_SIZE; x++) {
+//            for (int z = 0; z < GRID_SIZE; z++) {
+//                if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+//                    scale = grille[x][z].plante.taille;
+//                    break;
+//                }
+//            }
+//            if (scale != 1.0f) break;
+//        }
+//        
+//        truc_a_dessiner = plantes_l1[id_correspondant].model;
+//        // Appliquer la transformation d'échelle avant de dessiner
+//        truc_a_dessiner.transform = MatrixScale(scale, scale, scale);
+//        DrawModel(truc_a_dessiner, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
     } else {
         DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
     }
