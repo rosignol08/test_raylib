@@ -541,8 +541,8 @@ void UnloadShadowmapRenderTexture(RenderTexture2D target)
     }
 }
 
-//pour dessiner la scene 
-void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition);
+//pour dessiner la scene
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, std::vector<Plante> plantes, std::vector<Plante> plantes_l1, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition);
 
 //fonction pour faire varier un parametre
 void test_variation(GridCell * cellule){
@@ -1196,6 +1196,153 @@ int main(void) {
     {
         model_mort_sapin1_boreal.materials[i].shader = herbe_shader;
     }
+    
+    //pour les lod l1
+    model_bouleau1_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_bouleau1_l1.materialCount; i++)
+    {
+        model_bouleau1_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_bouleau1_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_bouleau1_l1.materialCount; i++)
+    {
+        model_mort_bouleau1_l1.materials[i].shader = herbe_shader;
+    }
+
+    model_bouleau2_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_bouleau2_l1.materialCount; i++)
+    {
+        model_bouleau2_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_bouleau2_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_bouleau2_l1.materialCount; i++)
+    {
+        model_mort_bouleau2_l1.materials[i].shader = herbe_shader;
+    }
+
+    model_erable_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_erable_l1.materialCount; i++)
+    {
+        model_erable_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_erable_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_erable_l1.materialCount; i++)
+    {
+        model_mort_erable_l1.materials[i].shader = herbe_shader;
+    }
+    
+    model_hetre_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_hetre_l1.materialCount; i++)
+    {
+        model_hetre_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_hetre_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_hetre_l1.materialCount; i++)
+    {
+        model_mort_hetre_l1.materials[i].shader = herbe_shader;
+    }
+    
+    model_chene_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_chene_l1.materialCount; i++)
+    {
+        model_chene_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_chene_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_chene_l1.materialCount; i++)
+    {
+        model_mort_chene_l1.materials[i].shader = herbe_shader;
+    }
+    model_jungle1_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_jungle1_l1.materialCount; i++)
+    {
+        model_jungle1_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_jungle1_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_jungle1_l1.materialCount; i++)
+    {
+        model_mort_jungle1_l1.materials[i].shader = herbe_shader;
+    }
+    model_jungle2_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_jungle2_l1.materialCount; i++)
+    {
+        model_jungle2_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_jungle2_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_jungle2_l1.materialCount; i++)
+    {
+        model_mort_jungle2_l1.materials[i].shader = herbe_shader;
+    }
+    model_jungle3_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_jungle3_l1.materialCount; i++)
+    {
+        model_jungle3_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_jungle3_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_jungle3_l1.materialCount; i++)
+    {
+        model_mort_jungle3_l1.materials[i].shader = herbe_shader;
+    }
+    model_acacia_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_acacia_l1.materialCount; i++)
+    {
+        model_acacia_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_acacia_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_acacia_l1.materialCount; i++)
+    {
+        model_mort_acacia_l1.materials[i].shader = herbe_shader;
+    }
+    model_accacia2_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_accacia2_l1.materialCount; i++)
+    {
+        model_accacia2_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_accacia2_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_accacia2_l1.materialCount; i++)
+    {
+        model_mort_accacia2_l1.materials[i].shader = herbe_shader;
+    }
+    model_cypr_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_cypr_l1.materialCount; i++)
+    {
+        model_cypr_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_cypr_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_cypr_l1.materialCount; i++)
+    {
+        model_mort_cypr_l1.materials[i].shader = herbe_shader;
+    }
+    model_pin_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_pin_l1.materialCount; i++)
+    {
+        model_pin_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_pin_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_pin_l1.materialCount; i++)
+    {
+        model_mort_pin_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_sapin_boreal_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_sapin_boreal_l1.materialCount; i++)
+    {
+        model_mort_sapin_boreal_l1.materials[i].shader = herbe_shader;
+    }
+    model_sapin_boreal_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_sapin_boreal_l1.materialCount; i++)
+    {
+        model_sapin_boreal_l1.materials[i].shader = herbe_shader;
+    }
+    model_sapin1_boreal_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_sapin1_boreal_l1.materialCount; i++)
+    {
+        model_sapin1_boreal_l1.materials[i].shader = herbe_shader;
+    }
+    model_mort_sapin1_boreal_l1.materials[0].shader = herbe_shader;
+    for (int i = 0; i < model_mort_sapin1_boreal_l1.materialCount; i++)
+    {
+        model_mort_sapin1_boreal_l1.materials[i].shader = herbe_shader;
+    }
+
 
     // Après avoir chargé le shader
     if (herbe_shader.id == 0) {
@@ -1261,74 +1408,104 @@ int main(void) {
     int influence_humidite = GetRandomValue(-00.1, 00.1);
     // FORET TEMPERE
     Plante bouleau1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau1, couleur);
+    Plante bouleau1_l1("Bouleau1", 0, 100, 70, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau1_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau2("Bouleau2", 1, 100, 75, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau2, couleur);
+        Plante bouleau2_l1("Bouleau2_l1", 1, 100, 75, 80, 5, 10, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.0f, 0.2f, 0, false, 250, model_bouleau2_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante erable("Erable", 2, 100, 70, 80, 5, 10, 500, 1500, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, false, 350, model_erable, couleur);
+        Plante erable_l1("Erable_l1", 2, 100, 70, 80, 5, 10, 500, 1500, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, false, 350, model_erable_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau_mort1("Bouleau_mort1", 0, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau1, couleur);
+        Plante bouleau_mort1_l1("Bouleau_mort1_l1", 0, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau1_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante bouleau_mort2("Bouleau_mort2", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2, couleur);
+        Plante bouleau_mort2_l1("Bouleau_mort2_l1", 1, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.0f, 0.2f, 0, true, 50, model_mort_bouleau2_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante erable_mort("Erable_mort", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable, couleur);
+        Plante erable_mort_l1("Erable_mort_l1", 2, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.04f, 0.0f, 0.2f, 0, true, 50, model_mort_erable_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante hetre("Hetre", 3, 100, 70, 80, 10, 15, 1000, 1500, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_hetre, couleur);
+        Plante hetre_l1("Hetre_l1", 3, 100, 70, 80, 10, 15, 1000, 1500, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_hetre_l1, couleur);
     Plante hetre_mort("Hetre_mort", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre, couleur);
+        Plante hetre_mort_l1("Hetre_mort_l1", 3, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_hetre_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante chene("Chene", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene, couleur);
+        Plante chene_l1("Chene_l1", 4, 100, 70, 80, 10, 15, 500, 1000, influence_temperature, influence_humidite, 0.005f, 0.01f, 0.01f, 0.2f, 0, false, 1000, model_chene_l1, couleur);
     Plante chene_mort("Chene_mort", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene, couleur);
+        Plante chene_mort_l1("Chene_mort_l1", 4, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.01f, 0.01f, 0.2f, 0, true, 50, model_mort_chene_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     // FORET TROPICALE HUMIDE
     // Plantes tropicales humides 
     Plante jungle1("Jungle1", 5, 100, 80, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.009f, 0.0f, 0.2f, 0, false, 500, model_jungle1, couleur);
+        Plante jungle1_l1("Jungle1_l1", 5, 100, 80, 90, 20, 30, 2000, 3000, influence_temperature, influence_humidite, 0.001f, 0.009f, 0.0f, 0.2f, 0, false, 500, model_jungle1_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante jungle2("Jungle2", 6, 100, 75, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2, couleur);
+        Plante jungle2_l1("Jungle2_l1", 6, 100, 75, 85, 20, 30, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.02f, 0.0f, 0.2f, 0, false, 500, model_jungle2_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante jungle3("Jungle3", 7, 100, 85, 95, 20, 35, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.03f, 0.0f, 0.2f, 0, false, 500, model_jungle3, couleur);
+        Plante jungle3_l1("Jungle3_l1", 7, 100, 85, 95, 20, 35, 2000, 5000, influence_temperature, influence_humidite, 0.01f, 0.03f, 0.0f, 0.2f, 0, false, 500, model_jungle3_l1, couleur);
     Plante jungle_mort1("Jungle_mort1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.009f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1, couleur);
+        Plante jungle_mort1_l1("Jungle_mort1_l1", 5, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.001f, 0.009f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle1_l1, couleur);
     Plante jungle_mort2("Jungle_mort2", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2, couleur);
+        Plante jungle_mort2_l1("Jungle_mort2_l1", 6, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle2_l1, couleur);
     Plante jungle_mort3("Jungle_mort3", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.03f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3, couleur);
+        Plante jungle_mort3_l1("Jungle_mort3_l1", 7, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.03f, 0.0f, 0.2f, 0, true, 50, model_mort_jungle3_l1, couleur);
     // FORET TROPICALE SECHE
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante acacia("Acacia", 8, 100, 40, 70, 25, 30, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_acacia, couleur);
+        Plante acacia_l1("Acacia_l1", 8, 100, 40, 70, 25, 30, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_acacia_l1, couleur);
     Plante acacia_mort("Acacia_mort", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia, couleur);
+        Plante acacia_mort_l1("Acacia_mort_l1", 8, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_acacia_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante accacia2("Accacia2", 10, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2, couleur);
+        Plante accacia2_l1("Accacia2_l1", 10, 100, 40, 70, 35, 35, 1000, 2000, influence_temperature, influence_humidite, 0.01f, 0.08f, 0.0f, 0.2f, 0, false, 500, model_accacia2_l1, couleur);
     Plante accacia2_mort("Accacia2_mort", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2, couleur);
+        Plante accacia2_mort_l1("Accacia2_mort_l1", 10, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.08f, 0.0f, 0.2f, 0, true, 50, model_mort_accacia2_l1, couleur);
     // FORET MEDITERANEENNE
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante cypr("Cypr", 11, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr, couleur);
+        Plante cypr_l1("Cypr_l1", 11, 100, 50, 75, 20, 35, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.008f, 0.0f, 0.2f, 0, false, 500, model_cypr_l1, couleur);
     Plante cypr_mort("Cypr_mort", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr, couleur);
+        Plante cypr_mort_l1("Cypr_mort_l1", 11, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.008f, 0.0f, 0.2f, 0, true, 50, model_mort_cypr_l1, couleur);
     influence_temperature = GetRandomValue(-00.1, 00.1);
     influence_humidite = GetRandomValue(-00.1, 00.1);
     Plante pin("Pin", 12, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin, couleur);
+        Plante pin_l1("Pin_l1", 12, 100, 55, 80, 25, 40, 300, 800, influence_temperature, influence_humidite, 0.005f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_pin_l1, couleur);
     Plante pin_mort("Pin_mort", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin, couleur);
-
-    // FORET BOREAL
+        Plante pin_mort_l1("Pin_mort_l1", 12, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_pin_l1, couleur);
+    // FORET BOREAL 
     influence_temperature = GetRandomValue(-00.2, 00.1);
     influence_humidite = GetRandomValue(-00.2, 00.1);
     Plante sapin_boreal("Sapin_boreal", 13, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal, couleur);
+        Plante sapin_boreal_l1("Sapin_boreal_l1", 13, 100, 50, 70, -20, 10, 200, 600, influence_temperature, influence_humidite, 0.0002f, 0.002f, 0.0f, 0.2f, 0, false, 500, model_sapin_boreal_l1, couleur);
     Plante sapin_boreal_mort("Sapin_boreal_mort", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal, couleur);
+        Plante sapin_boreal_mort_l1("Sapin_boreal_mort_l1", 13, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.01f, 0.02f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin_boreal_l1, couleur);
     influence_temperature = GetRandomValue(-00.2, 00.1);
     influence_humidite = GetRandomValue(-00.2, 00.1);
     Plante sapin1_boreal("Sapin1_boreal", 14, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal, couleur);
+        Plante sapin1_boreal_l1("Sapin1_boreal_l1", 14, 100, 50, 70, -25, 5, 200, 600, influence_temperature, influence_humidite, 0.001f, 0.006f, 0.0f, 0.2f, 0, false, 500, model_sapin1_boreal_l1, couleur);
     Plante sapin1_boreal_mort("Sapin1_boreal_mort", 14, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal, couleur);
+        Plante sapin1_boreal_mort_l1("Sapin1_boreal_mort_l1", 14, 100, 0, 100, -50, 200, 0, 5000, 0, 0, 0.005f, 0.006f, 0.0f, 0.2f, 0, true, 50, model_mort_sapin1_boreal_l1, couleur);
+
     Plante vide("Vide", 16, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0, false, 100, emptyModel, couleur);
 
     std::vector<Plante> plantes = {bouleau1, bouleau2, erable, hetre, chene, jungle1, jungle2, jungle3, acacia, accacia2, cypr, pin, sapin_boreal, sapin1_boreal};//pour les plantes vivantes
+    std::vector<Plante> plantes_l1 = {bouleau1_l1, bouleau2_l1, erable_l1, hetre_l1, chene_l1, jungle1_l1, jungle2_l1, jungle3_l1, acacia_l1, accacia2_l1, cypr_l1, pin_l1, sapin_boreal_l1, sapin1_boreal_l1};//pour les plantes vivantes lod1
+    std::vector<Plante> plantes_mortes_l1 = {bouleau_mort1_l1, bouleau_mort2_l1, erable_mort_l1, hetre_mort_l1, chene_mort_l1, jungle_mort1_l1, jungle_mort2_l1, jungle_mort3_l1, acacia_mort_l1, accacia2_mort_l1, cypr_mort_l1, pin_mort_l1, sapin_boreal_mort_l1, sapin1_boreal_mort_l1, vide};//pour les plantes mortes lod1
     std::vector<Plante> plantes_mortes = {bouleau_mort1, bouleau_mort2, erable_mort, hetre_mort, chene_mort, jungle_mort1, jungle_mort2, jungle_mort3, acacia_mort, accacia2_mort, cypr_mort, pin_mort, sapin_boreal_mort, sapin1_boreal_mort, vide};//pour les plantes mortes
     //ajout des différentes météo
     /*
@@ -2008,7 +2185,7 @@ int main(void) {
                                 lightView = rlGetMatrixModelview();
                                 lightProj = rlGetMatrixProjection();
                                 
-                                dessine_scene(camera, image_sol, taille_terrain, model_sol, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+                                dessine_scene(camera, image_sol, taille_terrain, model_sol, plantes, plantes_l1, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
                                 int isGrass = 1;
 
                                 SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
@@ -2074,7 +2251,7 @@ int main(void) {
                         
                             isGrass = 2;
                             SetShaderValue(herbe_shader, GetShaderLocation(herbe_shader, "isGrass"), &isGrass, SHADER_UNIFORM_INT);
-                            dessine_scene(camera, image_sol, taille_terrain, model_sol, plantes, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
+                            dessine_scene(camera, image_sol, taille_terrain, model_sol, plantes, plantes_l1, grille, viewMode, minTemp, maxTemp, minHum, maxHum, mapPosition);
                                 isGrass = 1;
                                 SetShaderValue(herbe_shader, timeLocation, &time, SHADER_UNIFORM_FLOAT);
                                 SetShaderValue(herbe_shader, windStrengthLocation, &windStrength, SHADER_UNIFORM_FLOAT);
@@ -2365,7 +2542,7 @@ int main(void) {
     return 0;
 }
 
-void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, std::vector<Plante> plantes, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition) {
+void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model model_sol, std::vector<Plante> plantes, std::vector<Plante> plantes_l1, std::vector<std::vector<GridCell>> grille, int viewMode, int &minTemp, int &maxTemp, int &minHum, int &maxHum, Vector3 mapPosition) {
     SceneObject sceneObjects[GRID_SIZE * GRID_SIZE + 1]; // +1 pour inclure le sol
     int objectCount = 0;
     // Ajouter le sol à la liste
@@ -2408,6 +2585,7 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
     }
     // Trier les objets par profondeur
     qsort(sceneObjects, objectCount, sizeof(SceneObject), CompareSceneObjects);
+    Model truc_a_dessiner; //correspond à l'arbre qu'on va rendre
     // Dessiner les objets dans l'ordre trié
     for (int i = 0; i < objectCount; i++) {
         if (viewMode == MODE_NORMAL) {
@@ -2416,7 +2594,45 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
                 //DrawCubeV((Vector3){0,0,0 }, (Vector3){taille_terrain.x, 0.2f, taille_terrain.z}, GRAY);
                 DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 0.1f, WHITE);
             } else {
-                DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+                //si la distance entre cette case et la caméra est plus grande que 10 on dessine l'arbre qui a le meme id de la liste plantes_l1
+                float distanceToCamera = Vector3Distance(camera.position, sceneObjects[i].position);
+                if(distanceToCamera > 5.0f) {
+                    // Trouver l'id de la plante correspondante
+                    int id_correspondant = -1;
+                    for (int x = 0; x < GRID_SIZE; x++) {
+                        for (int z = 0; z < GRID_SIZE; z++) {
+                            if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                                id_correspondant = grille[x][z].plante.id;
+                                break;
+                            }
+                        }
+                        if (id_correspondant != -1) break;
+                    }
+                    
+                    if (id_correspondant >= 0 && id_correspondant < plantes_l1.size()) {
+        // Récupérer l'échelle de la plante originale
+        float scale = 1.0f;
+        for (int x = 0; x < GRID_SIZE; x++) {
+            for (int z = 0; z < GRID_SIZE; z++) {
+                if (Vector3Equals(grille[x][z].position, sceneObjects[i].position)) {
+                    scale = grille[x][z].plante.taille;
+                    break;
+                }
+            }
+            if (scale != 1.0f) break;
+        }
+        
+        truc_a_dessiner = plantes_l1[id_correspondant].model;
+        // Appliquer la transformation d'échelle avant de dessiner
+        truc_a_dessiner.transform = MatrixScale(scale, scale, scale);
+        DrawModel(truc_a_dessiner, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+    } else {
+        DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+    }
+                }else{
+                    DrawModel(*sceneObjects[i].model, sceneObjects[i].position, 1.0f, sceneObjects[i].color);
+                }
+
                 //printf("couleur : R=%d, G=%d, B=%d, A=%d\n", sceneObjects[i].color.r, sceneObjects[i].color.g, sceneObjects[i].color.b, sceneObjects[i].color.a);
             }
         } else if (viewMode == MODE_TEMPERATURE) {
