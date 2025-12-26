@@ -40,7 +40,7 @@
     #define GLSL_VERSION            330//120//si c'est 100 ça ouvre pas les autres shaders
 #endif
 
-#define GRID_SIZE 100
+#define GRID_SIZE 200
 #define SHADOWMAP_RESOLUTION 2048 //la resolution de la shadowmap
 
 //pour la vitesse de simulation
