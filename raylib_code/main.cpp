@@ -414,7 +414,7 @@ int main(void) {
     //les ombres
     Shader shadowShader = LoadShader(TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.vs", GLSL_VERSION),TextFormat("include/shaders/resources/shaders/glsl%i/shadowmap.fs", GLSL_VERSION));
     //le test du shader pbr avec l'ombre
-    Shader pbr_ombre_shader = LoadShader("ressources/custom_shader/glsl330/ombre_pbr.vs","ressources/custom_shader/glsl330/ombre_pbr.fs");
+    //Shader pbr_ombre_shader = LoadShader("ressources/custom_shader/glsl330/ombre_pbr.vs","ressources/custom_shader/glsl330/ombre_pbr.fs");
     //l'herbe
     Shader herbe_shader = LoadShader("ressources/custom_shader/glsl330/herbe_shader.vs","ressources/custom_shader/glsl330/herbe_shader.fs");
     // Configurez les locations du shader de l'ombre
@@ -487,7 +487,7 @@ int main(void) {
     // Charger le modèle et la texture test commentaire
     Model model_mort  = LoadModel("models/arb_mort/scene.gltf");
     Model model_sapin = LoadModel("models/pine_tree/scene.glb");
-    Model model_buisson_europe = LoadModel("models/buisson/foret_classique/scene.gltf");
+    Model model_buisson_europe = LoadModel("models/buisson/foret_classique/stylized_bush.glb");//LoadModel("models/buisson/foret_classique/scene.gltf"); //trop lourd pour windows
     Texture2D texture_buisson_europe = LoadTexture("models/buisson/foret_classique/textures/gbushy_baseColor.png");
     model_buisson_europe.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture_buisson_europe;
     //Model model_herbe = LoadModel("models/herbe/untitled.glb");
@@ -682,7 +682,7 @@ int main(void) {
                                         
                                 mesh_sol = GenMeshHeightmap(image_sol, (Vector3){ 40, 20, 40 }); // Generate heightmap mesh (RAM and VRAM)
                                 model_sol = LoadModelFromMesh(mesh_sol); // Load model from generated mesh
-                                image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
+                                image_texture_sol = LoadImage("ressources/compress_terrain_texture_tiede.jpg");//LoadImage("ressources/compress_terrain_texture_tiede.jpg"); //rocky_terrain_02_diff_1k.jpg
                                 texture_sol = LoadTextureFromImage(image_texture_sol); // Load map texture
                                 shader_taille = LoadShader("include/shaders/resources/shaders/glsl100/base.vs", "include/shaders/resources/shaders/glsl100/base.fs");
                                 uvScaleLoc = GetShaderLocation(shader_taille, "uvScale");
@@ -916,9 +916,9 @@ int main(void) {
 
             static float accumulatedTime = 0.0f;
             accumulatedTime += dt * 0.5f; // Contrôle la vitesse d'animation des nuages
-            float timeValue = accumulatedTime;
+            //float timeValue = accumulatedTime;
 
-            const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
+            //const float driftSpeed = 0.2f; // Vitesse de déplacement des nuages
 
             // Faire dériver les nuages horizontalement
             for (auto& nuage : grandsNuages) {
@@ -1466,3 +1466,4 @@ void dessine_scene(Camera camera, Image image_sol, Vector3 taille_terrain, Model
         }
     }
 }
+
